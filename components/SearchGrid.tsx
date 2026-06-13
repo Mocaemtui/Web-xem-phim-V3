@@ -17,6 +17,7 @@ interface NguonCMovieItem {
   thumb_url: string;
   year?: number;
   created?: string;
+  modified?: string;
 }
 
 interface SearchGridProps {
@@ -64,7 +65,37 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
           }
           
           if (active) {
-            const newMovies: ExtendedMovie[] = allNguonCItems.map((item: NguonCMovieItem) => ({
+            // Sort by relevance score first, then by modified date descending
+            const getRelevance = (movie: NguonCMovieItem) => {
+              const kw = keyword.toLowerCase().trim();
+              const name = (movie.name || '').toLowerCase();
+              const orig = (movie.original_name || '').toLowerCase();
+              
+              if (name === kw || orig === kw) return 100;
+              if (name.startsWith(kw) || orig.startsWith(kw)) return 80;
+              if (name.includes(kw) || orig.includes(kw)) return 60;
+              
+              const tokens = kw.split(/\s+/);
+              let matches = 0;
+              tokens.forEach(t => {
+                if (name.includes(t) || orig.includes(t)) matches++;
+              });
+              if (matches > 0) return (matches / tokens.length) * 40;
+              
+              return 0;
+            };
+
+            const sortedNguonC = [...allNguonCItems].sort((a, b) => {
+              const scoreA = getRelevance(a);
+              const scoreB = getRelevance(b);
+              if (scoreA !== scoreB) return scoreB - scoreA;
+              
+              const timeA = a.modified ? new Date(a.modified).getTime() : 0;
+              const timeB = b.modified ? new Date(b.modified).getTime() : 0;
+              return timeB - timeA;
+            });
+
+            const newMovies: ExtendedMovie[] = sortedNguonC.map((item: NguonCMovieItem) => ({
               _id: item.id || Math.random().toString(),
               name: item.name,
               slug: item.slug,
@@ -102,36 +133,25 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
 
   const filteredMovies = useMemo(() => {
-    const normalize = (str: string) => {
-      return str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+    const getSmartKey = (item: ExtendedMovie) => {
+      const originName = item.origin_name || item.name || '';
+      const normalizedOriginName = originName.toLowerCase().replace(/\s+/g, ' ').trim();
+      return `${normalizedOriginName}-${item.year || 'unknown'}`;
     };
 
-    // 1. Build maps of PhimAPI movies by slug and by normalized name
-    const phimapiBySlug = new Map<string, ExtendedMovie>();
-    const phimapiByName = new Map<string, ExtendedMovie>();
-
+    // 1. Build a map of PhimAPI movies to use their images everywhere
+    const phimapiMap = new Map<string, ExtendedMovie>();
     movies.forEach(m => {
       if (m.source === 'phimapi') {
-        if (m.slug) phimapiBySlug.set(m.slug, m);
-        const nameKey = normalize(m.origin_name || m.name || '');
-        if (nameKey) phimapiByName.set(nameKey, m);
+        phimapiMap.set(getSmartKey(m), m);
       }
     });
 
     // 2. Resolve movies (overwrite images with PhimAPI version if available)
     const resolvedMovies = movies.map(movie => {
-      if (movie.source === 'phimapi') return movie;
-
-      // Match by slug first
-      let phimapiMovie = movie.slug ? phimapiBySlug.get(movie.slug) : null;
-
-      // Match by normalized name if slug did not match
-      if (!phimapiMovie) {
-        const nameKey = normalize(movie.origin_name || movie.name || '');
-        if (nameKey) phimapiMovie = phimapiByName.get(nameKey);
-      }
-
-      if (phimapiMovie) {
+      const key = getSmartKey(movie);
+      const phimapiMovie = phimapiMap.get(key);
+      if (phimapiMovie && movie.source !== 'phimapi') {
         return {
           ...movie,
           poster_url: phimapiMovie.poster_url,
@@ -143,42 +163,34 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
     // 3. Filter or Deduplicate based on selectedSource
     if (selectedSource === "all") {
-      // Assign stable sort indexes
-      const indexedMovies = resolvedMovies.map((m, idx) => ({ ...m, originalIndex: idx }));
-
-      // Sort by source priority: phimapi (3) > nguonc (2) > ophim (1)
-      const sorted = [...indexedMovies].sort((a, b) => {
-        const priority: Record<string, number> = { phimapi: 3, nguonc: 2, ophim: 1 };
-        const priorityA = (a.source && priority[a.source]) || 0;
-        const priorityB = (b.source && priority[b.source]) || 0;
-        
-        if (priorityA !== priorityB) {
-          return priorityB - priorityA;
-        }
-        return a.originalIndex - b.originalIndex;
-      });
-
-      // Deduplicate (first occurrence wins, matching by slug or normalized name)
-      const itemsMap = new Map<string, ExtendedMovie>();
       const addedKeys = new Set<string>();
+      const result: ExtendedMovie[] = [];
 
-      sorted.forEach(movie => {
-        const slugKey = movie.slug ? `slug-${movie.slug}` : null;
-        const nameKey = normalize(movie.origin_name || movie.name || '');
-        const nameKeyFormatted = nameKey ? `name-${nameKey}` : null;
+      resolvedMovies.forEach(movie => {
+        const key = getSmartKey(movie);
+        if (!addedKeys.has(key)) {
+          // Find all duplicates for this key
+          const duplicates = resolvedMovies.filter(m => getSmartKey(m) === key);
+          
+          // Find the one with highest priority source: phimapi (3) > nguonc (2) > ophim (1)
+          const priority: Record<string, number> = { phimapi: 3, nguonc: 2, ophim: 1 };
+          let bestMovie = movie;
+          let bestPriority = (movie.source && priority[movie.source]) || 0;
 
-        const isAlreadyAdded = (slugKey && addedKeys.has(slugKey)) || (nameKeyFormatted && addedKeys.has(nameKeyFormatted));
+          duplicates.forEach(dup => {
+            const dupPriority = (dup.source && priority[dup.source]) || 0;
+            if (dupPriority > bestPriority) {
+              bestMovie = dup;
+              bestPriority = dupPriority;
+            }
+          });
 
-        if (!isAlreadyAdded) {
-          if (slugKey) addedKeys.add(slugKey);
-          if (nameKeyFormatted) addedKeys.add(nameKeyFormatted);
-
-          const { originalIndex, ...rest } = movie as any;
-          itemsMap.set(movie.slug || movie._id, rest);
+          result.push(bestMovie);
+          addedKeys.add(key);
         }
       });
 
-      return Array.from(itemsMap.values());
+      return result;
     } else {
       // Show all movies from that source directly, but with resolved images
       return resolvedMovies.filter((movie: ExtendedMovie) => movie.source === selectedSource);
