@@ -102,25 +102,36 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
 
   const filteredMovies = useMemo(() => {
-    const getSmartKey = (item: ExtendedMovie) => {
-      const originName = item.origin_name || item.name || '';
-      const normalizedOriginName = originName.toLowerCase().replace(/\s+/g, ' ').trim();
-      return `${normalizedOriginName}-${item.year || 'unknown'}`;
+    const normalize = (str: string) => {
+      return str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
     };
 
-    // 1. Build a map of PhimAPI movies to use their images everywhere
-    const phimapiMap = new Map<string, ExtendedMovie>();
+    // 1. Build maps of PhimAPI movies by slug and by normalized name
+    const phimapiBySlug = new Map<string, ExtendedMovie>();
+    const phimapiByName = new Map<string, ExtendedMovie>();
+
     movies.forEach(m => {
       if (m.source === 'phimapi') {
-        phimapiMap.set(getSmartKey(m), m);
+        if (m.slug) phimapiBySlug.set(m.slug, m);
+        const nameKey = normalize(m.origin_name || m.name || '');
+        if (nameKey) phimapiByName.set(nameKey, m);
       }
     });
 
     // 2. Resolve movies (overwrite images with PhimAPI version if available)
     const resolvedMovies = movies.map(movie => {
-      const key = getSmartKey(movie);
-      const phimapiMovie = phimapiMap.get(key);
-      if (phimapiMovie && movie.source !== 'phimapi') {
+      if (movie.source === 'phimapi') return movie;
+
+      // Match by slug first
+      let phimapiMovie = movie.slug ? phimapiBySlug.get(movie.slug) : null;
+
+      // Match by normalized name if slug did not match
+      if (!phimapiMovie) {
+        const nameKey = normalize(movie.origin_name || movie.name || '');
+        if (nameKey) phimapiMovie = phimapiByName.get(nameKey);
+      }
+
+      if (phimapiMovie) {
         return {
           ...movie,
           poster_url: phimapiMovie.poster_url,
@@ -147,13 +158,23 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
         return a.originalIndex - b.originalIndex;
       });
 
-      // Deduplicate (first occurrence wins)
+      // Deduplicate (first occurrence wins, matching by slug or normalized name)
       const itemsMap = new Map<string, ExtendedMovie>();
+      const addedKeys = new Set<string>();
+
       sorted.forEach(movie => {
-        const key = getSmartKey(movie);
-        if (!itemsMap.has(key)) {
+        const slugKey = movie.slug ? `slug-${movie.slug}` : null;
+        const nameKey = normalize(movie.origin_name || movie.name || '');
+        const nameKeyFormatted = nameKey ? `name-${nameKey}` : null;
+
+        const isAlreadyAdded = (slugKey && addedKeys.has(slugKey)) || (nameKeyFormatted && addedKeys.has(nameKeyFormatted));
+
+        if (!isAlreadyAdded) {
+          if (slugKey) addedKeys.add(slugKey);
+          if (nameKeyFormatted) addedKeys.add(nameKeyFormatted);
+
           const { originalIndex, ...rest } = movie as any;
-          itemsMap.set(key, rest);
+          itemsMap.set(movie.slug || movie._id, rest);
         }
       });
 
