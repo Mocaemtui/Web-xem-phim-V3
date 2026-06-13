@@ -6,7 +6,7 @@ import FilterPanel from "@/components/FilterPanel";
 import MovieCard from "@/components/MovieCard";
 import SectionTitle from "@/components/SectionTitle";
 import Pagination from "@/components/Pagination";
-import { getDanhSach, getTheLoaiDetails, getQuocGiaDetails, getTheLoai, getQuocGia, getMoviePosterUrl } from "@/lib/api";
+import { getDanhSach, getTheLoaiDetails, getQuocGiaDetails, getTheLoai, getQuocGia, getPhimMoi } from "@/lib/api";
 import type { MovieListResponse, Genre, Country, Movie } from "@/types/api";
 
 const DANH_MUC_LIST = [
@@ -69,17 +69,27 @@ function FilterContent() {
         sort_type: filters.sortField ? "desc" : undefined
       };
 
+      const hasAnyFilter = filters.theLoai || filters.quocGia || filters.year || filters.sortField;
+
       if (filters.loaiPhim || filters.phienBan) {
-        const res = await getDanhSach(danhMucSlug, queryParams);
-        data = res?.data || null;
+        if (danhMucSlug === "phim-moi" && !hasAnyFilter) {
+          const res = await getPhimMoi(page, 30);
+          data = res?.data || null;
+        } else {
+          const res = await getDanhSach(danhMucSlug, queryParams);
+          data = res?.data || null;
+        }
       } else if (filters.theLoai) {
         const res = await getTheLoaiDetails(filters.theLoai, queryParams);
         data = res?.data || null;
       } else if (filters.quocGia) {
         const res = await getQuocGiaDetails(filters.quocGia, queryParams);
         data = res?.data || null;
-      } else {
+      } else if (hasAnyFilter) {
         const res = await getDanhSach("phim-moi", queryParams);
+        data = res?.data || null;
+      } else {
+        const res = await getPhimMoi(page, 30);
         data = res?.data || null;
       }
       setMovies(data);
