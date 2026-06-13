@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "phimapi.com",
       },
+      {
+        protocol: "https",
+        hostname: "phim.nguonc.com",
+      },
     ],
   },
 };

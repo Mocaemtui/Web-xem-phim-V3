@@ -373,6 +373,55 @@ export async function getDanhSach(
 }
 
 
+async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
+  try {
+    const res = await fetch(`https://phim.nguonc.com/api/film/${slug}`, {
+      next: { revalidate: 86400 },
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+      }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || !data.movie) return null;
+
+    const movie = data.movie;
+    
+    const standardMovie: MovieDetail = {
+      _id: movie.id || movie.slug,
+      name: movie.name,
+      slug: movie.slug,
+      origin_name: movie.original_name || movie.name,
+      poster_url: movie.poster_url || "",
+      thumb_url: movie.thumb_url || "",
+      year: movie.year || (movie.category && movie.category['3'] ? movie.category['3'].list[0]?.name : 2024),
+      quality: movie.quality || "HD",
+      lang: movie.language || "Vietsub",
+      time: movie.duration || "",
+      episode_current: movie.current_episode || "",
+      episode_total: movie.total_episodes?.toString() || "",
+      content: movie.description || "",
+      episodes: movie.episodes?.map((epServer: any) => ({
+        server_name: `NguonC - ${epServer.server_name || "NguonC"}`,
+        server_data: epServer.items?.map((ep: any) => ({
+          name: ep.name,
+          slug: ep.slug,
+          filename: ep.name,
+          link: "",
+          link_embed: ep.embed || "",
+          link_m3u8: "",
+        })) || []
+      })) || []
+    };
+
+    return standardMovie;
+  } catch (error) {
+    console.error('getChiTietPhimNguonC Error:', error);
+    return null;
+  }
+}
+
 export async function getChiTietPhim(
   slug: string
 ): Promise<ApiResponse<{ item: MovieDetail }> | null> {
@@ -443,6 +492,14 @@ export async function getChiTietPhim(
   if (phimapiRes?.data?.item) {
     if (!baseMovie) baseMovie = phimapiRes.data.item;
     allEpisodes.push(...(phimapiRes.data.item.episodes?.map(e => ({ ...e, server_name: `PhimAPI - ${e.server_name}` })) || []));
+  }
+
+  // Fallback to NguonC server-side if movie is not found on Ophim and PhimAPI
+  if (!baseMovie) {
+    baseMovie = await getChiTietPhimNguonC(slug);
+    if (baseMovie) {
+      allEpisodes.push(...(baseMovie.episodes || []));
+    }
   }
 
   if (!baseMovie) return null;
