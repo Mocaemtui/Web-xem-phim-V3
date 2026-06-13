@@ -76,8 +76,11 @@ export async function getPhimMoi(
 ): Promise<ApiResponse<MovieListResponse> | null> {
   if (PRIMARY_SOURCE.id === 'phimapi') {
     try {
-      const res = await fetch(`https://phimapi.com/danh-sach/phim-moi-cap-nhat-v3?page=${page}&limit=${limit}`, {
-        next: { revalidate: 3600 }
+      const res = await fetch(`https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${page}&limit=${limit}`, {
+        next: { revalidate: 3600 },
+        headers: {
+          'Accept': 'application/json'
+        }
       });
       if (res.ok) {
         const data = await res.json();
@@ -94,7 +97,7 @@ export async function getPhimMoi(
         }
       }
     } catch (e) {
-      console.error(e);
+      console.warn("PhimAPI getPhimMoi fetch failed:", e);
     }
   }
 

@@ -32,7 +32,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
     let active = true;
     const fetchNguonC = async () => {
       try {
-        const res = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}`);
+        const res = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}&page=1`);
         if (!res.ok) {
           if (active) setIsLoadingNguonC(false);
           return;
@@ -40,23 +40,47 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
         const data = await res.json();
         
         if (active && data && data.items && Array.isArray(data.items)) {
-          const newMovies: ExtendedMovie[] = data.items.map((item: NguonCMovieItem) => ({
-            _id: item.id || Math.random().toString(),
-            name: item.name,
-            slug: item.slug,
-            origin_name: item.original_name || item.name,
-            poster_url: item.poster_url,
-            thumb_url: item.thumb_url,
-            year: item.year || 0,
-            source: 'nguonc'
-          }));
+          const allNguonCItems = [...data.items];
+          const totalPages = data.paginate?.total_page || 1;
           
-          if (newMovies.length > 0) {
-            setMovies(prev => {
-              const existingSlugs = new Set(prev.map(m => m.slug));
-              const filteredNew = newMovies.filter(m => !existingSlugs.has(m.slug));
-              return [...prev, ...filteredNew];
-            });
+          if (totalPages > 1 && active) {
+            const fetchPromises = [];
+            const maxPagesToFetch = Math.min(totalPages, 10);
+            for (let p = 2; p <= maxPagesToFetch; p++) {
+              fetchPromises.push(
+                fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}&page=${p}`)
+                  .then(r => r.ok ? r.json() : null)
+                  .then(pageData => pageData?.items || [])
+                  .catch(() => [])
+              );
+            }
+            const pagesResults = await Promise.all(fetchPromises);
+            if (active) {
+              pagesResults.forEach(items => {
+                allNguonCItems.push(...items);
+              });
+            }
+          }
+          
+          if (active) {
+            const newMovies: ExtendedMovie[] = allNguonCItems.map((item: NguonCMovieItem) => ({
+              _id: item.id || Math.random().toString(),
+              name: item.name,
+              slug: item.slug,
+              origin_name: item.original_name || item.name,
+              poster_url: item.poster_url,
+              thumb_url: item.thumb_url,
+              year: item.year || 0,
+              source: 'nguonc'
+            }));
+            
+            if (newMovies.length > 0) {
+              setMovies(prev => {
+                const existingSlugs = new Set(prev.map(m => m.slug));
+                const filteredNew = newMovies.filter(m => !existingSlugs.has(m.slug));
+                return [...prev, ...filteredNew];
+              });
+            }
           }
         }
       } catch (error) {
