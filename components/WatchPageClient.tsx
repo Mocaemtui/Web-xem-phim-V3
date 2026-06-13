@@ -63,22 +63,23 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
 
   // Client-side fetch for NguonC to bypass Vercel DataCenter Cloudflare blocks
   useEffect(() => {
+    let active = true;
     const fetchNguonC = async () => {
       try {
         let res = await fetch(`https://phim.nguonc.com/api/film/${movie.slug}`);
         let data = res.ok ? await res.json() : null;
 
         // --- SMART CROSS-API MATCHING (FALLBACK) ---
-        if (!data?.movie?.episodes) {
+        if (!data?.movie?.episodes && active) {
           const originName = movie.origin_name || movie.name;
           if (originName) {
             const searchRes = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(originName)}`);
-            if (searchRes.ok) {
+            if (searchRes.ok && active) {
               const searchData = await searchRes.json();
               const match = searchData?.items?.find((m: any) => 
                 (m.original_name?.toLowerCase() === originName.toLowerCase() || m.name?.toLowerCase() === originName.toLowerCase())
               );
-              if (match && match.slug !== movie.slug) {
+              if (match && match.slug !== movie.slug && active) {
                 res = await fetch(`https://phim.nguonc.com/api/film/${match.slug}`);
                 data = res.ok ? await res.json() : null;
               }
@@ -86,7 +87,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
           }
         }
         
-        if (data?.movie?.episodes) {
+        if (active && data?.movie?.episodes) {
           const nguonCEps = data.movie.episodes.map((epServer: any) => ({
             server_name: `NguonC - ${epServer.server_name}`,
             server_data: epServer.items.map((item: any) => ({
@@ -120,11 +121,14 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
       } catch (error) {
         console.error("Lỗi tải NguonC (Client):", error);
       } finally {
-        setIsLoadingNguonC(false);
+        if (active) setIsLoadingNguonC(false);
       }
     };
 
     fetchNguonC();
+    return () => {
+      active = false;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [movie.slug]);
 

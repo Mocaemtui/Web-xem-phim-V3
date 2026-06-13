@@ -15,18 +15,19 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
   const [selectedSource, setSelectedSource] = useState<string>("all");
 
   useEffect(() => {
+    let active = true;
     setMovies(initialMovies);
     setIsLoadingNguonC(true);
     const fetchNguonC = async () => {
       try {
         const res = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}`);
         if (!res.ok) {
-          setIsLoadingNguonC(false);
+          if (active) setIsLoadingNguonC(false);
           return;
         }
         const data = await res.json();
         
-        if (data && data.items && Array.isArray(data.items)) {
+        if (active && data && data.items && Array.isArray(data.items)) {
           const newMovies: Movie[] = data.items.map((item: any) => ({
             _id: item.id || Math.random().toString(),
             name: item.name,
@@ -49,11 +50,14 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       } catch (error) {
         console.error("Lỗi lấy NguonC Search (Client):", error);
       } finally {
-        setIsLoadingNguonC(false);
+        if (active) setIsLoadingNguonC(false);
       }
     };
 
     fetchNguonC();
+    return () => {
+      active = false;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword, initialMovies]);
 
