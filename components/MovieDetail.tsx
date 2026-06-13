@@ -7,7 +7,7 @@ import type { MovieDetail, MovieImages, MoviePeoples } from "@/types/api";
 import ImageToggle from "./ImageToggle";
 import { getWatchHistory } from "@/lib/watchHistory";
 
-import { getPosterUrl, getBackdropUrl, resolveImgUrl } from "@/lib/api";
+import { getPosterUrl, getBackdropUrl, resolveImgUrl, sortEpisodes } from "@/lib/api";
 
 interface NguonCEpisodeItem {
   name: string;
@@ -124,13 +124,13 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
 
   const router = useRouter();
   const [historyItem, setHistoryItem] = useState<any>(null);
-  const [episodes, setEpisodes] = useState(movie.episodes || []);
+  const [episodes, setEpisodes] = useState(sortEpisodes(movie.episodes || []));
 
   useEffect(() => {
     const history = getWatchHistory();
     const item = history.find((i: any) => i.slug === movie.slug);
     setHistoryItem(item || null);
-    setEpisodes(movie.episodes || []);
+    setEpisodes(sortEpisodes(movie.episodes || []));
     setNguonCBackdrop(null);
     setNguonCPoster(null);
   }, [movie.slug, movie.episodes]);
@@ -181,7 +181,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
           
           setEpisodes(prev => {
             if (prev.some(e => e.server_name.startsWith('NguonC'))) return prev;
-            return [...prev, ...nguonCEps];
+            return sortEpisodes([...prev, ...nguonCEps]);
           });
         }
       } catch (error) {

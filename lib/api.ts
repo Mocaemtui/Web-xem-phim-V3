@@ -146,6 +146,27 @@ export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string 
   return resolveImgUrl(movie.poster_url || movie.thumb_url);
 };
 
+export function sortEpisodes(eps: any[]): any[] {
+  if (!eps) return [];
+  const priority: Record<string, number> = {
+    phimapi: 3,
+    kkphim: 3,
+    nguonc: 2,
+    ophim: 1
+  };
+  
+  return [...eps].sort((a, b) => {
+    const getPriority = (name: string) => {
+      const lower = name.toLowerCase();
+      if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) return priority.phimapi;
+      if (lower.includes("nguonc") || lower.includes("nguồn c") || lower.includes("nguon c")) return priority.nguonc;
+      if (lower.includes("ophim")) return priority.ophim;
+      return 0;
+    };
+    return getPriority(b.server_name) - getPriority(a.server_name);
+  });
+}
+
 export async function getPhimBo(
   page: number = 1,
   limit: number = 20
@@ -233,8 +254,8 @@ export async function searchPhim(
     }
   };
 
-  addItems(ophimRes, 'ophim');
   addItems(phimapiRes, 'phimapi');
+  addItems(ophimRes, 'ophim');
 
   if (allItems.length === 0) return null;
 
@@ -498,14 +519,14 @@ export async function getChiTietPhim(
 
   const allEpisodes: any[] = [];
 
-  if (ophimRes?.data?.item) {
-    if (!baseMovie) baseMovie = ophimRes.data.item;
-    allEpisodes.push(...(ophimRes.data.item.episodes?.map(e => ({ ...e, server_name: `Ophim - ${e.server_name}` })) || []));
-  }
-  
   if (phimapiRes?.data?.item) {
     if (!baseMovie) baseMovie = phimapiRes.data.item;
     allEpisodes.push(...(phimapiRes.data.item.episodes?.map(e => ({ ...e, server_name: `PhimAPI - ${e.server_name}` })) || []));
+  }
+
+  if (ophimRes?.data?.item) {
+    if (!baseMovie) baseMovie = ophimRes.data.item;
+    allEpisodes.push(...(ophimRes.data.item.episodes?.map(e => ({ ...e, server_name: `Ophim - ${e.server_name}` })) || []));
   }
 
   // Fallback to NguonC server-side if movie is not found on Ophim and PhimAPI
@@ -521,19 +542,32 @@ export async function getChiTietPhim(
   // Re-evaluate baseMovie based on PRIMARY_SOURCE after potential fallbacks
   if (PRIMARY_SOURCE.id === 'phimapi') {
     baseMovie = phimapiRes?.data?.item || ophimRes?.data?.item || baseMovie;
-    if (ophimRes?.data?.item && baseMovie !== ophimRes.data.item) {
-      baseMovie.alt_poster_url = ophimRes.data.item.poster_url;
-      baseMovie.alt_thumb_url = ophimRes.data.item.thumb_url;
-    }
   } else {
     baseMovie = ophimRes?.data?.item || phimapiRes?.data?.item || baseMovie;
-    if (phimapiRes?.data?.item && baseMovie !== phimapiRes.data.item) {
-      baseMovie.alt_poster_url = phimapiRes.data.item.poster_url;
-      baseMovie.alt_thumb_url = phimapiRes.data.item.thumb_url;
-    }
   }
 
-  baseMovie.episodes = allEpisodes;
+  // Swap primary and alternate images to prioritize PhimAPI
+  if (phimapiRes?.data?.item) {
+    if (baseMovie !== phimapiRes.data.item) {
+      // Save Ophim's original images as alternates
+      baseMovie.alt_poster_url = baseMovie.poster_url; // Ophim backdrop
+      baseMovie.alt_thumb_url = baseMovie.thumb_url;   // Ophim poster
+      
+      // Set PhimAPI's images as primary
+      baseMovie.poster_url = phimapiRes.data.item.poster_url; // PhimAPI poster
+      baseMovie.thumb_url = phimapiRes.data.item.thumb_url;   // PhimAPI backdrop
+    } else {
+      if (ophimRes?.data?.item) {
+        baseMovie.alt_poster_url = ophimRes.data.item.poster_url;
+        baseMovie.alt_thumb_url = ophimRes.data.item.thumb_url;
+      }
+    }
+  } else if (ophimRes?.data?.item && baseMovie !== ophimRes.data.item) {
+    baseMovie.alt_poster_url = ophimRes.data.item.poster_url;
+    baseMovie.alt_thumb_url = ophimRes.data.item.thumb_url;
+  }
+
+  baseMovie.episodes = sortEpisodes(allEpisodes);
 
   return {
     status: "success",

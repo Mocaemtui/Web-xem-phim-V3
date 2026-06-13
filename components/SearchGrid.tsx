@@ -16,6 +16,7 @@ interface NguonCMovieItem {
   poster_url: string;
   thumb_url: string;
   year?: number;
+  created?: string;
 }
 
 interface SearchGridProps {
@@ -70,7 +71,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
               origin_name: item.original_name || item.name,
               poster_url: item.poster_url,
               thumb_url: item.thumb_url,
-              year: item.year || 0,
+              year: item.year || (item.created ? new Date(item.created).getFullYear() : 2024),
               source: 'nguonc'
             }));
             
@@ -107,54 +108,67 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       return `${normalizedOriginName}-${item.year || 'unknown'}`;
     };
 
-    // 1. Build maps of priority sources (Ophim, PhimAPI, NguonC)
-    const ophimMap = new Map<string, ExtendedMovie>();
+    // 1. Build a map of PhimAPI movies to use their images everywhere
     const phimapiMap = new Map<string, ExtendedMovie>();
-    const nguoncMap = new Map<string, ExtendedMovie>();
-
-    movies.forEach(movie => {
-      const key = getSmartKey(movie);
-      const source = movie.source;
-      if (source === 'ophim') {
-        ophimMap.set(key, movie);
-      } else if (source === 'phimapi') {
-        phimapiMap.set(key, movie);
-      } else if (source === 'nguonc') {
-        nguoncMap.set(key, movie);
+    movies.forEach(m => {
+      if (m.source === 'phimapi') {
+        phimapiMap.set(getSmartKey(m), m);
       }
     });
 
-    // 2. Filter or Deduplicate based on selectedSource
+    // 2. Resolve movies (overwrite images with PhimAPI version if available)
+    const resolvedMovies = movies.map(movie => {
+      const key = getSmartKey(movie);
+      const phimapiMovie = phimapiMap.get(key);
+      if (phimapiMovie && movie.source !== 'phimapi') {
+        return {
+          ...movie,
+          poster_url: phimapiMovie.poster_url,
+          thumb_url: phimapiMovie.thumb_url,
+        };
+      }
+      return movie;
+    });
+
+    // 3. Filter or Deduplicate based on selectedSource
     if (selectedSource === "all") {
-      const itemsMap = new Map<string, ExtendedMovie>();
-      
-      // Sort movies: 'phimapi' first, then 'ophim', then 'nguonc'
-      const sortedMovies = [...movies].sort((a: ExtendedMovie, b: ExtendedMovie) => {
-        const priority: Record<string, number> = { phimapi: 3, ophim: 2, nguonc: 1 };
+      // Assign stable sort indexes
+      const indexedMovies = resolvedMovies.map((m, idx) => ({ ...m, originalIndex: idx }));
+
+      // Sort by source priority: phimapi (3) > nguonc (2) > ophim (1)
+      const sorted = [...indexedMovies].sort((a, b) => {
+        const priority: Record<string, number> = { phimapi: 3, nguonc: 2, ophim: 1 };
         const priorityA = (a.source && priority[a.source]) || 0;
         const priorityB = (b.source && priority[b.source]) || 0;
-        return priorityB - priorityA;
+        
+        if (priorityA !== priorityB) {
+          return priorityB - priorityA;
+        }
+        return a.originalIndex - b.originalIndex;
       });
 
-      sortedMovies.forEach(movie => {
+      // Deduplicate (first occurrence wins)
+      const itemsMap = new Map<string, ExtendedMovie>();
+      sorted.forEach(movie => {
         const key = getSmartKey(movie);
         if (!itemsMap.has(key)) {
-          itemsMap.set(key, movie);
+          const { originalIndex, ...rest } = movie as any;
+          itemsMap.set(key, rest);
         }
       });
 
       return Array.from(itemsMap.values());
     } else {
-      // Show all movies from that source directly without overriding metadata
-      return movies.filter((movie: ExtendedMovie) => movie.source === selectedSource);
+      // Show all movies from that source directly, but with resolved images
+      return resolvedMovies.filter((movie: ExtendedMovie) => movie.source === selectedSource);
     }
   }, [movies, selectedSource]);
 
   const sourceFilters = [
     { id: "all", name: "Tất cả" },
-    { id: "ophim", name: "Ophim" },
     { id: "phimapi", name: "PhimAPI" },
     { id: "nguonc", name: "NguonC" },
+    { id: "ophim", name: "Ophim" },
   ];
 
   if (filteredMovies.length === 0 && !isLoadingNguonC) {

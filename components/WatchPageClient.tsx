@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import type { MovieDetail } from "@/types/api";
 import { saveWatchHistory, getWatchHistory } from "@/lib/watchHistory";
+import { sortEpisodes } from "@/lib/api";
 
 const VideoPlayer = dynamic(() => import("@/components/VideoPlayer"), {
   ssr: false,
@@ -34,14 +35,15 @@ import { useRouter } from "next/navigation";
 
 export default function WatchPageClient({ movie, posterUrl }: WatchPageClientProps) {
   const router = useRouter();
-  const [episodes, setEpisodes] = useState(movie.episodes || []);
+  const [episodes, setEpisodes] = useState(sortEpisodes(movie.episodes || []));
   const [isLoadingNguonC, setIsLoadingNguonC] = useState(true);
   
   const [currentServerIndex, setCurrentServerIndex] = useState(() => {
     if (typeof window !== "undefined" && movie.episodes) {
       const preferred = localStorage.getItem("preferred_server_name");
       if (preferred) {
-        const idx = movie.episodes.findIndex(e => e.server_name === preferred);
+        const sortedEps = sortEpisodes(movie.episodes);
+        const idx = sortedEps.findIndex(e => e.server_name === preferred);
         if (idx !== -1) return idx;
       }
     }
@@ -57,12 +59,13 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
     setIsRestored(false);
     setIsLoadingNguonC(true);
     setCurrentEpisodeIndex(0);
-    setEpisodes(movie.episodes || []);
+    const sortedEps = sortEpisodes(movie.episodes || []);
+    setEpisodes(sortedEps);
     let initialIdx = 0;
     if (typeof window !== "undefined" && movie.episodes) {
       const preferred = localStorage.getItem("preferred_server_name");
       if (preferred) {
-        const idx = (movie.episodes || []).findIndex(e => e.server_name === preferred);
+        const idx = sortedEps.findIndex(e => e.server_name === preferred);
         if (idx !== -1) {
           initialIdx = idx;
         }
@@ -113,7 +116,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
           
           setEpisodes(prev => {
             if (prev.some(e => e.server_name.startsWith('NguonC'))) return prev;
-            const updated = [...prev, ...nguonCEps];
+            const updated = sortEpisodes([...prev, ...nguonCEps]);
             
             // Re-evaluate preferred server if it has NguonC
             if (typeof window !== "undefined") {
