@@ -76,8 +76,8 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
             
             if (newMovies.length > 0) {
               setMovies(prev => {
-                const existingSlugs = new Set(prev.map(m => m.slug));
-                const filteredNew = newMovies.filter(m => !existingSlugs.has(m.slug));
+                const existingKeys = new Set(prev.map(m => `${m.source || 'default'}-${m.slug}`));
+                const filteredNew = newMovies.filter(m => !existingKeys.has(`${m.source || 'default'}-${m.slug}`));
                 return [...prev, ...filteredNew];
               });
             }
