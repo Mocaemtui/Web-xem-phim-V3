@@ -19,6 +19,8 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   // 0 = Primary, 1 = TMDB, 2 = Alternate
   const [backdropSource, setBackdropSource] = useState<0 | 1 | 2>(0);
   const [posterSource, setPosterSource] = useState<0 | 1 | 2>(0);
+  const [nguonCBackdrop, setNguonCBackdrop] = useState<string | null>(null);
+  const [nguonCPoster, setNguonCPoster] = useState<string | null>(null);
 
   const primaryPosterUrl = getBackdropUrl(movie);
   const primaryThumbUrl = getPosterUrl(movie);
@@ -36,6 +38,16 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   const tmdbBackdropBase = images?.image_sizes?.backdrop?.w1280 || "https://image.tmdb.org/t/p/w1280";
   const tmdbBackdropUrl = tmdbBackdropFile ? `${tmdbBackdropBase}${tmdbBackdropFile}` : null;
 
+  const resolveNguonCUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/')) return `https://phim.nguonc.com${url}`;
+    return `https://phim.nguonc.com/${url}`;
+  };
+
+  const nguonCBackdropUrl = resolveNguonCUrl(nguonCBackdrop);
+  const nguonCPosterUrl = resolveNguonCUrl(nguonCPoster);
+
   // Determine available options
   const hasAltBackdrop = Boolean(altPosterUrl && altPosterUrl !== primaryPosterUrl);
   const hasAltPoster = Boolean(altThumbUrl && altThumbUrl !== primaryThumbUrl);
@@ -50,6 +62,10 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
     availableBackdrops.push(altPosterUrl!);
     backdropNames.push("Ophim");
   }
+  if (nguonCBackdropUrl && nguonCBackdropUrl !== primaryPosterUrl) {
+    availableBackdrops.push(nguonCBackdropUrl);
+    backdropNames.push("NguonC");
+  }
 
   const availablePosters = [primaryThumbUrl];
   const posterNames = ["PhimAPI"];
@@ -60,6 +76,10 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   if (hasAltPoster) {
     availablePosters.push(altThumbUrl!);
     posterNames.push("Ophim");
+  }
+  if (nguonCPosterUrl && nguonCPosterUrl !== primaryThumbUrl) {
+    availablePosters.push(nguonCPosterUrl);
+    posterNames.push("NguonC");
   }
 
   // Current active images
@@ -100,6 +120,8 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
     const item = history.find((i: any) => i.slug === movie.slug);
     setHistoryItem(item || null);
     setEpisodes(movie.episodes || []);
+    setNguonCBackdrop(null);
+    setNguonCPoster(null);
   }, [movie.slug, movie.episodes]);
 
   // Client-side fetch for NguonC to bypass Vercel DataCenter Cloudflare blocks
@@ -128,6 +150,11 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
           }
         }
         
+        if (active && data?.movie) {
+          if (data.movie.poster_url) setNguonCBackdrop(data.movie.poster_url);
+          if (data.movie.thumb_url) setNguonCPoster(data.movie.thumb_url);
+        }
+
         if (active && data?.movie?.episodes) {
           const nguonCEps = data.movie.episodes.map((epServer: any) => ({
             server_name: `NguonC - ${epServer.server_name}`,
@@ -188,7 +215,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
         {availableBackdrops.length > 1 && (
           <div className="hidden md:flex absolute top-0 right-0 w-48 h-48 z-30 group/corner items-start justify-end p-4">
             <div className="opacity-0 invisible group-hover/corner:opacity-100 group-hover/corner:visible pointer-events-none group-hover/corner:pointer-events-auto transition-all duration-300">
-              <ImageToggle onToggle={toggleBackdrop} label={`Đổi ảnh nền (${currentBackdropName}: ${currentBackdropIndex + 1}/${availableBackdrops.length})`} />
+              <ImageToggle onToggle={toggleBackdrop} label={`Đổi ảnh nền (Nguồn: ${currentBackdropName})`} />
             </div>
           </div>
         )}
@@ -207,7 +234,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
               />
               {availablePosters.length > 1 && (
                 <div className="absolute top-3 right-3 z-30 opacity-0 group-hover:opacity-100 invisible group-hover:visible pointer-events-none group-hover:pointer-events-auto transition-all duration-300">
-                  <ImageToggle onToggle={togglePoster} label={`Đổi ảnh poster (${currentPosterName}: ${currentPosterIndex + 1}/${availablePosters.length})`} />
+                  <ImageToggle onToggle={togglePoster} label={`Đổi ảnh poster (Nguồn: ${currentPosterName})`} />
                 </div>
               )}
             </div>
