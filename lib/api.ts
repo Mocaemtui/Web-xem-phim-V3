@@ -373,6 +373,17 @@ export async function getDanhSach(
 }
 
 
+interface NguonCEpisodeItem {
+  name: string;
+  slug: string;
+  embed: string;
+}
+
+interface NguonCEpisodeServer {
+  server_name: string;
+  items: NguonCEpisodeItem[];
+}
+
 async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
   try {
     const res = await fetch(`https://phim.nguonc.com/api/film/${slug}`, {
@@ -402,9 +413,9 @@ async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
       episode_current: movie.current_episode || "",
       episode_total: movie.total_episodes?.toString() || "",
       content: movie.description || "",
-      episodes: movie.episodes?.map((epServer: any) => ({
+      episodes: movie.episodes?.map((epServer: NguonCEpisodeServer) => ({
         server_name: `NguonC - ${epServer.server_name || "NguonC"}`,
-        server_data: epServer.items?.map((ep: any) => ({
+        server_data: epServer.items?.map((ep: NguonCEpisodeItem) => ({
           name: ep.name,
           slug: ep.slug,
           filename: ep.name,

@@ -18,6 +18,7 @@ export default async function SearchPage({ params }: PageProps) {
       <SectionTitle title={`Kết quả tìm kiếm: "${decodedKeyword}"`} />
       
       <SearchGrid 
+        key={decodedKeyword}
         initialMovies={searchResults?.data?.items || []} 
         keyword={decodedKeyword} 
       />

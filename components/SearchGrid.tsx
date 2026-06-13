@@ -4,20 +4,32 @@ import { useState, useEffect, useMemo } from "react";
 import MovieCardWrapper from "@/components/MovieCardWrapper";
 import type { Movie } from "@/types/api";
 
+interface ExtendedMovie extends Movie {
+  source?: string;
+}
+
+interface NguonCMovieItem {
+  id: string;
+  name: string;
+  slug: string;
+  original_name?: string;
+  poster_url: string;
+  thumb_url: string;
+  year?: number;
+}
+
 interface SearchGridProps {
   initialMovies: Movie[];
   keyword: string;
 }
 
 export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) {
-  const [movies, setMovies] = useState<Movie[]>(initialMovies);
+  const [movies, setMovies] = useState<ExtendedMovie[]>(initialMovies);
   const [isLoadingNguonC, setIsLoadingNguonC] = useState(true);
   const [selectedSource, setSelectedSource] = useState<string>("all");
 
   useEffect(() => {
     let active = true;
-    setMovies(initialMovies);
-    setIsLoadingNguonC(true);
     const fetchNguonC = async () => {
       try {
         const res = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}`);
@@ -28,16 +40,16 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
         const data = await res.json();
         
         if (active && data && data.items && Array.isArray(data.items)) {
-          const newMovies: Movie[] = data.items.map((item: any) => ({
+          const newMovies: ExtendedMovie[] = data.items.map((item: NguonCMovieItem) => ({
             _id: item.id || Math.random().toString(),
             name: item.name,
             slug: item.slug,
             origin_name: item.original_name || item.name,
             poster_url: item.poster_url,
             thumb_url: item.thumb_url,
-            year: item.year || '',
+            year: item.year || 0,
             source: 'nguonc'
-          } as any));
+          }));
           
           if (newMovies.length > 0) {
             setMovies(prev => {
@@ -65,20 +77,20 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
 
   const filteredMovies = useMemo(() => {
-    const getSmartKey = (item: Movie) => {
+    const getSmartKey = (item: ExtendedMovie) => {
       const originName = item.origin_name || item.name || '';
       const normalizedOriginName = originName.toLowerCase().replace(/\s+/g, ' ').trim();
       return `${normalizedOriginName}-${item.year || 'unknown'}`;
     };
 
     // 1. Build maps of priority sources (Ophim, PhimAPI, NguonC)
-    const ophimMap = new Map<string, Movie>();
-    const phimapiMap = new Map<string, Movie>();
-    const nguoncMap = new Map<string, Movie>();
+    const ophimMap = new Map<string, ExtendedMovie>();
+    const phimapiMap = new Map<string, ExtendedMovie>();
+    const nguoncMap = new Map<string, ExtendedMovie>();
 
     movies.forEach(movie => {
       const key = getSmartKey(movie);
-      const source = (movie as any).source;
+      const source = movie.source;
       if (source === 'ophim') {
         ophimMap.set(key, movie);
       } else if (source === 'phimapi') {
@@ -90,13 +102,13 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
     // 2. Filter or Deduplicate based on selectedSource
     if (selectedSource === "all") {
-      const itemsMap = new Map<string, Movie>();
+      const itemsMap = new Map<string, ExtendedMovie>();
       
       // Sort movies: 'phimapi' first, then 'ophim', then 'nguonc'
-      const sortedMovies = [...movies].sort((a: any, b: any) => {
-        const priority = { phimapi: 3, ophim: 2, nguonc: 1 } as any;
-        const priorityA = priority[(a as any).source] || 0;
-        const priorityB = priority[(b as any).source] || 0;
+      const sortedMovies = [...movies].sort((a: ExtendedMovie, b: ExtendedMovie) => {
+        const priority: Record<string, number> = { phimapi: 3, ophim: 2, nguonc: 1 };
+        const priorityA = (a.source && priority[a.source]) || 0;
+        const priorityB = (b.source && priority[b.source]) || 0;
         return priorityB - priorityA;
       });
 
@@ -110,7 +122,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       return Array.from(itemsMap.values());
     } else {
       // Show all movies from that source directly without overriding metadata
-      return movies.filter((movie: any) => (movie as any).source === selectedSource);
+      return movies.filter((movie: ExtendedMovie) => movie.source === selectedSource);
     }
   }, [movies, selectedSource]);
 
@@ -170,7 +182,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {filteredMovies.map((movie) => (
-          <MovieCardWrapper key={`${(movie as any).source || 'default'}-${movie.slug || movie._id}`} movie={movie} />
+          <MovieCardWrapper key={`${movie.source || 'default'}-${movie.slug || movie._id}`} movie={movie} />
         ))}
       </div>
       {isLoadingNguonC && (

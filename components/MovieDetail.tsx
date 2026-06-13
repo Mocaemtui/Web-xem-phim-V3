@@ -9,6 +9,17 @@ import { getWatchHistory } from "@/lib/watchHistory";
 
 import { getPosterUrl, getBackdropUrl, resolveImgUrl } from "@/lib/api";
 
+interface NguonCEpisodeItem {
+  name: string;
+  slug: string;
+  embed: string;
+}
+
+interface NguonCEpisodeServer {
+  server_name: string;
+  items: NguonCEpisodeItem[];
+}
+
 interface MovieDetailProps {
   movie: MovieDetail;
   images: MovieImages;
@@ -139,7 +150,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             const searchRes = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(originName)}`);
             if (searchRes.ok && active) {
               const searchData = await searchRes.json();
-              const match = searchData?.items?.find((m: any) => 
+              const match = searchData?.items?.find((m: { original_name?: string; name?: string; slug: string }) => 
                 (m.original_name?.toLowerCase() === originName.toLowerCase() || m.name?.toLowerCase() === originName.toLowerCase())
               );
               if (match && match.slug !== movie.slug && active) {
@@ -156,9 +167,9 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
         }
 
         if (active && data?.movie?.episodes) {
-          const nguonCEps = data.movie.episodes.map((epServer: any) => ({
+          const nguonCEps = data.movie.episodes.map((epServer: NguonCEpisodeServer) => ({
             server_name: `NguonC - ${epServer.server_name}`,
-            server_data: epServer.items.map((item: any) => ({
+            server_data: epServer.items.map((item: NguonCEpisodeItem) => ({
               name: item.name,
               slug: item.slug,
               filename: item.name,
