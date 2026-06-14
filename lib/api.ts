@@ -130,22 +130,26 @@ export const resolveImgUrl = (url: string | undefined): string => {
   return finalUrl;
 };
 
+const DEFAULT_POSTER = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400"><rect width="300" height="400" fill="%2318181b"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="16">No Poster</text></svg>';
+
+const DEFAULT_BACKDROP = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="%2318181b"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="24">No Image</text></svg>';
+
 // Lấy ảnh dọc (Poster) - Ophim dùng thumb_url làm poster; PhimAPI dùng poster_url làm poster
 export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string }): string => {
   const isPhimApi = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
-  if (isPhimApi) {
-    return resolveImgUrl(movie.poster_url || movie.thumb_url);
-  }
-  return resolveImgUrl(movie.thumb_url || movie.poster_url);
+  const url = isPhimApi
+    ? resolveImgUrl(movie.poster_url || movie.thumb_url)
+    : resolveImgUrl(movie.thumb_url || movie.poster_url);
+  return url || DEFAULT_POSTER;
 };
 
 // Lấy ảnh ngang (Backdrop) - Ophim dùng poster_url làm backdrop; PhimAPI dùng thumb_url làm backdrop
 export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string }): string => {
   const isPhimApi = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
-  if (isPhimApi) {
-    return resolveImgUrl(movie.thumb_url || movie.poster_url);
-  }
-  return resolveImgUrl(movie.poster_url || movie.thumb_url);
+  const url = isPhimApi
+    ? resolveImgUrl(movie.thumb_url || movie.poster_url)
+    : resolveImgUrl(movie.poster_url || movie.thumb_url);
+  return url || DEFAULT_BACKDROP;
 };
 
 export function sortEpisodes(eps: any[]): any[] {
@@ -485,6 +489,78 @@ async function getAnimeMalIds(originalName: string, seasonCount: number): Promis
   }
 
   const malIds: Record<number, number> = {};
+
+  // 1. Try AniList GraphQL API first (Fast, Stable, No Rate Limit timeouts)
+  try {
+    const query = `
+      query ($search: String) {
+        Page(page: 1, perPage: 15) {
+          media(search: $search, type: ANIME, format_in: [TV, ONA]) {
+            id
+            idMal
+            title {
+              romaji
+              english
+            }
+            startDate {
+              year
+            }
+          }
+        }
+      }
+    `;
+    
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        query: query,
+        variables: {
+          search: originalName
+        }
+      }),
+      next: { revalidate: 86400 }
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      const mediaList = result.data?.Page?.media || [];
+      
+      if (mediaList.length > 0) {
+        const tvShows = mediaList.filter((item: any) => item.idMal !== null);
+        
+        tvShows.sort((a: any, b: any) => {
+          const scoreA = getMatchScore({ title: a.title.romaji, title_english: a.title.english }, originalName);
+          const scoreB = getMatchScore({ title: b.title.romaji, title_english: b.title.english }, originalName);
+          if (Math.abs(scoreB - scoreA) > 0.01) {
+            return scoreB - scoreA;
+          }
+          const yearA = a.startDate?.year || 0;
+          const yearB = b.startDate?.year || 0;
+          return yearA - yearB;
+        });
+        
+        for (let s = 1; s <= seasonCount; s++) {
+          const matchedAnime = tvShows[s - 1];
+          if (matchedAnime) {
+            malIds[s] = matchedAnime.idMal;
+          }
+        }
+        
+        if (Object.keys(malIds).length > 0) {
+          animeMalCache[cacheKey] = malIds;
+          return malIds;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("AniList query error, falling back to Jikan:", e);
+  }
+
+  // 2. Fallback to Jikan API (Legacy)
   try {
     let attempt = 0;
     let res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(originalName)}&limit=15`);
@@ -528,7 +604,7 @@ async function getAnimeMalIds(originalName: string, seasonCount: number): Promis
       animeMalCache[cacheKey] = malIds;
     }
   } catch (e) {
-    console.warn("getAnimeMalIds error:", e);
+    console.warn("getAnimeMalIds Jikan fallback error:", e);
   }
   return malIds;
 }
