@@ -273,7 +273,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
     // 3. Extract and sort movies for each source
     const phimapiMovies = resolvedMovies.filter(m => m.source === 'phimapi');
     const sortedNguonCMovies = sortMovies(resolvedMovies.filter(m => m.source === 'nguonc'));
-    const sortedOphimMovies = sortMovies(resolvedMovies.filter(m => m.source === 'ophim'));
+    const ophimMovies = resolvedMovies.filter(m => m.source === 'ophim');
 
     // 4. Return results based on selectedSource
     if (selectedSource === "all") {
@@ -281,7 +281,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       const sortedGroupedMovies = [
         ...phimapiMovies,
         ...sortedNguonCMovies,
-        ...sortedOphimMovies
+        ...ophimMovies
       ];
 
       // Deduplicate (first occurrence wins, which will be phimapi if available, then nguonc, then ophim)
@@ -299,7 +299,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
     } else if (selectedSource === "nguonc") {
       return sortedNguonCMovies; // Sorted by relevance + modified time
     } else if (selectedSource === "ophim") {
-      return sortedOphimMovies; // Sorted by relevance + modified time
+      return ophimMovies; // Original API relevance order (no sorting)
     } else {
       return resolvedMovies.filter((movie: ExtendedMovie) => movie.source === selectedSource);
     }
