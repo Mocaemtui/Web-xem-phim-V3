@@ -163,8 +163,8 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
         }
         
         if (active && data?.movie) {
-          if (data.movie.poster_url) setNguonCBackdrop(data.movie.poster_url);
-          if (data.movie.thumb_url) setNguonCPoster(data.movie.thumb_url);
+          if (data.movie.thumb_url) setNguonCBackdrop(data.movie.thumb_url);
+          if (data.movie.poster_url) setNguonCPoster(data.movie.poster_url);
         }
 
         if (active && data?.movie?.episodes) {
