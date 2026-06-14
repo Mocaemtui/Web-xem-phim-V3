@@ -120,7 +120,8 @@ export const resolveImgUrl = (url: string | undefined): string => {
     const cleanUrl = url.startsWith('/') ? url : `/${url}`;
     finalUrl = `https://phim.nguonc.com${cleanUrl}`;
   } else {
-    finalUrl = `https://img.ophim.live/uploads/movies/${url}`;
+    const cleanOphimUrl = url.startsWith('movies/') ? url : `movies/${url}`;
+    finalUrl = `https://img.ophim.live/uploads/${cleanOphimUrl}`;
   }
 
   // Tối ưu ảnh: Nếu là ảnh từ phimimg.com (KKPhim/PhimAPI), sử dụng image.php để lấy file WEBP
