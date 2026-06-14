@@ -17,7 +17,7 @@ export default async function Home() {
     longTiengData,
     thuyetMinhData,
   ] = await Promise.all([
-    getPhimMoi(1, 13), // Fetch 13 items to take 1 for Hero and 12 for Slider
+    getPhimMoi(1, 17), // Fetch 17 items to take 5 for Hero and 12 for Slider
     getDanhSach("phim-bo", { page: 1, limit: 12, country: "viet-nam" }),
     getDanhSach("phim-le", { page: 1, limit: 12, country: "au-my" }),
     getDanhSach("phim-bo", { page: 1, limit: 12, country: "han-quoc" }),
