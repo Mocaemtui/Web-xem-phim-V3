@@ -85,6 +85,7 @@ export default function VideoPlayer({
   const [savedTime, setSavedTime] = useState<number | null>(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const lastSavedTimeRef = useRef(0);
+  const [showIframe, setShowIframe] = useState(false);
   
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -810,13 +811,41 @@ export default function VideoPlayer({
             )}
           </>
         ) : embedUrl ? (
-          <iframe
-            src={embedUrl}
-            className="max-w-full max-h-full aspect-video w-full h-full rounded-lg"
-            allowFullScreen
-            allow="autoplay; encrypted-media"
-            referrerPolicy="no-referrer"
-          />
+          !showIframe ? (
+            <div 
+              onClick={() => setShowIframe(true)}
+              className="relative w-full h-full aspect-video bg-zinc-900 rounded-lg cursor-pointer overflow-hidden group/poster flex items-center justify-center"
+            >
+              {poster ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={poster}
+                  alt={poster.startsWith("http") ? "Movie Poster" : ""}
+                  className="absolute inset-0 w-full h-full object-cover opacity-35 blur-[2px] transition-transform duration-500 group-hover/poster:scale-105"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-zinc-950" />
+              )}
+              {/* Play Button Overlay */}
+              <div className="absolute inset-0 bg-black/40 group-hover/poster:bg-black/50 transition-colors" />
+              <div className="relative z-10 w-16 h-16 rounded-full bg-red-650/90 group-hover/poster:bg-red-650 flex items-center justify-center text-white border border-white/20 shadow-2xl transition-all duration-300 group-hover/poster:scale-110 group-active/poster:scale-95">
+                <svg className="w-8 h-8 fill-current translate-x-0.5" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+              <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs font-semibold text-zinc-300 bg-zinc-950/70 border border-zinc-850 px-3 py-1.5 rounded-full backdrop-blur-md opacity-0 group-hover/poster:opacity-100 transition-opacity duration-300">
+                Click để phát phim
+              </span>
+            </div>
+          ) : (
+            <iframe
+              src={embedUrl}
+              className="max-w-full max-h-full aspect-video w-full h-full rounded-lg"
+              allowFullScreen
+              allow="autoplay; encrypted-media"
+              referrerPolicy="no-referrer"
+            />
+          )
         ) : (
           <div className="max-w-full max-h-full aspect-video bg-zinc-900 rounded-lg flex items-center justify-center">
             <p className="text-zinc-400">Không tìm thấy link phim</p>

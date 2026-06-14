@@ -7,6 +7,7 @@ import { Users, Copy, Check, RefreshCw, Smile, Eye, EyeOff, MessageSquare } from
 import EpisodeSelector from "@/components/EpisodeSelector";
 import { useWatchTogether } from "@/hooks/useWatchTogether";
 import { saveWatchHistory } from "@/lib/watchHistory";
+import { getBackdropUrl } from "@/lib/api";
 
 const VideoPlayer = dynamic(() => import("@/components/VideoPlayer"), { ssr: false });
 const RoomChat = dynamic(() => import("@/components/RoomChat"), { ssr: false });
@@ -758,7 +759,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               <FloatingReactions reactions={reactions} />
               <VideoPlayer
                 externalVideoRef={videoRef}
-                poster=""
+                poster={getBackdropUrl(movie)}
                 videoUrl={currentEpisode.link_m3u8}
                 playbackProgressKey={`playback_progress_${movie.slug}_ep_${currentEpisodeIndex}`}
                 nextVideoUrl={serverData[currentEpisodeIndex + 1]?.link_m3u8}

@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import type { MovieDetail } from "@/types/api";
 import { saveWatchHistory, getWatchHistory } from "@/lib/watchHistory";
-import { sortEpisodes } from "@/lib/api";
+import { sortEpisodes, getBackdropUrl } from "@/lib/api";
 
 const VideoPlayer = dynamic(() => import("@/components/VideoPlayer"), {
   ssr: false,
@@ -259,7 +259,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
           {currentEpisode ? (
             <VideoPlayer
               key={`${currentServerIndex}-${currentEpisodeIndex}-${playerMode}`}
-              poster=""
+              poster={getBackdropUrl(movie)}
               videoUrl={playerMode === "hls" ? currentEpisode.link_m3u8 : undefined}
               embedUrl={finalEmbedUrl}
               playbackProgressKey={`playback_progress_${movie.slug}_ep_${currentEpisodeIndex}`}
