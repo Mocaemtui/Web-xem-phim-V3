@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FilterPanel from "@/components/FilterPanel";
 import MovieCard from "@/components/MovieCard";
@@ -46,6 +46,7 @@ function FilterContent() {
   const [title, setTitle] = useState("Bộ Lọc Phim");
   const [theLoaiList, setTheLoaiList] = useState<Genre[]>([]);
   const [quocGiaList, setQuocGiaList] = useState<Country[]>([]);
+  const fetchIdRef = useRef(0);
 
 
   const updateTitle = useCallback(() => {
@@ -65,6 +66,7 @@ function FilterContent() {
   }, [filters, theLoaiList, quocGiaList]);
 
   const fetchMovies = useCallback(async (page: number = 1) => {
+    const fetchId = ++fetchIdRef.current;
     setLoading(true);
     try {
       let data: MovieListResponse | null = null;
@@ -85,30 +87,40 @@ function FilterContent() {
       if (filters.loaiPhim || filters.phienBan) {
         if (danhMucSlug === "phim-moi" && !hasAnyFilter) {
           const res = await getPhimMoi(page, 30);
+          if (fetchId !== fetchIdRef.current) return;
           data = res?.data || null;
         } else {
           const res = await getDanhSach(danhMucSlug, queryParams);
+          if (fetchId !== fetchIdRef.current) return;
           data = res?.data || null;
         }
       } else if (filters.theLoai) {
         const res = await getTheLoaiDetails(filters.theLoai, queryParams);
+        if (fetchId !== fetchIdRef.current) return;
         data = res?.data || null;
       } else if (filters.quocGia) {
         const res = await getQuocGiaDetails(filters.quocGia, queryParams);
+        if (fetchId !== fetchIdRef.current) return;
         data = res?.data || null;
       } else if (hasAnyFilter) {
         const res = await getDanhSach("phim-moi", queryParams);
+        if (fetchId !== fetchIdRef.current) return;
         data = res?.data || null;
       } else {
         const res = await getPhimMoi(page, 30);
+        if (fetchId !== fetchIdRef.current) return;
         data = res?.data || null;
       }
       setMovies(data);
       updateTitle();
     } catch (e) {
-      console.error("Error fetching movies:", e);
+      if (fetchId === fetchIdRef.current) {
+        console.error("Error fetching movies:", e);
+      }
     } finally {
-      setLoading(false);
+      if (fetchId === fetchIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [filters, updateTitle]);
 
