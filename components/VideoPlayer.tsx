@@ -221,7 +221,7 @@ export default function VideoPlayer({
 
   // Load saved playback progress
   useEffect(() => {
-    if (!videoUrl) return;
+    if (!videoUrl || isWatchTogether) return;
     try {
       const key = `playback_progress_${videoUrl}`;
       const saved = localStorage.getItem(key);
