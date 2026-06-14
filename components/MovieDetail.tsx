@@ -114,9 +114,60 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
     const history = getWatchHistory();
     const item = history.find((i: any) => i.slug === movie.slug);
     setHistoryItem(item || null);
-    setEpisodes(sortEpisodes(movie.episodes || []));
+    
+    const sortedEps = sortEpisodes(movie.episodes || []);
+    
+    // Inject Server Quốc tế (VidLink) if TMDB ID is available
+    if (movie.tmdb?.id) {
+      const tmdbId = movie.tmdb.id.toString();
+      const isTv = movie.tmdb.type === "tv" || (movie.episodes?.[0]?.server_data?.length || 0) > 1;
+      
+      const primaryColor = "B20710"; // theme-primary red
+      const secondaryColor = "170000";
+      const iconColor = "B20710";
+      const icons = "vid";
+      
+      let vidLinkServerData = [];
+      if (!isTv) {
+        // Movie
+        vidLinkServerData = [{
+          name: "Full",
+          slug: "full",
+          filename: "Full",
+          link: "",
+          link_embed: `https://vidlink.pro/movie/${tmdbId}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
+          link_m3u8: ""
+        }];
+      } else {
+        // TV Show - Mirror the episodes from the first available server
+        const baseServer = sortedEps[0];
+        if (baseServer && baseServer.server_data) {
+          const season = movie.tmdb.season || 1;
+          vidLinkServerData = baseServer.server_data.map((ep: any, idx: number) => {
+            const epNum = idx + 1;
+            return {
+              name: ep.name,
+              slug: ep.slug,
+              filename: ep.name,
+              link: "",
+              link_embed: `https://vidlink.pro/tv/${tmdbId}/${season}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
+              link_m3u8: ""
+            };
+          });
+        }
+      }
+      
+      if (vidLinkServerData.length > 0) {
+        sortedEps.push({
+          server_name: "Server Quốc tế (VidLink)",
+          server_data: vidLinkServerData
+        });
+      }
+    }
+    
+    setEpisodes(sortedEps);
     setCurrentOriginName(movie.origin_name);
-  }, [movie.slug, movie.origin_name, movie.episodes]);
+  }, [movie.slug, movie.origin_name, movie.episodes, movie.tmdb]);
 
 
 

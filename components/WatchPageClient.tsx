@@ -52,13 +52,62 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
     setIsRestored(false);
     setCurrentEpisodeIndex(0);
     const sortedEps = sortEpisodes(movie.episodes || []);
+    
+    // Inject Server Quốc tế (VidLink) if TMDB ID is available
+    if (movie.tmdb?.id) {
+      const tmdbId = movie.tmdb.id.toString();
+      const isTv = movie.tmdb.type === "tv" || (movie.episodes?.[0]?.server_data?.length || 0) > 1;
+      
+      const primaryColor = "B20710"; // theme-primary red
+      const secondaryColor = "170000";
+      const iconColor = "B20710";
+      const icons = "vid";
+      
+      let vidLinkServerData = [];
+      if (!isTv) {
+        // Movie
+        vidLinkServerData = [{
+          name: "Full",
+          slug: "full",
+          filename: "Full",
+          link: "",
+          link_embed: `https://vidlink.pro/movie/${tmdbId}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
+          link_m3u8: ""
+        }];
+      } else {
+        // TV Show - Mirror the episodes from the first available server
+        const baseServer = sortedEps[0];
+        if (baseServer && baseServer.server_data) {
+          const season = movie.tmdb.season || 1;
+          vidLinkServerData = baseServer.server_data.map((ep: any, idx: number) => {
+            const epNum = idx + 1;
+            return {
+              name: ep.name,
+              slug: ep.slug,
+              filename: ep.name,
+              link: "",
+              link_embed: `https://vidlink.pro/tv/${tmdbId}/${season}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
+              link_m3u8: ""
+            };
+          });
+        }
+      }
+      
+      if (vidLinkServerData.length > 0) {
+        sortedEps.push({
+          server_name: "Server Quốc tế (VidLink)",
+          server_data: vidLinkServerData
+        });
+      }
+    }
+    
     setEpisodes(sortedEps);
     // Luôn chọn server đầu tiên (đã sắp xếp theo thứ tự ưu tiên: PhimAPI > Ophim)
     // khi mở phim mới, trừ phi được phục hồi từ lịch sử xem của chính phim này.
     setCurrentServerIndex(0);
     setSelectedServerIndex(0);
     setCurrentOriginName(movie.origin_name);
-  }, [movie.slug, movie.origin_name, movie.episodes]);
+  }, [movie.slug, movie.origin_name, movie.episodes, movie.tmdb]);
 
 
 
@@ -147,6 +196,61 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
 
   const [playerMode, setPlayerMode] = useState<"hls" | "iframe">("hls");
 
+  // Listen to message events from VidLink iframe
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleVidLinkMessage = (event: MessageEvent) => {
+      if (event.origin !== "https://vidlink.pro") return;
+
+      const eventData = event.data;
+      if (!eventData) return;
+
+      if (eventData.type === "MEDIA_DATA" && eventData.data) {
+        try {
+          localStorage.setItem("vidLinkProgress", JSON.stringify(eventData.data));
+        } catch (e) {
+          console.warn("Failed to save vidLinkProgress", e);
+        }
+      }
+
+      if (eventData.type === "PLAYER_EVENT" && eventData.data) {
+        const { event: eventType, currentTime, duration } = eventData.data;
+
+        if (currentServer?.server_name === "Server Quốc tế (VidLink)" && currentEpisode) {
+          const baseEmbedUrl = currentEpisode.link_embed;
+          if (eventType === "timeupdate" || eventType === "pause" || eventType === "seeked") {
+            try {
+              localStorage.setItem(`playback_progress_${baseEmbedUrl}`, currentTime.toString());
+              
+              saveWatchHistory(
+                movie,
+                currentEpisode.name || `Tập ${currentEpisodeIndex + 1}`,
+                currentServer.server_name,
+                currentServerIndex,
+                currentEpisodeIndex
+              );
+            } catch (e) {}
+          }
+          
+          if (eventType === "ended") {
+            try {
+              localStorage.removeItem(`playback_progress_${baseEmbedUrl}`);
+              if (currentEpisodeIndex < serverData.length - 1) {
+                setCurrentEpisodeIndex((prev) => prev + 1);
+              }
+            } catch (e) {}
+          }
+        }
+      }
+    };
+
+    window.addEventListener("message", handleVidLinkMessage);
+    return () => {
+      window.removeEventListener("message", handleVidLinkMessage);
+    };
+  }, [currentServer, currentEpisode, currentServerIndex, currentEpisodeIndex, serverData, movie]);
+
 
 
   const handleEpisodeSelect = (episodeIndex: number) => {
@@ -163,6 +267,20 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
       }
     }
   };
+
+  // Dynamically resolve startAt for VidLink if there is saved progress
+  let finalEmbedUrl = currentEpisode?.link_embed;
+  if (currentServer?.server_name === "Server Quốc tế (VidLink)" && finalEmbedUrl) {
+    if (typeof window !== "undefined") {
+      const savedProgress = localStorage.getItem(`playback_progress_${finalEmbedUrl}`);
+      if (savedProgress) {
+        const seconds = Math.round(parseFloat(savedProgress));
+        if (seconds > 10) {
+          finalEmbedUrl = `${finalEmbedUrl}&startAt=${seconds}`;
+        }
+      }
+    }
+  }
 
   const isSingleEpisode = currentEpisode?.name.toLowerCase().includes("full") || (episodes.length > 0 && serverData.length === 1 && currentEpisode?.name === "1");
 
@@ -190,7 +308,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
               key={`${currentServerIndex}-${currentEpisodeIndex}-${playerMode}`}
               poster=""
               videoUrl={playerMode === "hls" ? currentEpisode.link_m3u8 : undefined}
-              embedUrl={currentEpisode.link_embed}
+              embedUrl={finalEmbedUrl}
               onError={() => {
                 if (playerMode === "hls" && currentEpisode.link_embed) {
                   setPlayerMode("iframe");

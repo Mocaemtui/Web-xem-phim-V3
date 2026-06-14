@@ -10,6 +10,12 @@ export const MOVIE_SOURCES = {
     name: 'PhimAPI',
     url: 'https://phimapi.com',
     type: 'V1_STANDARD'
+  },
+  VIDLINK: {
+    id: 'vidlink',
+    name: 'Server Quốc tế (VidLink)',
+    url: 'https://vidlink.pro',
+    type: 'IFRAME_EMBED'
   }
 };
 
