@@ -30,6 +30,16 @@ const getServerPriority = (name: string) => {
   return 0;
 };
 
+const isSameServerProvider = (nameA: string, nameB: string): boolean => {
+  const clean = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) return "phimapi";
+    if (lower.includes("ophim")) return "ophim";
+    return lower;
+  };
+  return clean(nameA) === clean(nameB);
+};
+
 export default function WatchPageClient({ movie, posterUrl }: WatchPageClientProps) {
   const router = useRouter();
   
@@ -101,9 +111,14 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
            item.currentServerIndex === 0 ? "PhimAPI" : undefined);
 
         if (targetServerName) {
-          foundServerIdx = episodes.findIndex(e => e.server_name === targetServerName || 
-                           (targetServerName.startsWith("Ophim") && e.server_name.startsWith("Ophim")) ||
-                           (targetServerName.startsWith("PhimAPI") && e.server_name.startsWith("PhimAPI")));
+          foundServerIdx = episodes.findIndex(e => 
+            e.server_name === targetServerName || 
+            isSameServerProvider(e.server_name, targetServerName)
+          );
+        }
+
+        if (foundServerIdx === -1 && item.currentServerIndex !== undefined && episodes[item.currentServerIndex]) {
+          foundServerIdx = item.currentServerIndex;
         }
 
         if (foundServerIdx !== -1 && episodes[foundServerIdx]) {
