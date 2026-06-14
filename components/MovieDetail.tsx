@@ -163,8 +163,8 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
         }
         
         if (active && data?.movie) {
-          if (data.movie.poster_url) setNguonCBackdrop(data.movie.poster_url);
-          if (data.movie.thumb_url) setNguonCPoster(data.movie.thumb_url);
+          if (data.movie.thumb_url) setNguonCBackdrop(data.movie.thumb_url);
+          if (data.movie.poster_url) setNguonCPoster(data.movie.poster_url);
         }
 
         if (active && data?.movie?.episodes) {
@@ -341,40 +341,62 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             )}
 
             {/* Director */}
-            {peoples.peoples && peoples.peoples.length > 0 && (
+            {((peoples.peoples && peoples.peoples.filter(p => p.known_for_department === 'Directing').length > 0) || (movie.director && movie.director.length > 0)) && (
               <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Đạo diễn</h3>
                 <div className="flex flex-wrap gap-2">
-                  {peoples.peoples
-                    .filter(p => p.known_for_department === 'Directing')
-                    .map((person, index) => (
+                  {peoples.peoples && peoples.peoples.filter(p => p.known_for_department === 'Directing').length > 0 ? (
+                    peoples.peoples
+                      .filter(p => p.known_for_department === 'Directing')
+                      .map((person, index) => (
+                        <span
+                          key={index}
+                          className="text-sm text-zinc-400"
+                        >
+                          {person.name}
+                        </span>
+                      ))
+                  ) : (
+                    movie.director?.map((dir, index) => (
                       <span
                         key={index}
                         className="text-sm text-zinc-400"
                       >
-                        {person.name}
+                        {dir}
                       </span>
-                    ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
 
             {/* Actors */}
-            {peoples.peoples && peoples.peoples.length > 0 && (
+            {((peoples.peoples && peoples.peoples.filter(p => p.known_for_department === 'Acting').length > 0) || (movie.actor && movie.actor.length > 0)) && (
               <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Diễn viên</h3>
                 <div className="flex flex-wrap gap-2">
-                  {peoples.peoples
-                    .filter(p => p.known_for_department === 'Acting')
-                    .slice(0, 10)
-                    .map((person, index) => (
+                  {peoples.peoples && peoples.peoples.filter(p => p.known_for_department === 'Acting').length > 0 ? (
+                    peoples.peoples
+                      .filter(p => p.known_for_department === 'Acting')
+                      .slice(0, 10)
+                      .map((person, index) => (
+                        <span
+                          key={index}
+                          className="text-sm text-zinc-400"
+                        >
+                          {person.name}
+                        </span>
+                      ))
+                  ) : (
+                    movie.actor?.slice(0, 10).map((act, index) => (
                       <span
                         key={index}
                         className="text-sm text-zinc-400"
                       >
-                        {person.name}
+                        {act}
                       </span>
-                    ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
