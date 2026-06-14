@@ -86,25 +86,6 @@ export default function VideoPlayer({
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const lastSavedTimeRef = useRef(0);
   const [showIframe, setShowIframe] = useState(false);
-  const [isIframeUnlocked, setIsIframeUnlocked] = useState(false);
-
-  useEffect(() => {
-    if (isIframeUnlocked) {
-      const handleScroll = () => {
-        setIsIframeUnlocked(false);
-      };
-      
-      const timer = setTimeout(() => {
-        setIsIframeUnlocked(false);
-      }, 6000);
-      
-      window.addEventListener("scroll", handleScroll, { passive: true });
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener("scroll", handleScroll);
-      };
-    }
-  }, [isIframeUnlocked]);
   
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -857,42 +838,13 @@ export default function VideoPlayer({
               </span>
             </div>
           ) : (
-            <div className="relative w-full h-full aspect-video">
-              <iframe
-                src={embedUrl}
-                className="max-w-full max-h-full aspect-video w-full h-full rounded-lg"
-                allowFullScreen
-                allow="autoplay; encrypted-media"
-                referrerPolicy="no-referrer"
-              />
-              {/* Scroll Safety Overlay */}
-              {!isIframeUnlocked && (
-                <div 
-                  onClick={() => setIsIframeUnlocked(true)}
-                  className="absolute inset-0 bg-transparent z-20 cursor-pointer flex items-center justify-center pointer-events-auto"
-                  style={{ touchAction: "pan-y" }}
-                >
-                  {/* Subtle help tag in the corner of the player to notify user they can touch to control */}
-                  <div className="absolute top-2 right-2 bg-black/75 hover:bg-black/90 text-white border border-zinc-800 text-[10px] sm:text-xs font-semibold px-2.5 py-1.5 rounded-lg backdrop-blur-md transition-all shadow-lg flex items-center gap-1 cursor-pointer select-none active:scale-95">
-                    <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Lướt trang mượt (Chạm để xem)</span>
-                  </div>
-                </div>
-              )}
-              {isIframeUnlocked && (
-                <button
-                  onClick={() => setIsIframeUnlocked(false)}
-                  className="absolute bottom-16 right-4 z-20 bg-black/80 hover:bg-black/95 text-white border border-zinc-700 text-xs font-semibold p-2.5 rounded-full backdrop-blur-md transition-all shadow-xl active:scale-95 duration-200 cursor-pointer"
-                  title="Khóa chạm để lướt trang"
-                >
-                  <svg className="w-4 h-4 text-red-500 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122-2.122-2.122L7.584 6.172l2.122 2.122-2.122 2.122 2.122 2.122 2.122-2.122 2.122-2.122 2.122-2.122-2.122-2.122 2.122-2.122z" />
-                  </svg>
-                </button>
-              )}
-            </div>
+            <iframe
+              src={embedUrl}
+              className="max-w-full max-h-full aspect-video w-full h-full rounded-lg"
+              allowFullScreen
+              allow="autoplay; encrypted-media"
+              referrerPolicy="no-referrer"
+            />
           )
         ) : (
           <div className="max-w-full max-h-full aspect-video bg-zinc-900 rounded-lg flex items-center justify-center">

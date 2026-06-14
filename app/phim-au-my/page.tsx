@@ -2,7 +2,7 @@ import MovieCardWrapper from "@/components/MovieCardWrapper";
 import SectionTitle from "@/components/SectionTitle";
 import BackButton from "@/components/BackButton";
 import Pagination from "@/components/Pagination";
-import { getQuocGiaDetails } from "@/lib/apiExtra";
+import { getQuocGiaDetails } from "@/lib/api";
 
 interface PageProps {
   searchParams: Promise<{

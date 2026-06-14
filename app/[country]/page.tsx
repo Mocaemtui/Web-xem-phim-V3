@@ -1,6 +1,5 @@
-// app/[country]/page.tsx
 import { notFound } from "next/navigation";
-import { getQuocGiaDetails } from "@/lib/apiExtra"; // API helper for country list
+import { getQuocGiaDetails } from "@/lib/api"; // API helper for country list
 import MovieCardWrapper from "@/components/MovieCardWrapper";
 import type { Metadata } from "next";
 
