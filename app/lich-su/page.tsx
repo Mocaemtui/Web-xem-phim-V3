@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Trash2, Clock, Play, X } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import {
   getWatchHistory,
   removeFromHistory,
@@ -68,6 +69,10 @@ export default function WatchHistoryPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white pb-20">
       <div className="container mx-auto px-4 py-8 mt-16 md:mt-20">
+        {/* Back Button */}
+        <div className="mb-6">
+          <BackButton fallbackUrl="/" label="Quay lại Trang chủ" />
+        </div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">

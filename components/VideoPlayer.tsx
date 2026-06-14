@@ -822,13 +822,13 @@ export default function VideoPlayer({
           <div className="absolute top-4 right-4 bg-zinc-900/95 border border-zinc-800 text-white p-4 rounded-xl shadow-2xl z-30 max-w-[280px] backdrop-blur-md transition-all animate-in fade-in slide-in-from-top-2">
             <p className="text-sm font-medium mb-1">Tập tiếp theo sẽ phát sau</p>
             <div className="flex items-center gap-3">
-              <span className="text-2xl font-bold text-blue-500">{autoNextCountdown}s</span>
+              <span className="text-2xl font-bold text-red-500">{autoNextCountdown}s</span>
               <button
                 onClick={() => {
                   setShowAutoNext(false);
                   if (onAutoNext) onAutoNext();
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
               >
                 Chuyển ngay
               </button>
@@ -852,7 +852,7 @@ export default function VideoPlayer({
             <div className="flex items-center gap-1.5 ml-2">
               <button
                 onClick={handleResumePlayback}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer active:scale-95 shadow-md"
+                className="bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer active:scale-95 shadow-md"
               >
                 Xem tiếp
               </button>

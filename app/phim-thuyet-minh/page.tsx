@@ -1,5 +1,6 @@
 import MovieCardWrapper from "@/components/MovieCardWrapper";
 import SectionTitle from "@/components/SectionTitle";
+import BackButton from "@/components/BackButton";
 import Pagination from "@/components/Pagination";
 import { getDanhSach } from "@/lib/api";
 
@@ -22,6 +23,10 @@ export default async function PhimThuyetMinhPage({ searchParams }: PageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Nút thoát / quay lại */}
+      <div className="mb-6">
+        <BackButton fallbackUrl="/" label="Quay lại Trang chủ" />
+      </div>
       <SectionTitle title="Phim Thuyết Minh" />
       <div className="text-white text-sm mb-4">
         Hiển thị {(currentPage - 1) * totalItemsPerPage + 1}-{Math.min(currentPage * totalItemsPerPage, totalItems)} của {totalItems} phim

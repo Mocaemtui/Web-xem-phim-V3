@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import WatchPageClient from "@/components/WatchPageClient";
-import { getChiTietPhim, getBackdropUrl } from "@/lib/api";
+import { getChiTietPhim, getPosterUrl } from "@/lib/api";
 
 interface PageProps {
   params: Promise<{
@@ -23,7 +23,7 @@ export default async function WatchPage({ params }: PageProps) {
   }
 
   const movie = movieData.data.item;
-  const posterUrl = getBackdropUrl(movie);
+  const posterUrl = getPosterUrl(movie);
 
 
 

@@ -80,7 +80,7 @@ export default function EpisodeSelector({
                 onClick={() => onSelectServer(index)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   currentServerIndex === index
-                    ? "bg-blue-600 text-white"
+                    ? "bg-red-600 text-white shadow-md shadow-red-900/20"
                     : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                 }`}
               >
@@ -103,7 +103,7 @@ export default function EpisodeSelector({
               onClick={() => onSelectEpisode(index)}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer border ${
                 currentEpisodeIndex === index
-                  ? "bg-blue-600 text-white border-blue-500"
+                  ? "bg-red-600 text-white border-red-500 shadow-md shadow-red-900/20"
                   : isWatched
                     ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20 hover:bg-emerald-900/40"
                     : "bg-zinc-800 text-zinc-300 border-zinc-700/50 hover:bg-zinc-700"

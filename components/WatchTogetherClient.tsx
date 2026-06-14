@@ -6,6 +6,7 @@ import type { MovieDetail } from "@/types/api";
 import { Users, Copy, Check, RefreshCw, Smile, Eye, EyeOff, MessageSquare } from "lucide-react";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import { useWatchTogether } from "@/hooks/useWatchTogether";
+import { saveWatchHistory } from "@/lib/watchHistory";
 
 const VideoPlayer = dynamic(() => import("@/components/VideoPlayer"), { ssr: false });
 const RoomChat = dynamic(() => import("@/components/RoomChat"), { ssr: false });
@@ -22,17 +23,9 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   const [isJoined, setIsJoined] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const [currentServerIndex, setCurrentServerIndex] = useState(() => {
-    if (typeof window !== "undefined" && movie.episodes) {
-      const preferred = localStorage.getItem("preferred_server_name");
-      if (preferred) {
-        const idx = movie.episodes.findIndex(e => e.server_name === preferred);
-        if (idx !== -1) return idx;
-      }
-    }
-    return 0;
-  });
+  const [currentServerIndex, setCurrentServerIndex] = useState(0);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
+  const [selectedServerIndex, setSelectedServerIndex] = useState(0);
   const [activeMobileTab, setActiveMobileTab] = useState<"chat" | "episodes" | "watchers">("chat");
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [chatWidth, setChatWidth] = useState(384);
@@ -94,7 +87,10 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   const [showHostSyncPrompt, setShowHostSyncPrompt] = useState(false);
   const [hostSavedTime, setHostSavedTime] = useState<number | null>(null);
 
-  const episodes = movie.episodes || [];
+  const episodes = (movie.episodes || []).filter(e => {
+    const lower = e.server_name.toLowerCase();
+    return !lower.includes("nguonc") && !lower.includes("nguồn c") && !lower.includes("nguon c");
+  });
   const currentServer = episodes[currentServerIndex];
   const serverData = currentServer?.server_data || [];
   const currentEpisode = serverData[currentEpisodeIndex];
@@ -401,6 +397,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
       if (data.serverIndex !== undefined && data.episodeIndex !== undefined) {
         setCurrentServerIndex(data.serverIndex);
+        setSelectedServerIndex(data.serverIndex);
         setCurrentEpisodeIndex(data.episodeIndex);
       }
 
@@ -425,6 +422,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
     onChangeEpisodeRef.current = (serverIndex, episodeIndex) => {
       setCurrentServerIndex(serverIndex);
+      setSelectedServerIndex(serverIndex);
       setCurrentEpisodeIndex(episodeIndex);
     };
   }, [onPlayRef, onPauseRef, onSeekRef, onRequestSyncRef, onSyncResponseRef, onChangeEpisodeRef]);
@@ -444,6 +442,19 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
       }, 1000);
     }
   }, [isJoined]);
+
+  // Lưu lịch sử xem phim khi tập phim hoặc server thay đổi trong phòng xem chung
+  useEffect(() => {
+    if (isJoined && currentEpisode && currentServer) {
+      saveWatchHistory(
+        movie,
+        currentEpisode.name || `Tập ${currentEpisodeIndex + 1}`,
+        currentServer.server_name,
+        currentServerIndex,
+        currentEpisodeIndex
+      );
+    }
+  }, [movie, currentEpisode, currentServer, currentServerIndex, currentEpisodeIndex, isJoined]);
 
   const promptedEpisodeRef = useRef("");
   const formatTime = (seconds: number) => {
@@ -577,14 +588,59 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
       <KeyboardAndTheaterHandler setIsTheaterMode={setIsTheaterMode} setIsChatHidden={setIsChatHidden} containerRef={containerRef} isTheaterMode={isTheaterMode} />
 
 
-      {/* Main workspace: Side-by-side Player and Chat Sidebar (Fills the screen first fold) */}
-      <div className="flex-1 w-full h-full flex flex-col md:flex-row shrink-0 relative overflow-hidden">
+      {/* Room Header: Show when not in theater mode */}
+      {!isTheaterMode && (
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 pt-6 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/40 relative z-20">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+              Xem Chung: {movie.name}
+            </h1>
+            <p className="text-xs text-zinc-400 mt-1 font-medium">
+              Đang phát: <span className="text-red-500 font-semibold">{currentServer?.server_name}</span>
+              <span className="mx-2 text-zinc-700">|</span>
+              Tập: <span className="text-red-500 font-semibold">{currentEpisode?.name.toLowerCase().includes("tập") ? currentEpisode.name : `Tập ${currentEpisodeIndex + 1}`}</span>
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Copy Link */}
+            <button
+              onClick={copyLink}
+              className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800/80 text-zinc-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shadow-md active:scale-95 cursor-pointer"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-red-500" />}
+              <span>{copied ? "Đã copy link" : "Mời bạn bè"}</span>
+            </button>
+
+            {/* Zoom / Theater Mode Button */}
+            <button
+              onClick={() => setIsTheaterMode(prev => !prev)}
+              className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800/80 text-zinc-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shadow-md active:scale-95 cursor-pointer"
+              title="Bật/Tắt chế độ phóng to rạp chiếu (Enter)"
+            >
+              <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m-11.25 11.25v-4.5m0 4.5h4.5m-4.5 0L9 15m11.25 5.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
+              </svg>
+              <span>Phóng to (Enter)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+
+      {/* Main workspace: Side-by-side Player and Chat Sidebar */}
+      <div className={`w-full flex flex-col md:flex-row shrink-0 relative overflow-hidden ${
+        isTheaterMode 
+          ? "h-full flex-1" 
+          : "max-w-[1600px] mx-auto px-4 md:px-6 py-6 gap-6 items-stretch min-h-0"
+      }`}>
         {/* Left Area: Video Player & Controls */}
         <div 
-          className={`flex-1 flex flex-col transition-all duration-300 group/theater relative z-10 ${
+          className={`flex flex-col transition-all duration-300 group/theater relative z-10 ${
             isTheaterMode 
-              ? "h-full w-full p-0 bg-transparent overflow-hidden justify-center items-center" 
-              : "min-h-0 overflow-hidden p-3 md:p-6 bg-transparent"
+              ? "h-full w-full p-0 bg-transparent overflow-hidden justify-center items-center flex-1" 
+              : "flex-1 min-w-0"
           }`}
           onDoubleClick={() => setIsTheaterMode(prev => !prev)}
         >
@@ -598,23 +654,23 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         {/* Video Player */}
         <div className={`w-full transition-all ${
           isTheaterMode 
-            ? "h-full max-h-screen flex items-center justify-end p-0 z-40 fixed inset-0" 
-            : "fixed md:relative top-0 left-0 right-0 z-40 md:z-20 bg-zinc-950 md:bg-transparent p-0 shrink min-h-0 md:mb-6 md:flex-1 flex items-center justify-center h-[56.25vw] md:h-auto md:max-h-[calc(100vh-160px)]"
+            ? "h-full max-h-screen flex items-center justify-end p-0 z-40 fixed inset-0 bg-black" 
+            : "relative aspect-video rounded-2xl overflow-hidden border border-zinc-850 shadow-2xl bg-zinc-950"
         }`}>
 
-          {/* Floating Horizontal Controller at Top-Right (Only shows when chat is hidden) */}
-          {isChatHidden && (
+          {/* Floating Horizontal Controller at Top-Right (Only shows when chat is hidden in theater mode) */}
+          {isChatHidden && isTheaterMode && (
             <div className={`absolute top-4 right-4 z-50 flex items-center gap-2 bg-zinc-950/90 border border-zinc-800/60 p-2 rounded-xl backdrop-blur-md transition-opacity duration-300 shadow-xl ${showTopControls ? "opacity-100" : "opacity-0 pointer-events-none"} animate-in fade-in`}
                  style={{ contentVisibility: "auto" }}>
               
-              {/* Watchers Popover (Horizontal Context) */}
+              {/* Watchers Popover */}
               <div className="relative">
                 <button
                   onClick={() => {
                     setShowWatchers(prev => !prev);
                     setShowEmojis(false);
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${showWatchers ? "bg-zinc-800/80 border-zinc-700 text-blue-400" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${showWatchers ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
                 >
                   <Users className="w-3.5 h-3.5" />
                   <span>{watchers.length}</span>
@@ -634,14 +690,14 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 )}
               </div>
 
-              {/* Emojis Popover (Horizontal Context) */}
+              {/* Emojis Popover */}
               <div className="relative">
                 <button
                   onClick={() => {
                     setShowEmojis(prev => !prev);
                     setShowWatchers(false);
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${showEmojis ? "bg-zinc-800/80 border-zinc-700 text-blue-400" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${showEmojis ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
                 >
                   <Smile className="w-3.5 h-3.5" />
                 </button>
@@ -668,7 +724,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               {/* Theater/Zoom Toggle Button in Overlay */}
               <button
                 onClick={() => setIsTheaterMode(prev => !prev)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isTheaterMode ? "bg-zinc-800/80 border-zinc-700 text-blue-400" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isTheaterMode ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
                 title="Bật/Tắt chế độ phóng to rạp chiếu"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -705,7 +761,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               <FloatingReactions reactions={reactions} />
               <VideoPlayer
                 externalVideoRef={videoRef}
-                poster={posterUrl}
+                poster=""
                 videoUrl={currentEpisode.link_m3u8}
                 nextVideoUrl={serverData[currentEpisodeIndex + 1]?.link_m3u8}
                 isWatchTogether={true}
@@ -732,6 +788,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             </>
           ) : (
             <div className="w-full aspect-video bg-zinc-900 rounded-lg flex items-center justify-center">
+              <span className="text-zinc-500 text-sm">Đang tải video...</span>
             </div>
           )}
         </div>
@@ -746,19 +803,19 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             <div className="flex md:hidden border-b border-zinc-800/40 bg-zinc-950/20 rounded-t-xl shrink-0">
               <button
                 onClick={() => setActiveMobileTab("chat")}
-                className={`flex-1 py-2.5 text-center text-xs font-semibold border-b-2 transition-colors ${activeMobileTab === "chat" ? "border-blue-500 text-blue-400" : "border-transparent text-zinc-400 hover:text-zinc-200"}`}
+                className={`flex-1 py-2.5 text-center text-xs font-semibold border-b-2 transition-colors ${activeMobileTab === "chat" ? "border-red-500 text-red-400" : "border-transparent text-zinc-400 hover:text-zinc-200"}`}
               >
                 Trò chuyện
               </button>
               <button
                 onClick={() => setActiveMobileTab("episodes")}
-                className={`flex-1 py-2.5 text-center text-xs font-semibold border-b-2 transition-colors ${activeMobileTab === "episodes" ? "border-blue-500 text-blue-400" : "border-transparent text-zinc-400 hover:text-zinc-200"}`}
+                className={`flex-1 py-2.5 text-center text-xs font-semibold border-b-2 transition-colors ${activeMobileTab === "episodes" ? "border-red-500 text-red-400" : "border-transparent text-zinc-400 hover:text-zinc-200"}`}
               >
                 Tập phim
               </button>
               <button
                 onClick={() => setActiveMobileTab("watchers")}
-                className={`flex-1 py-2.5 text-center text-xs font-semibold border-b-2 transition-colors ${activeMobileTab === "watchers" ? "border-blue-500 text-blue-400" : "border-transparent text-zinc-400 hover:text-zinc-200"}`}
+                className={`flex-1 py-2.5 text-center text-xs font-semibold border-b-2 transition-colors ${activeMobileTab === "watchers" ? "border-red-500 text-red-400" : "border-transparent text-zinc-400 hover:text-zinc-200"}`}
               >
                 Người xem ({watchers.length})
               </button>
@@ -799,22 +856,15 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   {episodes.length > 0 && serverData.length > 0 && (
                     <EpisodeSelector
                       episodes={episodes}
-                      currentServerIndex={currentServerIndex}
-                      currentEpisodeIndex={currentEpisodeIndex}
+                      currentServerIndex={selectedServerIndex}
+                      currentEpisodeIndex={currentServerIndex === selectedServerIndex ? currentEpisodeIndex : -1}
                       onSelectEpisode={(idx) => {
+                        setCurrentServerIndex(selectedServerIndex);
                         setCurrentEpisodeIndex(idx);
-                        triggerChangeEpisode(currentServerIndex, idx);
+                        triggerChangeEpisode(selectedServerIndex, idx);
                       }}
                       onSelectServer={(idx) => {
-                        setCurrentServerIndex(idx);
-                        setCurrentEpisodeIndex(0);
-                        triggerChangeEpisode(idx, 0);
-                        if (typeof window !== "undefined") {
-                          const preferred = episodes[idx]?.server_name;
-                          if (preferred) {
-                            localStorage.setItem("preferred_server_name", preferred);
-                          }
-                        }
+                        setSelectedServerIndex(idx);
                       }}
                     />
                   )}
@@ -824,12 +874,12 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               {activeMobileTab === "watchers" && (
                 <div className="flex-1 overflow-y-auto space-y-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4 text-blue-400" />
+                    <Users className="w-4 h-4 text-red-400" />
                     <h3 className="font-semibold text-white text-sm">Danh sách người đang xem</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {watchers.map((w) => (
-                      <div key={w.id} className="flex items-center gap-1.5 bg-zinc-800 px-3 py-1.5 rounded-full text-xs">
+                      <div key={w.id} className="flex items-center gap-1.5 bg-zinc-850 px-3 py-1.5 rounded-full text-xs">
                         <span className="text-zinc-200">{w.name}</span>
                       </div>
                     ))}
@@ -841,167 +891,215 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         )}
       </div>
 
-      {/* Resizable Divider handle (Absolutely positioned to overlap seamlessly, eliminating any black layout gap) */}
+
+      {/* Resizable Divider handle */}
       {!isTheaterMode && (
         <div 
           onMouseDown={startResizing} 
-          className="hidden md:block absolute top-0 bottom-0 w-2 cursor-col-resize z-50 bg-transparent hover:bg-blue-500/20 transition-all duration-150" 
+          className="hidden md:block absolute top-[100px] bottom-[200px] w-2 cursor-col-resize z-50 bg-transparent hover:bg-red-500/20 transition-all duration-150" 
           style={{ right: `${chatWidth - 4}px` }}
         />
       )}
 
       {/* Right Area: Desktop Sidebar */}
       <div 
-        className={`hidden md:flex bg-transparent flex-col min-h-0 shrink-0 z-10 relative transition-opacity duration-300 ease-in-out ${
+        className={`hidden md:flex bg-transparent flex-col min-h-0 shrink-0 z-10 relative transition-all duration-300 ease-in-out ${
           isChatHidden ? "opacity-0 pointer-events-none" : "opacity-100"
         } ${isTheaterMode ? "pointer-events-none" : ""}`}
         style={{ 
           width: isTheaterMode ? "260px" : `${chatWidth}px`, 
-          padding: "12px",
-          gap: "12px",
+          padding: isTheaterMode ? "12px" : "0px",
+          gap: isTheaterMode ? "12px" : "0px",
           overflow: "hidden",
           backgroundColor: "transparent" 
         }}
       >
 
+        {/* Sleek controls row: Watchers & Emojis Popovers (Only show in Theater Mode) */}
+        {isTheaterMode && (
+          <div className={`flex items-center gap-2 justify-end relative z-20 shrink-0 ${isChatHidden ? "flex-col" : "flex-row"} pointer-events-auto`}>
+            
+            {/* Watchers Popover */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowWatchers(prev => !prev);
+                  setShowEmojis(false);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${showWatchers ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>{watchers.length}</span>
+              </button>
 
-        {/* Sleek controls row: Watchers & Emojis Popovers */}
-        <div className={`flex items-center gap-2 justify-end relative z-20 shrink-0 ${isChatHidden ? "flex-col" : "flex-row"} pointer-events-auto`}>
-          
-          {/* Watchers Popover */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                setShowWatchers(prev => !prev);
-                setShowEmojis(false);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${showWatchers ? "bg-zinc-800/80 border-zinc-700 text-blue-400" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>{watchers.length}</span>
-            </button>
-
-            {showWatchers && (
-              <div className="absolute right-full top-0 mr-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-3 rounded-lg shadow-2xl z-50 min-w-[180px] max-w-[240px]">
-                <h4 className="text-[11px] font-semibold text-zinc-400 mb-2 border-b border-zinc-900 pb-1">Người xem ({watchers.length})</h4>
-                <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
-                  {watchers.map((w) => (
-                    <div key={w.id} className="text-xs text-zinc-300 py-0.5 truncate">
-                      {w.name}
-                    </div>
-                  ))}
+              {showWatchers && (
+                <div className="absolute right-full top-0 mr-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-3 rounded-lg shadow-2xl z-50 min-w-[180px] max-w-[240px]">
+                  <h4 className="text-[11px] font-semibold text-zinc-400 mb-2 border-b border-zinc-900 pb-1">Người xem ({watchers.length})</h4>
+                  <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
+                    {watchers.map((w) => (
+                      <div key={w.id} className="text-xs text-zinc-300 py-0.5 truncate">
+                        {w.name}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Emojis Popover */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                setShowEmojis(prev => !prev);
-                setShowWatchers(false);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${showEmojis ? "bg-zinc-800/80 border-zinc-700 text-blue-400" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
-            >
-              <Smile className="w-3.5 h-3.5" />
-            </button>
-
-            {showEmojis && (
-              <div className="absolute right-full top-0 mr-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-2 rounded-lg shadow-2xl z-50 min-w-[200px]">
-                <div className="grid grid-cols-5 gap-1.5 justify-items-center">
-                  {EMOJIS.map(emoji => (
-                    <button
-                      key={emoji}
-                      onClick={() => {
-                        triggerReaction(emoji);
-                      }}
-                      className="text-lg hover:scale-125 active:scale-95 transition-transform duration-100 cursor-pointer"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-           {/* Theater/Zoom Toggle Button */}
-          <button
-            onClick={() => setIsTheaterMode(prev => !prev)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isTheaterMode ? "bg-zinc-800/80 border-zinc-700 text-blue-400" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
-            title="Bật/Tắt chế độ phóng to rạp chiếu"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              {isTheaterMode ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3 3m12 6V4.5M15 9h4.5M15 9l6-6m-6 12v4.5M15 15h4.5M15 15l6 6m-6-6v4.5M9 15H4.5M9 15l-6 6" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m-11.25 11.25v-4.5m0 4.5h4.5m-4.5 0L9 15m11.25 5.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
               )}
-            </svg>
-          </button>
+            </div>
 
-           {/* Hide/Show Chat Toggle Button */}
-          {isTheaterMode && (
+            {/* Emojis Popover */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowEmojis(prev => !prev);
+                  setShowWatchers(false);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${showEmojis ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+              >
+                <Smile className="w-3.5 h-3.5" />
+              </button>
+
+              {showEmojis && (
+                <div className="absolute right-full top-0 mr-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-2 rounded-lg shadow-2xl z-50 min-w-[200px]">
+                  <div className="grid grid-cols-5 gap-1.5 justify-items-center">
+                    {EMOJIS.map(emoji => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          triggerReaction(emoji);
+                        }}
+                        className="text-lg hover:scale-125 active:scale-95 transition-transform duration-100 cursor-pointer"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+             {/* Theater/Zoom Toggle Button */}
             <button
-              onClick={() => {
-                setIsChatHidden(prev => !prev);
-                setShowWatchers(false);
-                setShowEmojis(false);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isChatHidden ? "bg-zinc-800/80 border-zinc-700 text-blue-400" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
-              title={isChatHidden ? "Hiện cuộc trò chuyện" : "Tạm ẩn cuộc trò chuyện"}
+              onClick={() => setIsTheaterMode(prev => !prev)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isTheaterMode ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+              title="Bật/Tắt chế độ phóng to rạp chiếu"
             >
-              {isChatHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                {isTheaterMode ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3 3m12 6V4.5M15 9h4.5M15 9l6-6m-6 12v4.5M15 15h4.5M15 15l6 6m-6-6v4.5M9 15H4.5M9 15l-6 6" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m-11.25 11.25v-4.5m0 4.5h4.5m-4.5 0L9 15m11.25 5.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
+                )}
+              </svg>
             </button>
+
+             {/* Hide/Show Chat Toggle Button */}
+            {isTheaterMode && (
+              <button
+                onClick={() => {
+                  setIsChatHidden(prev => !prev);
+                  setShowWatchers(false);
+                  setShowEmojis(false);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isChatHidden ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+                title={isChatHidden ? "Hiện cuộc trò chuyện" : "Tạm ẩn cuộc trò chuyện"}
+              >
+                {isChatHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
+        )}
+
+
+        <div className={`flex-1 min-h-0 flex flex-col pointer-events-auto ${
+          isTheaterMode 
+            ? "bg-transparent border-0 shadow-none" 
+            : "bg-zinc-900/30 border border-zinc-800/50 rounded-2xl backdrop-blur-md shadow-2xl overflow-hidden"
+        }`}>
+          {!isTheaterMode && (
+            <>
+              {/* Chat Header */}
+              <div className="px-4 py-3 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-950/20 shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                  <span className="text-xs font-bold text-zinc-300">Phòng chat ({watchers.length} người)</span>
+                </div>
+                
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setShowWatchers(prev => !prev);
+                      setShowEmojis(false);
+                    }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all border cursor-pointer ${showWatchers ? "bg-zinc-800 border-zinc-700 text-red-500" : "bg-zinc-900/50 border-zinc-800/50 text-zinc-400 hover:text-zinc-200"}`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Người xem</span>
+                  </button>
+
+                  {showWatchers && (
+                    <div className="absolute right-0 top-9 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-3 rounded-lg shadow-2xl z-50 min-w-[180px] max-w-[240px]">
+                      <h4 className="text-[10px] font-bold text-zinc-500 mb-2 border-b border-zinc-900 pb-1 uppercase tracking-wider">Đang xem ({watchers.length})</h4>
+                      <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
+                        {watchers.map((w) => (
+                          <div key={w.id} className="text-xs text-zinc-300 py-0.5 truncate">
+                            {w.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Emojis Reaction bar */}
+              <div className="px-3 py-2 border-b border-zinc-800/30 bg-zinc-950/10 flex items-center gap-2 shrink-0 overflow-x-auto no-scrollbar">
+                <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mr-1 select-none">Cảm xúc:</span>
+                {EMOJIS.map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={() => triggerReaction(emoji)}
+                    className="text-base hover:scale-125 active:scale-95 transition-transform duration-100 cursor-pointer"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
-        </div>
 
-
-        <div className={`flex-1 overflow-hidden p-0 relative z-10 transition-opacity duration-300 ${isChatHidden ? "opacity-0 pointer-events-none" : "opacity-100"} pointer-events-auto`}>
-          <RoomChat 
-            messages={messages} 
-            typingUsers={typingUsers}
-            onSendMessage={sendMessage} 
-            onTyping={triggerTyping}
-            isTheaterMode={isTheaterMode}
-          />
+          <div className="flex-1 overflow-hidden">
+            <RoomChat 
+              messages={messages} 
+              typingUsers={typingUsers}
+              onSendMessage={sendMessage} 
+              onTyping={triggerTyping}
+              isTheaterMode={isTheaterMode}
+            />
+          </div>
         </div>
       </div>
-
-      {/* Close the Side-by-side Video/Chat container */}
-      </div>
-
-
+    </div>
 
       {/* Bottom Section: Full-width Standalone Episode Selector (Desktop-only, scroll down to see) */}
       {!isTheaterMode && (
-        <div className="hidden md:block w-full shrink-0 px-6 py-6 bg-zinc-950/60 border-t border-zinc-900/50 backdrop-blur-md relative z-20">
-          <h1 className="text-xl md:text-2xl font-bold text-white mb-4">
-            {movie.name} - {currentServer?.server_name} - {currentEpisode?.name.toLowerCase().includes("tập") ? currentEpisode.name : `Tập ${currentEpisodeIndex + 1}`}
-          </h1>
-          {episodes.length > 0 && serverData.length > 0 && (
-            <EpisodeSelector
-              episodes={episodes}
-              currentServerIndex={currentServerIndex}
-              currentEpisodeIndex={currentEpisodeIndex}
-              onSelectEpisode={(idx) => {
-                setCurrentEpisodeIndex(idx);
-                triggerChangeEpisode(currentServerIndex, idx);
-              }}
-              onSelectServer={(idx) => {
-                setCurrentServerIndex(idx);
-                setCurrentEpisodeIndex(0);
-                triggerChangeEpisode(idx, 0);
-                if (typeof window !== "undefined") {
-                  const preferred = episodes[idx]?.server_name;
-                  if (preferred) {
-                    localStorage.setItem("preferred_server_name", preferred);
-                  }
-                }
-              }}
-            />
-          )}
+        <div className="hidden md:block w-full shrink-0 max-w-[1600px] mx-auto px-4 md:px-6 pb-12 relative z-20">
+          <div className="w-full px-6 py-6 bg-zinc-900/20 border border-zinc-800/40 backdrop-blur-md rounded-2xl">
+            {episodes.length > 0 && serverData.length > 0 && (
+              <EpisodeSelector
+                episodes={episodes}
+                currentServerIndex={selectedServerIndex}
+                currentEpisodeIndex={currentServerIndex === selectedServerIndex ? currentEpisodeIndex : -1}
+                onSelectEpisode={(idx) => {
+                  setCurrentServerIndex(selectedServerIndex);
+                  setCurrentEpisodeIndex(idx);
+                  triggerChangeEpisode(selectedServerIndex, idx);
+                }}
+                onSelectServer={(idx) => {
+                  setSelectedServerIndex(idx);
+                }}
+              />
+            )}
+          </div>
         </div>
       )}
     </div>

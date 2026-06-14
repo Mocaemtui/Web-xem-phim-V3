@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getChiTietPhim, getBackdropUrl } from "@/lib/api";
+import { getChiTietPhim, getPosterUrl } from "@/lib/api";
 import WatchTogetherClient from "@/components/WatchTogetherClient";
 
 interface PageProps {
@@ -24,7 +24,7 @@ export default async function WatchTogetherPage({ params }: PageProps) {
   }
 
   const movie = movieData.data.item;
-  const posterUrl = getBackdropUrl(movie);
+  const posterUrl = getPosterUrl(movie);
 
   return (
     <WatchTogetherClient movie={movie} posterUrl={posterUrl} roomId={roomId} />

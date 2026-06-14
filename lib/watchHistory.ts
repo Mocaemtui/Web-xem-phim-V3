@@ -9,6 +9,7 @@ export interface WatchHistoryItem {
   year: number;
   country?: string;
   episodeName?: string;
+  serverName?: string;
   currentServerIndex: number;
   currentEpisodeIndex: number;
   watchedAt: number; // timestamp
@@ -35,6 +36,7 @@ export function getWatchHistory(): WatchHistoryItem[] {
 export function saveWatchHistory(
   movie: Pick<Movie, "slug" | "name" | "origin_name" | "poster_url" | "thumb_url" | "year" | "country">,
   episodeName: string,
+  serverName: string,
   currentServerIndex: number,
   currentEpisodeIndex: number
 ): void {
@@ -54,6 +56,7 @@ export function saveWatchHistory(
       year: movie.year,
       country: movie.country?.[0]?.name,
       episodeName,
+      serverName,
       currentServerIndex,
       currentEpisodeIndex,
       watchedAt: Date.now(),
@@ -70,9 +73,33 @@ export function saveWatchHistory(
 export function removeFromHistory(slug: string): void {
   if (!isBrowser()) return;
   try {
+    // 1. Xóa khỏi danh sách lịch sử phim
     const history = getWatchHistory();
     const filtered = history.filter((item) => item.slug !== slug);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+
+    // 2. Xóa các tập đã xem của phim này khỏi danh sách "watched_episodes_v3"
+    const watchedEpsRaw = localStorage.getItem("watched_episodes_v3");
+    if (watchedEpsRaw) {
+      const watchedEps = JSON.parse(watchedEpsRaw);
+      if (Array.isArray(watchedEps)) {
+        const cleanWatched = watchedEps.filter((epKey: string) => {
+          if (!epKey) return false;
+          return !epKey.toLowerCase().includes(slug.toLowerCase());
+        });
+        localStorage.setItem("watched_episodes_v3", JSON.stringify(cleanWatched));
+      }
+    }
+
+    // 3. Xóa tiến trình thời gian xem của tất cả các tập phim thuộc phim này
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("playback_progress_") && key.toLowerCase().includes(slug.toLowerCase())) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
   } catch {
     // Silently fail
   }
@@ -81,7 +108,21 @@ export function removeFromHistory(slug: string): void {
 export function clearWatchHistory(): void {
   if (!isBrowser()) return;
   try {
+    // 1. Xóa lịch sử phim
     localStorage.removeItem(STORAGE_KEY);
+
+    // 2. Xóa danh sách các tập đã xem
+    localStorage.removeItem("watched_episodes_v3");
+
+    // 3. Xóa tất cả tiến trình phát video
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("playback_progress_")) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
   } catch {
     // Silently fail
   }
