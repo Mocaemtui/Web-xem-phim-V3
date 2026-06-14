@@ -139,6 +139,48 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       return `${normalizedOriginName}-${item.year || 'unknown'}`;
     };
 
+    const getRelevance = (movie: ExtendedMovie) => {
+      const kw = keyword.toLowerCase().trim();
+      const name = (movie.name || '').toLowerCase();
+      const orig = (movie.origin_name || '').toLowerCase();
+      
+      if (name === kw || orig === kw) return 100;
+      if (name.startsWith(kw) || orig.startsWith(kw)) return 80;
+      if (name.includes(kw) || orig.includes(kw)) return 60;
+      
+      const tokens = kw.split(/\s+/);
+      let matches = 0;
+      tokens.forEach(t => {
+        if (name.includes(t) || orig.includes(t)) matches++;
+      });
+      if (matches > 0) return (matches / tokens.length) * 40;
+      
+      return 0;
+    };
+
+    const getModifiedTime = (movie: any): number => {
+      if (!movie.modified) return 0;
+      if (typeof movie.modified === 'string') {
+        return new Date(movie.modified).getTime();
+      }
+      if (typeof movie.modified === 'object' && movie.modified.time) {
+        return new Date(movie.modified.time).getTime();
+      }
+      return 0;
+    };
+
+    const sortMovies = (list: ExtendedMovie[]) => {
+      return [...list].sort((a, b) => {
+        const scoreA = getRelevance(a);
+        const scoreB = getRelevance(b);
+        if (scoreA !== scoreB) return scoreB - scoreA;
+        
+        const timeA = getModifiedTime(a);
+        const timeB = getModifiedTime(b);
+        return timeB - timeA;
+      });
+    };
+
     // 1. Build a map of PhimAPI movies to use their images everywhere
     const phimapiMap = new Map<string, ExtendedMovie>();
     movies.forEach(m => {
@@ -161,39 +203,40 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       return movie;
     });
 
-    // 3. Filter or Deduplicate based on selectedSource
+    // 3. Extract and sort movies for each source
+    const phimapiMovies = resolvedMovies.filter(m => m.source === 'phimapi');
+    const sortedNguonCMovies = sortMovies(resolvedMovies.filter(m => m.source === 'nguonc'));
+    const sortedOphimMovies = sortMovies(resolvedMovies.filter(m => m.source === 'ophim'));
+
+    // 4. Return results based on selectedSource
     if (selectedSource === "all") {
-      // Assign stable sort indexes
-      const indexedMovies = resolvedMovies.map((m, idx) => ({ ...m, originalIndex: idx }));
+      // Group movies by source priority: phimapi (first) -> nguonc (second) -> ophim (third)
+      const sortedGroupedMovies = [
+        ...phimapiMovies,
+        ...sortedNguonCMovies,
+        ...sortedOphimMovies
+      ];
 
-      // Sort by source priority: phimapi (3) > nguonc (2) > ophim (1)
-      const sorted = [...indexedMovies].sort((a, b) => {
-        const priority: Record<string, number> = { phimapi: 3, nguonc: 2, ophim: 1 };
-        const priorityA = (a.source && priority[a.source]) || 0;
-        const priorityB = (b.source && priority[b.source]) || 0;
-        
-        if (priorityA !== priorityB) {
-          return priorityB - priorityA;
-        }
-        return a.originalIndex - b.originalIndex;
-      });
-
-      // Deduplicate (first occurrence wins)
+      // Deduplicate (first occurrence wins, which will be phimapi if available, then nguonc, then ophim)
       const itemsMap = new Map<string, ExtendedMovie>();
-      sorted.forEach(movie => {
+      sortedGroupedMovies.forEach(movie => {
         const key = getSmartKey(movie);
         if (!itemsMap.has(key)) {
-          const { originalIndex, ...rest } = movie as any;
-          itemsMap.set(key, rest);
+          itemsMap.set(key, movie);
         }
       });
 
       return Array.from(itemsMap.values());
+    } else if (selectedSource === "phimapi") {
+      return phimapiMovies; // Original API relevance order
+    } else if (selectedSource === "nguonc") {
+      return sortedNguonCMovies; // Sorted by relevance + modified time
+    } else if (selectedSource === "ophim") {
+      return sortedOphimMovies; // Sorted by relevance + modified time
     } else {
-      // Show all movies from that source directly, but with resolved images
       return resolvedMovies.filter((movie: ExtendedMovie) => movie.source === selectedSource);
     }
-  }, [movies, selectedSource]);
+  }, [movies, selectedSource, keyword]);
 
   const sourceFilters = [
     { id: "all", name: "Tất cả" },
