@@ -199,13 +199,15 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
     // 3. Extract and sort movies for each source
     const phimapiMovies = resolvedMovies.filter(m => m.source === 'phimapi');
     const ophimMovies = resolvedMovies.filter(m => m.source === 'ophim');
+    const tmdbMovies = resolvedMovies.filter(m => m.source === 'tmdb');
 
     // 4. Return results based on selectedSource
     if (selectedSource === "all") {
-      // Group movies by source priority: phimapi (first) -> ophim (second)
+      // Group movies by source priority: phimapi (first) -> ophim (second) -> tmdb (third)
       const sortedGroupedMovies = [
         ...phimapiMovies,
-        ...ophimMovies
+        ...ophimMovies,
+        ...tmdbMovies
       ];
 
       // Deduplicate (first occurrence wins, which will be phimapi if available, then ophim)
@@ -231,6 +233,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
     { id: "all", name: "Tất cả" },
     { id: "phimapi", name: "PhimAPI" },
     { id: "ophim", name: "Ophim" },
+    { id: "tmdb", name: "TMDB (Quốc tế)" },
   ];
 
   if (filteredMovies.length === 0) {

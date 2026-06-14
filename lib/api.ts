@@ -235,9 +235,17 @@ export async function searchPhim(
 ): Promise<ApiResponse<MovieListResponse> | null> {
   const endpoint = `/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}`;
   
-  const [ophimRes, phimapiRes] = await Promise.all([
+  const tmdbKey = process.env.TMDB_API_KEY;
+  const tmdbPromise = tmdbKey
+    ? fetch(`https://api.themoviedb.org/3/search/multi?api_key=${tmdbKey}&query=${encodeURIComponent(keyword)}&language=vi-VN`)
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+    : Promise.resolve(null);
+
+  const [ophimRes, phimapiRes, tmdbSearchRes] = await Promise.all([
     fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.OPHIM.url),
-    fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.PHIMAPI.url)
+    fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.PHIMAPI.url),
+    tmdbPromise
   ]);
 
   const allItems: Movie[] = [];
@@ -256,6 +264,29 @@ export async function searchPhim(
 
   addItems(phimapiRes, 'phimapi');
   addItems(ophimRes, 'ophim');
+
+  if (tmdbSearchRes?.results) {
+    tmdbSearchRes.results.forEach((r: any) => {
+      if (r.media_type === 'movie' || r.media_type === 'tv') {
+        const title = r.name || r.title;
+        const originTitle = r.original_name || r.original_title;
+        allItems.push({
+          _id: `tmdb-${r.media_type}-${r.id}`,
+          name: title,
+          slug: `tmdb-${r.media_type}-${r.id}`,
+          origin_name: originTitle || title,
+          poster_url: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : "",
+          thumb_url: r.backdrop_path ? `https://image.tmdb.org/t/p/w500${r.backdrop_path}` : "",
+          year: r.first_air_date || r.release_date ? new Date(r.first_air_date || r.release_date).getFullYear() : 2024,
+          source: 'tmdb',
+          tmdb: {
+            type: r.media_type,
+            id: r.id
+          }
+        } as any);
+      }
+    });
+  }
 
   if (allItems.length === 0) return null;
 
@@ -400,6 +431,115 @@ export async function getDanhSach(
 export async function getChiTietPhim(
   slug: string
 ): Promise<ApiResponse<{ item: MovieDetail }> | null> {
+  const tmdbKey = process.env.TMDB_API_KEY;
+  if (slug.startsWith("tmdb-") && tmdbKey) {
+    const parts = slug.split("-");
+    const mediaType = parts[1]; // 'tv' or 'movie'
+    const tmdbId = parts[2];
+    
+    try {
+      const url = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}?api_key=${tmdbKey}&language=vi-VN`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json();
+      
+      const title = data.name || data.title;
+      const originTitle = data.original_name || data.original_title;
+      
+      const categoryList = data.genres?.map((g: any) => ({
+        id: g.id.toString(),
+        name: g.name,
+        slug: g.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+      })) || [];
+      
+      const countryList = data.production_countries?.map((c: any) => ({
+        id: c.iso_3166_1.toLowerCase(),
+        name: c.name,
+        slug: c.iso_3166_1.toLowerCase()
+      })) || [];
+
+      const primaryColor = "B20710"; // theme-primary red
+      const secondaryColor = "170000";
+      const iconColor = "B20710";
+      const icons = "vid";
+      
+      const serverEpisodes: any[] = [];
+      
+      if (mediaType === 'movie') {
+        serverEpisodes.push({
+          server_name: "Server Quốc tế (VidLink)",
+          server_data: [{
+            name: "Full",
+            slug: "full",
+            filename: "Full",
+            link: "",
+            link_embed: `https://vidlink.pro/movie/${tmdbId}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
+            link_m3u8: ""
+          }]
+        });
+      } else {
+        if (data.seasons && data.seasons.length > 0) {
+          data.seasons.forEach((season: any) => {
+            if (season.season_number > 0 && season.episode_count > 0) {
+              const seasonNum = season.season_number;
+              const server_data = Array.from({ length: season.episode_count }, (_, idx) => {
+                const epNum = idx + 1;
+                return {
+                  name: `Tập ${epNum}`,
+                  slug: `tap-${epNum}`,
+                  filename: `Tập ${epNum}`,
+                  link: "",
+                  link_embed: `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
+                  link_m3u8: ""
+                };
+              });
+              
+              serverEpisodes.push({
+                server_name: `Mùa ${seasonNum} (VidLink)`,
+                server_data
+              });
+            }
+          });
+        }
+      }
+
+      const movieDetail: MovieDetail = {
+        _id: slug,
+        name: title,
+        slug: slug,
+        origin_name: originTitle || title,
+        poster_url: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : "",
+        thumb_url: data.backdrop_path ? `https://image.tmdb.org/t/p/w1280${data.backdrop_path}` : "",
+        year: data.first_air_date || data.release_date ? new Date(data.first_air_date || data.release_date).getFullYear() : 2024,
+        quality: "HD",
+        lang: "Vietsub/Mutilsub",
+        time: data.episode_run_time ? `${data.episode_run_time[0] || ""} phút` : (data.runtime ? `${data.runtime} phút` : ""),
+        episode_current: mediaType === 'movie' ? "Full" : `Hoàn tất (${data.number_of_episodes || 0} tập)`,
+        episode_total: mediaType === 'movie' ? "1" : (data.number_of_episodes?.toString() || ""),
+        content: data.overview || "Chưa có tóm tắt tiếng Việt cho phim này.",
+        category: categoryList,
+        country: countryList,
+        director: [],
+        actor: [],
+        episodes: serverEpisodes,
+        tmdb: {
+          type: mediaType,
+          id: parseInt(tmdbId, 10),
+          vote_average: data.vote_average || 0,
+          vote_count: data.vote_count || 0
+        }
+      };
+      
+      return {
+        status: "success",
+        data: { item: movieDetail }
+      };
+    } catch (e) {
+      console.error("TMDB getChiTietPhim error:", e);
+      return null;
+    }
+  }
+
   const normalizeCompare = (s1: string | undefined, s2: string | undefined): boolean => {
     if (!s1 || !s2) return false;
     const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
