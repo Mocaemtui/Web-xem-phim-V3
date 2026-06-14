@@ -77,25 +77,58 @@ export async function getPhimMoi(
 ): Promise<ApiResponse<MovieListResponse> | null> {
   if (PRIMARY_SOURCE.id === 'phimapi') {
     try {
-      const res = await fetch(`https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${page}&limit=${limit}`, {
-        next: { revalidate: 3600 },
-        headers: {
-          'Accept': 'application/json'
+      // PhimAPI's phim-moi-cap-nhat endpoint ignores limit and always returns 10 items.
+      // We must fetch multiple pages to satisfy the requested limit.
+      const API_ITEMS_PER_PAGE = 10;
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      
+      const startApiPage = Math.floor(startIndex / API_ITEMS_PER_PAGE) + 1;
+      const endApiPage = Math.ceil(endIndex / API_ITEMS_PER_PAGE);
+      
+      const pagePromises = [];
+      for (let p = startApiPage; p <= endApiPage; p++) {
+        pagePromises.push(
+          fetch(`https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${p}`, {
+            next: { revalidate: 3600 },
+            headers: { 'Accept': 'application/json' }
+          }).then(res => res.json())
+        );
+      }
+      
+      const results = await Promise.all(pagePromises);
+      
+      let allItems: any[] = [];
+      let totalItems = 0;
+      
+      for (const data of results) {
+        if (data.status === true && data.items) {
+          allItems.push(...data.items);
+          if (data.pagination) {
+            totalItems = data.pagination.totalItems;
+          }
         }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === true) {
-          return {
-            status: "success",
-            data: {
-              items: data.items,
-              params: {
-                pagination: data.pagination
+      }
+      
+      const combinedStartIndex = (startApiPage - 1) * API_ITEMS_PER_PAGE;
+      const sliceStart = startIndex - combinedStartIndex;
+      const slicedItems = allItems.slice(sliceStart, sliceStart + limit);
+      
+      if (slicedItems.length > 0) {
+        return {
+          status: "success",
+          data: {
+            items: slicedItems,
+            params: {
+              pagination: {
+                totalItems: totalItems,
+                totalItemsPerPage: limit,
+                currentPage: page,
+                pageRanges: 1
               }
             }
-          } as any;
-        }
+          }
+        } as any;
       }
     } catch (e) {
       console.warn("PhimAPI getPhimMoi fetch failed:", e);
