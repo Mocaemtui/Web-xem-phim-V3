@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: typeof process !== "undefined" ? process.cwd() : undefined,
+  },
   images: {
     remotePatterns: [
       {

@@ -18,6 +18,7 @@ interface VideoPlayerProps {
   isWatchTogether?: boolean;
   isTheaterMode?: boolean;
   onError?: () => void;
+  playbackProgressKey?: string;
 }
 
 export default function VideoPlayer({
@@ -34,7 +35,8 @@ export default function VideoPlayer({
   onAutoNext,
   isWatchTogether,
   isTheaterMode,
-  onError
+  onError,
+  playbackProgressKey
 }: VideoPlayerProps) {
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const videoRef = externalVideoRef || internalVideoRef;
@@ -55,14 +57,8 @@ export default function VideoPlayer({
     type: "left" | "right";
   }>({ show: false, type: "left" });
 
-  // New Features States
-  const [ambientActive, setAmbientActive] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("ambient_active");
-      return saved !== "false";
-    }
-    return true;
-  });
+  // New Features States (Initialized to true, updated on mount to prevent Next.js hydration mismatches)
+  const [ambientActive, setAmbientActive] = useState(true);
 
   const handleAmbientToggle = () => {
     const nextVal = !ambientActive;
@@ -75,13 +71,7 @@ export default function VideoPlayer({
 
   const [showAutoNext, setShowAutoNext] = useState(false);
   const [autoNextCountdown, setAutoNextCountdown] = useState(5);
-  const [autoPlayNext, setAutoPlayNext] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("auto_play_next");
-      return saved !== "false";
-    }
-    return true;
-  });
+  const [autoPlayNext, setAutoPlayNext] = useState(true);
 
   const handleAutoPlayNextToggle = () => {
     const nextVal = !autoPlayNext;
@@ -99,6 +89,19 @@ export default function VideoPlayer({
   const isMountedRef = useRef(true);
   useEffect(() => {
     isMountedRef.current = true;
+    
+    // Load local storage states on mount to avoid hydration mismatch
+    try {
+      const savedAmbient = localStorage.getItem("ambient_active");
+      if (savedAmbient !== null) {
+        setAmbientActive(savedAmbient !== "false");
+      }
+      const savedAutoNext = localStorage.getItem("auto_play_next");
+      if (savedAutoNext !== null) {
+        setAutoPlayNext(savedAutoNext !== "false");
+      }
+    } catch {}
+
     return () => {
       isMountedRef.current = false;
     };
@@ -221,10 +224,10 @@ export default function VideoPlayer({
 
   // Load saved playback progress
   useEffect(() => {
-    if (!videoUrl || isWatchTogether) return;
+    const activeKey = playbackProgressKey || (videoUrl ? `playback_progress_${videoUrl}` : "");
+    if (!activeKey || isWatchTogether) return;
     try {
-      const key = `playback_progress_${videoUrl}`;
-      const saved = localStorage.getItem(key);
+      const saved = localStorage.getItem(activeKey);
       if (saved) {
         const parsed = parseFloat(saved);
         if (parsed > 10) {
@@ -253,7 +256,7 @@ export default function VideoPlayer({
     }
     setSavedTime(null);
     setShowResumePrompt(false);
-  }, [videoUrl, videoRef]);
+  }, [videoUrl, videoRef, playbackProgressKey]);
 
   // Prefetch next episode manifest when 90% through current video
   useEffect(() => {
@@ -454,10 +457,13 @@ export default function VideoPlayer({
     setDuration(video.duration || 0);
 
     // Save progress to localStorage every 5 seconds
-    if (videoUrl && Math.abs(time - lastSavedTimeRef.current) >= 5) {
+    if (Math.abs(time - lastSavedTimeRef.current) >= 5) {
       try {
-        localStorage.setItem(`playback_progress_${videoUrl}`, time.toString());
-        lastSavedTimeRef.current = time;
+        const activeKey = playbackProgressKey || (videoUrl ? `playback_progress_${videoUrl}` : "");
+        if (activeKey) {
+          localStorage.setItem(activeKey, time.toString());
+          lastSavedTimeRef.current = time;
+        }
       } catch (e) {
         // Quietly fail if localStorage is full or blocked
       }

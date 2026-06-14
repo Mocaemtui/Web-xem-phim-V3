@@ -8,6 +8,39 @@ interface PageProps {
   }>;
 }
 
+export async function generateMetadata({ params }: PageProps) {
+  const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
+  if (!decodedSlug || decodedSlug === "undefined") {
+    return {};
+  }
+
+  const movieData = await getChiTietPhim(decodedSlug);
+  if (!movieData || !movieData.data || !movieData.data.item) {
+    return {};
+  }
+
+  const movie = movieData.data.item;
+  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "Mocaemtui";
+  const title = `${movie.name} (${movie.year}) - Xem Phim ${movie.origin_name || ""} | ${siteName}`;
+  const description = `Xem phim ${movie.name} (${movie.origin_name || ""}) - ${movie.year} ${movie.quality || "HD"} ${movie.lang || "Vietsub"}. ${movie.content ? movie.content.replace(/<[^>]*>/g, "").slice(0, 150) + "..." : "Xem phim online miễn phí chất lượng cao."}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [
+        {
+          url: movie.thumb_url || movie.poster_url || "",
+          alt: movie.name,
+        },
+      ],
+    },
+  };
+}
+
 export default async function MoviePage({ params }: PageProps) {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);

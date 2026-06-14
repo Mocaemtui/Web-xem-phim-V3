@@ -10,6 +10,14 @@ interface PageProps {
   }>;
 }
 
+export async function generateMetadata() {
+  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "Mocaemtui";
+  return {
+    title: `Anime (Hoạt Hình Nhật Bản) Vietsub hay nhất | ${siteName}`,
+    description: `Xem phim Anime online vietsub mới nhất, cập nhật liên tục chất lượng cao, không giật lag.`,
+  };
+}
+
 export default async function AnimePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);

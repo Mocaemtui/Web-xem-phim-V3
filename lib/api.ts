@@ -135,18 +135,22 @@ const DEFAULT_POSTER = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/20
 const DEFAULT_BACKDROP = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="%2318181b"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="24">No Image</text></svg>';
 
 // Lấy ảnh dọc (Poster) - Ophim dùng thumb_url làm poster; PhimAPI dùng poster_url làm poster
-export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string }): string => {
+export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string; source?: string }): string => {
+  const isTmdb = movie.source === 'tmdb' || movie.thumb_url?.includes('tmdb.org') || movie.poster_url?.includes('tmdb.org');
   const isPhimApi = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
-  const url = isPhimApi
+  const useCorrect = isPhimApi || isTmdb;
+  const url = useCorrect
     ? resolveImgUrl(movie.poster_url || movie.thumb_url)
     : resolveImgUrl(movie.thumb_url || movie.poster_url);
   return url || DEFAULT_POSTER;
 };
 
 // Lấy ảnh ngang (Backdrop) - Ophim dùng poster_url làm backdrop; PhimAPI dùng thumb_url làm backdrop
-export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string }): string => {
+export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string; source?: string }): string => {
+  const isTmdb = movie.source === 'tmdb' || movie.thumb_url?.includes('tmdb.org') || movie.poster_url?.includes('tmdb.org');
   const isPhimApi = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
-  const url = isPhimApi
+  const useCorrect = isPhimApi || isTmdb;
+  const url = useCorrect
     ? resolveImgUrl(movie.thumb_url || movie.poster_url)
     : resolveImgUrl(movie.poster_url || movie.thumb_url);
   return url || DEFAULT_BACKDROP;
@@ -673,25 +677,40 @@ export async function getChiTietPhim(
               const seasonNum = season.season_number;
               const malId = animeMalIds[seasonNum];
               
-              const server_data = Array.from({ length: season.episode_count }, (_, idx) => {
+              if (malId) {
+                // Server Quốc tế Anime (MAL-based)
+                const anime_server_data = Array.from({ length: season.episode_count }, (_, idx) => {
+                  const epNum = idx + 1;
+                  return {
+                    name: `Tập ${epNum}`,
+                    slug: `tap-${epNum}`,
+                    filename: `Tập ${epNum}`,
+                    link: "",
+                    link_embed: `https://vidlink.pro/anime/${malId}/${epNum}/sub?fallback=true&primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
+                    link_m3u8: ""
+                  };
+                });
+                serverEpisodes.push({
+                  server_name: `Mùa ${seasonNum} (VidLink Anime)`,
+                  server_data: anime_server_data
+                });
+              }
+
+              // Server Quốc tế TV (TMDB-based)
+              const tv_server_data = Array.from({ length: season.episode_count }, (_, idx) => {
                 const epNum = idx + 1;
-                const embedUrl = malId 
-                  ? `https://vidlink.pro/anime/${malId}/${epNum}/sub?fallback=true&primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`
-                  : `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`;
-                
                 return {
                   name: `Tập ${epNum}`,
                   slug: `tap-${epNum}`,
                   filename: `Tập ${epNum}`,
                   link: "",
-                  link_embed: embedUrl,
+                  link_embed: `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
                   link_m3u8: ""
                 };
               });
-              
               serverEpisodes.push({
                 server_name: `Mùa ${seasonNum} (VidLink)`,
-                server_data
+                server_data: tv_server_data
               });
             }
           });
@@ -835,10 +854,9 @@ export async function getChiTietPhim(
     const isAnime = (baseMovie.type === 'hoathinh' || 
                     baseMovie.category?.some(c => c.name?.toLowerCase().includes('hoạt hình') || c.name?.toLowerCase().includes('anime')) || false) && hasJapan;
     
-    let vidLinkServerData: any[] = [];
     if (!isTv) {
       // Movie
-      vidLinkServerData = [{
+      const vidLinkServerData = [{
         name: "Full",
         slug: "full",
         filename: "Full",
@@ -846,6 +864,10 @@ export async function getChiTietPhim(
         link_embed: `https://vidlink.pro/movie/${tmdbId}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
         link_m3u8: ""
       }];
+      allEpisodes.push({
+        server_name: "Server Quốc tế (VidLink)",
+        server_data: vidLinkServerData
+      });
     } else {
       // TV Show - use the first available domestic server to get base episode names
       const baseServer = baseMovie.episodes?.[0] || (phimapiRes?.data?.item?.episodes?.[0] || ophimRes?.data?.item?.episodes?.[0]);
@@ -859,29 +881,40 @@ export async function getChiTietPhim(
           malId = animeMalIds[seasonNum];
         }
         
-        vidLinkServerData = baseServer.server_data.map((ep: any, idx: number) => {
+        if (malId) {
+          const animeServerData = baseServer.server_data.map((ep: any, idx: number) => {
+            const epNum = idx + 1;
+            return {
+              name: ep.name,
+              slug: ep.slug,
+              filename: ep.name,
+              link: "",
+              link_embed: `https://vidlink.pro/anime/${malId}/${epNum}/sub?fallback=true&primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
+              link_m3u8: ""
+            };
+          });
+          allEpisodes.push({
+            server_name: "Server Quốc tế (VidLink Anime)",
+            server_data: animeServerData
+          });
+        }
+
+        const tvServerData = baseServer.server_data.map((ep: any, idx: number) => {
           const epNum = idx + 1;
-          const embedUrl = malId 
-            ? `https://vidlink.pro/anime/${malId}/${epNum}/sub?fallback=true&primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`
-            : `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`;
-          
           return {
             name: ep.name,
             slug: ep.slug,
             filename: ep.name,
             link: "",
-            link_embed: embedUrl,
+            link_embed: `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
             link_m3u8: ""
           };
         });
+        allEpisodes.push({
+          server_name: "Server Quốc tế (VidLink)",
+          server_data: tvServerData
+        });
       }
-    }
-    
-    if (vidLinkServerData.length > 0) {
-      allEpisodes.push({
-        server_name: "Server Quốc tế (VidLink)",
-        server_data: vidLinkServerData
-      });
     }
   }
 

@@ -170,10 +170,10 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
         const { event: eventType, currentTime, duration } = eventData.data;
 
         if (currentServer?.server_name.includes("(VidLink)") && currentEpisode) {
-          const baseEmbedUrl = currentEpisode.link_embed;
+          const progressKey = `playback_progress_${movie.slug}_ep_${currentEpisodeIndex}`;
           if (eventType === "timeupdate" || eventType === "pause" || eventType === "seeked") {
             try {
-              localStorage.setItem(`playback_progress_${baseEmbedUrl}`, currentTime.toString());
+              localStorage.setItem(progressKey, currentTime.toString());
               
               saveWatchHistory(
                 movie,
@@ -187,7 +187,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
           
           if (eventType === "ended") {
             try {
-              localStorage.removeItem(`playback_progress_${baseEmbedUrl}`);
+              localStorage.removeItem(progressKey);
               if (currentEpisodeIndex < serverData.length - 1) {
                 setCurrentEpisodeIndex((prev) => prev + 1);
               }
@@ -224,7 +224,8 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
   let finalEmbedUrl = currentEpisode?.link_embed;
   if (currentServer?.server_name.includes("(VidLink)") && finalEmbedUrl) {
     if (typeof window !== "undefined") {
-      const savedProgress = localStorage.getItem(`playback_progress_${finalEmbedUrl}`);
+      const progressKey = `playback_progress_${movie.slug}_ep_${currentEpisodeIndex}`;
+      const savedProgress = localStorage.getItem(progressKey);
       if (savedProgress) {
         const seconds = Math.round(parseFloat(savedProgress));
         if (seconds > 10) {
@@ -261,6 +262,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
               poster=""
               videoUrl={playerMode === "hls" ? currentEpisode.link_m3u8 : undefined}
               embedUrl={finalEmbedUrl}
+              playbackProgressKey={`playback_progress_${movie.slug}_ep_${currentEpisodeIndex}`}
               onError={() => {
                 if (playerMode === "hls" && currentEpisode.link_embed) {
                   setPlayerMode("iframe");

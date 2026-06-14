@@ -465,7 +465,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
       const isHost = typeof window !== "undefined" && sessionStorage.getItem('host_' + roomId) === 'true';
       if (isHost) {
         promptedEpisodeRef.current = currentEpisode.link_m3u8;
-        const key = `playback_progress_${currentEpisode.link_m3u8}`;
+        const key = `playback_progress_${movie.slug}_ep_${currentEpisodeIndex}`;
         const saved = localStorage.getItem(key);
         if (saved) {
           const parsed = parseFloat(saved);
@@ -760,6 +760,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 externalVideoRef={videoRef}
                 poster=""
                 videoUrl={currentEpisode.link_m3u8}
+                playbackProgressKey={`playback_progress_${movie.slug}_ep_${currentEpisodeIndex}`}
                 nextVideoUrl={serverData[currentEpisodeIndex + 1]?.link_m3u8}
                 isWatchTogether={true}
                 isTheaterMode={isTheaterMode}
