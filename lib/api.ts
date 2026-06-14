@@ -131,33 +131,19 @@ export const resolveImgUrl = (url: string | undefined): string => {
   return finalUrl;
 };
 
-// Lấy ảnh dọc (Poster) - Ophim dùng thumb_url làm poster, PhimAPI và NguonC dùng poster_url làm poster
+// Lấy ảnh dọc (Poster) - Ophim và NguonC dùng thumb_url làm poster, PhimAPI dùng poster_url làm poster
 export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string }): string => {
-  const urls = [movie.thumb_url || "", movie.poster_url || ""];
-  const isPosterFirst = urls.some(url => 
-    url.includes('upload/') || 
-    url.includes('phimimg.com') || 
-    url.includes('nguonc.com') ||
-    url.startsWith('public/') ||
-    url.startsWith('/public/')
-  );
-  if (isPosterFirst) {
+  const isPhimApi = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
+  if (isPhimApi) {
     return resolveImgUrl(movie.poster_url || movie.thumb_url);
   }
   return resolveImgUrl(movie.thumb_url || movie.poster_url);
 };
 
-// Lấy ảnh ngang (Backdrop) - Ophim dùng poster_url làm backdrop, PhimAPI và NguonC dùng thumb_url làm backdrop
+// Lấy ảnh ngang (Backdrop) - Ophim và NguonC dùng poster_url làm backdrop, PhimAPI dùng thumb_url làm backdrop
 export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string }): string => {
-  const urls = [movie.thumb_url || "", movie.poster_url || ""];
-  const isPosterFirst = urls.some(url => 
-    url.includes('upload/') || 
-    url.includes('phimimg.com') || 
-    url.includes('nguonc.com') ||
-    url.startsWith('public/') ||
-    url.startsWith('/public/')
-  );
-  if (isPosterFirst) {
+  const isPhimApi = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
+  if (isPhimApi) {
     return resolveImgUrl(movie.thumb_url || movie.poster_url);
   }
   return resolveImgUrl(movie.poster_url || movie.thumb_url);
@@ -528,30 +514,37 @@ async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
 export async function getChiTietPhim(
   slug: string
 ): Promise<ApiResponse<{ item: MovieDetail }> | null> {
-  let [ophimRes, phimapiRes] = await Promise.all([
+  let [ophimRes, phimapiRes, nguonCMovie] = await Promise.all([
     fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 86400, MOVIE_SOURCES.OPHIM.url),
-    fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 86400, MOVIE_SOURCES.PHIMAPI.url)
+    fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 86400, MOVIE_SOURCES.PHIMAPI.url),
+    getChiTietPhimNguonC(slug)
   ]);
 
-  let baseMovie: MovieDetail | null = ophimRes?.data?.item || phimapiRes?.data?.item || null;
+  let baseMovie: MovieDetail | null = phimapiRes?.data?.item || nguonCMovie || ophimRes?.data?.item || null;
 
   // --- SMART CROSS-API MATCHING (FALLBACK) ---
   if (baseMovie) {
     const originName = baseMovie.origin_name || baseMovie.name;
     
-    if ((!ophimRes?.data?.item || !phimapiRes?.data?.item) && originName) {
+    if ((!ophimRes?.data?.item || !phimapiRes?.data?.item || !nguonCMovie) && originName) {
       // Step 1: Parallelize searches
-      const [searchOphim, searchPhimapi] = await Promise.all([
+      const [searchOphim, searchPhimapi, searchNguonc] = await Promise.all([
         !ophimRes?.data?.item 
           ? fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(originName)}`, 60, MOVIE_SOURCES.OPHIM.url) 
           : Promise.resolve(null),
         !phimapiRes?.data?.item 
           ? fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(originName)}`, 60, MOVIE_SOURCES.PHIMAPI.url) 
+          : Promise.resolve(null),
+        !nguonCMovie
+          ? fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(originName)}`)
+              .then(r => r.ok ? r.json() : null)
+              .catch(() => null)
           : Promise.resolve(null)
       ]);
 
       let fetchOphimPromise: Promise<ApiResponse<{ item: MovieDetail }> | null> | null = null;
       let fetchPhimapiPromise: Promise<ApiResponse<{ item: MovieDetail }> | null> | null = null;
+      let fetchNguoncPromise: Promise<MovieDetail | null> | null = null;
 
       if (searchOphim?.data?.items) {
         const match = searchOphim.data.items.find(m => 
@@ -571,15 +564,26 @@ export async function getChiTietPhim(
         }
       }
 
+      if (searchNguonc?.items) {
+        const match = searchNguonc.items.find((m: any) => 
+          (m.original_name?.toLowerCase() === originName.toLowerCase() || m.name?.toLowerCase() === originName.toLowerCase())
+        );
+        if (match && match.slug !== slug) {
+          fetchNguoncPromise = getChiTietPhimNguonC(match.slug);
+        }
+      }
+
       // Step 2: Parallelize detail fetches
-      if (fetchOphimPromise || fetchPhimapiPromise) {
-        const [fallbackOphim, fallbackPhimapi] = await Promise.all([
+      if (fetchOphimPromise || fetchPhimapiPromise || fetchNguoncPromise) {
+        const [fallbackOphim, fallbackPhimapi, fallbackNguonc] = await Promise.all([
           fetchOphimPromise || Promise.resolve(null),
-          fetchPhimapiPromise || Promise.resolve(null)
+          fetchPhimapiPromise || Promise.resolve(null),
+          fetchNguoncPromise || Promise.resolve(null)
         ]);
         
         if (fallbackOphim?.data?.item) ophimRes = fallbackOphim;
         if (fallbackPhimapi?.data?.item) phimapiRes = fallbackPhimapi;
+        if (fallbackNguonc) nguonCMovie = fallbackNguonc;
       }
     }
   }
@@ -588,51 +592,53 @@ export async function getChiTietPhim(
   const allEpisodes: any[] = [];
 
   if (phimapiRes?.data?.item) {
-    if (!baseMovie) baseMovie = phimapiRes.data.item;
     allEpisodes.push(...(phimapiRes.data.item.episodes?.map(e => ({ ...e, server_name: `PhimAPI - ${e.server_name}` })) || []));
   }
 
+  if (nguonCMovie) {
+    allEpisodes.push(...(nguonCMovie.episodes || []));
+  }
+
   if (ophimRes?.data?.item) {
-    if (!baseMovie) baseMovie = ophimRes.data.item;
     allEpisodes.push(...(ophimRes.data.item.episodes?.map(e => ({ ...e, server_name: `Ophim - ${e.server_name}` })) || []));
   }
 
-  // Fallback to NguonC server-side if movie is not found on Ophim and PhimAPI
-  if (!baseMovie) {
-    baseMovie = await getChiTietPhimNguonC(slug);
-    if (baseMovie) {
-      allEpisodes.push(...(baseMovie.episodes || []));
-    }
-  }
+  // Re-evaluate baseMovie based on priority: PhimAPI > NguonC > Ophim
+  baseMovie = phimapiRes?.data?.item || nguonCMovie || ophimRes?.data?.item || null;
 
   if (!baseMovie) return null;
 
-  // Re-evaluate baseMovie based on PRIMARY_SOURCE after potential fallbacks
-  if (PRIMARY_SOURCE.id === 'phimapi') {
-    baseMovie = phimapiRes?.data?.item || ophimRes?.data?.item || baseMovie;
-  } else {
-    baseMovie = ophimRes?.data?.item || phimapiRes?.data?.item || baseMovie;
-  }
-
-  // Swap primary and alternate images to prioritize PhimAPI
+  // Swap primary and alternate images to prioritize PhimAPI, then Ophim (since NguonC images might be broken)
   if (phimapiRes?.data?.item) {
     if (baseMovie !== phimapiRes.data.item) {
-      // Save Ophim's original images as alternates
-      baseMovie.alt_poster_url = baseMovie.poster_url; // Ophim backdrop
-      baseMovie.alt_thumb_url = baseMovie.thumb_url;   // Ophim poster
+      // Save original images as alternates
+      baseMovie.alt_poster_url = baseMovie.poster_url;
+      baseMovie.alt_thumb_url = baseMovie.thumb_url;
       
       // Set PhimAPI's images as primary
-      baseMovie.poster_url = phimapiRes.data.item.poster_url; // PhimAPI poster
-      baseMovie.thumb_url = phimapiRes.data.item.thumb_url;   // PhimAPI backdrop
+      baseMovie.poster_url = phimapiRes.data.item.poster_url;
+      baseMovie.thumb_url = phimapiRes.data.item.thumb_url;
     } else {
       if (ophimRes?.data?.item) {
         baseMovie.alt_poster_url = ophimRes.data.item.poster_url;
         baseMovie.alt_thumb_url = ophimRes.data.item.thumb_url;
+      } else if (nguonCMovie) {
+        baseMovie.alt_poster_url = nguonCMovie.poster_url;
+        baseMovie.alt_thumb_url = nguonCMovie.thumb_url;
       }
     }
-  } else if (ophimRes?.data?.item && baseMovie !== ophimRes.data.item) {
-    baseMovie.alt_poster_url = ophimRes.data.item.poster_url;
-    baseMovie.alt_thumb_url = ophimRes.data.item.thumb_url;
+  } else if (ophimRes?.data?.item) {
+    if (baseMovie !== ophimRes.data.item) {
+      // baseMovie is NguonC, but Ophim is available. Use Ophim images as primary because NguonC images might be broken
+      baseMovie.alt_poster_url = baseMovie.poster_url;
+      baseMovie.alt_thumb_url = baseMovie.thumb_url;
+      
+      baseMovie.poster_url = ophimRes.data.item.poster_url;
+      baseMovie.thumb_url = ophimRes.data.item.thumb_url;
+    } else if (nguonCMovie) {
+      baseMovie.alt_poster_url = nguonCMovie.poster_url;
+      baseMovie.alt_thumb_url = nguonCMovie.thumb_url;
+    }
   }
 
   baseMovie.episodes = sortEpisodes(allEpisodes);

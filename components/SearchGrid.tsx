@@ -248,24 +248,36 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       });
     };
 
-    // 1. Build a map of PhimAPI movies to use their images everywhere
-    const phimapiMap = new Map<string, ExtendedMovie>();
+    // 1. Build a map of fallback images prioritizing PhimAPI, then Ophim
+    const imageMap = new Map<string, { poster_url: string; thumb_url: string; source: string }>();
+    
+    // First, populate with Ophim images (lowest priority working images)
     movies.forEach(m => {
-      if (m.source === 'phimapi') {
-        phimapiMap.set(getSmartKey(m), m);
+      if (m.source === 'ophim' && m.poster_url && m.thumb_url) {
+        imageMap.set(getSmartKey(m), { poster_url: m.poster_url, thumb_url: m.thumb_url, source: 'ophim' });
+      }
+    });
+    
+    // Then, overwrite with PhimAPI images (highest priority working images)
+    movies.forEach(m => {
+      if (m.source === 'phimapi' && m.poster_url && m.thumb_url) {
+        imageMap.set(getSmartKey(m), { poster_url: m.poster_url, thumb_url: m.thumb_url, source: 'phimapi' });
       }
     });
 
-    // 2. Resolve movies (overwrite images with PhimAPI version if available)
+    // 2. Resolve movies (overwrite images with higher priority source if available)
     const resolvedMovies = movies.map(movie => {
       const key = getSmartKey(movie);
-      const phimapiMovie = phimapiMap.get(key);
-      if (phimapiMovie && movie.source !== 'phimapi') {
-        return {
-          ...movie,
-          poster_url: phimapiMovie.poster_url,
-          thumb_url: phimapiMovie.thumb_url,
-        };
+      const mappedImg = imageMap.get(key);
+      if (mappedImg && movie.source !== mappedImg.source) {
+        // If current source is NguonC, or if current is Ophim but mapped is PhimAPI
+        if (movie.source === 'nguonc' || (movie.source === 'ophim' && mappedImg.source === 'phimapi')) {
+          return {
+            ...movie,
+            poster_url: mappedImg.poster_url,
+            thumb_url: mappedImg.thumb_url,
+          };
+        }
       }
       return movie;
     });
