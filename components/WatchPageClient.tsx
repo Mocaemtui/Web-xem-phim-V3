@@ -19,6 +19,7 @@ interface NguonCEpisodeItem {
   name: string;
   slug: string;
   embed: string;
+  m3u8?: string;
 }
 
 interface NguonCEpisodeServer {
@@ -110,7 +111,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
               filename: item.name,
               link: "",
               link_embed: item.embed,
-              link_m3u8: "" // NguonC always empty for iframe fallback
+              link_m3u8: item.m3u8 || ""
             }))
           }));
           

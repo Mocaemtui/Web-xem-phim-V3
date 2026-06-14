@@ -401,11 +401,24 @@ interface NguonCEpisodeItem {
   name: string;
   slug: string;
   embed: string;
+  m3u8?: string;
 }
 
 interface NguonCEpisodeServer {
   server_name: string;
   items: NguonCEpisodeItem[];
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[đĐ]/g, "d")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
 }
 
 async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
@@ -422,6 +435,40 @@ async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
     if (!data || !data.movie) return null;
 
     const movie = data.movie;
+
+    // Parse categories (Thể loại)
+    const categoryList: any[] = [];
+    if (movie.category) {
+      const genres = movie.category["2"]?.list;
+      if (Array.isArray(genres)) {
+        genres.forEach((g: any) => {
+          categoryList.push({
+            id: g.id || Math.random().toString(),
+            name: g.name,
+            slug: g.name ? slugify(g.name) : ""
+          });
+        });
+      }
+    }
+
+    // Parse countries (Quốc gia)
+    const countryList: any[] = [];
+    if (movie.category) {
+      const countries = movie.category["4"]?.list;
+      if (Array.isArray(countries)) {
+        countries.forEach((c: any) => {
+          countryList.push({
+            id: c.id || Math.random().toString(),
+            name: c.name,
+            slug: c.name ? slugify(c.name) : ""
+          });
+        });
+      }
+    }
+
+    // Director and Actor lists
+    const directorList = movie.director ? movie.director.split(',').map((d: string) => d.trim()).filter(Boolean) : [];
+    const actorList = movie.casts ? movie.casts.split(',').map((a: string) => a.trim()).filter(Boolean) : [];
     
     const standardMovie: MovieDetail = {
       _id: movie.id || movie.slug,
@@ -430,13 +477,17 @@ async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
       origin_name: movie.original_name || movie.name,
       poster_url: movie.poster_url || "",
       thumb_url: movie.thumb_url || "",
-      year: movie.year || (movie.category && movie.category['3'] ? movie.category['3'].list[0]?.name : 2024),
+      year: movie.year || (movie.category && movie.category['3'] ? parseInt(movie.category['3'].list[0]?.name, 10) : 2024),
       quality: movie.quality || "HD",
       lang: movie.language || "Vietsub",
       time: movie.duration || "",
       episode_current: movie.current_episode || "",
       episode_total: movie.total_episodes?.toString() || "",
       content: movie.description || "",
+      category: categoryList,
+      country: countryList,
+      director: directorList,
+      actor: actorList,
       episodes: movie.episodes?.map((epServer: NguonCEpisodeServer) => ({
         server_name: `NguonC - ${epServer.server_name || "NguonC"}`,
         server_data: epServer.items?.map((ep: NguonCEpisodeItem) => ({
@@ -445,7 +496,7 @@ async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
           filename: ep.name,
           link: "",
           link_embed: ep.embed || "",
-          link_m3u8: "",
+          link_m3u8: ep.m3u8 || "",
         })) || []
       })) || []
     };
