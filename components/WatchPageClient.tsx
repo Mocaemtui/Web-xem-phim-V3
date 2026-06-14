@@ -36,6 +36,16 @@ import { useRouter } from "next/navigation";
 
 export default function WatchPageClient({ movie, posterUrl }: WatchPageClientProps) {
   const router = useRouter();
+  
+  const handleBack = () => {
+    const hasReferrer = typeof document !== 'undefined' && document.referrer && document.referrer.includes(window.location.host);
+    if (hasReferrer) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
+
   const [episodes, setEpisodes] = useState(sortEpisodes(movie.episodes || []));
   const [isLoadingNguonC, setIsLoadingNguonC] = useState(true);
   
@@ -219,21 +229,13 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
 
   const isSingleEpisode = currentEpisode?.name.toLowerCase().includes("full") || (episodes.length > 0 && serverData.length === 1 && currentEpisode?.name === "1");
 
-  const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.state && window.history.state.idx > 0) {
-      router.back();
-    } else {
-      router.push("/");
-    }
-  };
-
   return (
     <div className="min-h-screen bg-zinc-950 overflow-x-hidden">
       {/* Top Bar with Back Button */}
-      <div className="fixed top-20 left-4 z-50 pointer-events-none flex items-start">
+      <div className="fixed top-[76px] left-4 z-40 pointer-events-none flex items-start">
         <button 
           onClick={handleBack}
-          className="pointer-events-auto bg-black/70 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-colors border border-white/10 shadow-lg"
+          className="pointer-events-auto bg-black/60 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10 shadow-lg hover:scale-105 active:scale-95"
           title="Quay lại"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -136,7 +136,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
     const getSmartKey = (item: ExtendedMovie) => {
       const originName = item.origin_name || item.name || '';
       const normalizedOriginName = originName.toLowerCase().replace(/\s+/g, ' ').trim();
-      return `${normalizedOriginName}-${item.year || 'unknown'}`;
+      return `${normalizedOriginName}`;
     };
 
     const getRelevance = (movie: ExtendedMovie) => {
