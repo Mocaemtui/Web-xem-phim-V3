@@ -133,7 +133,14 @@ function FilterContent() {
     const phienBan = searchParams.get("phienBan") || undefined;
     const sortField = searchParams.get("sortField") || undefined;
     setFilters({ theLoai, quocGia, year, loaiPhim, phienBan, sortField });
-  }, [searchParams]);
+  }, [
+    searchParams.get("theLoai"),
+    searchParams.get("quocGia"),
+    searchParams.get("year"),
+    searchParams.get("loaiPhim"),
+    searchParams.get("phienBan"),
+    searchParams.get("sortField")
+  ]);
 
   const handleFilterChange = (newFilters: { theLoai?: string; quocGia?: string; year?: string; loaiPhim?: string; phienBan?: string; sortField?: string }) => {
     const params = new URLSearchParams();
@@ -145,15 +152,20 @@ function FilterContent() {
     if (newFilters.sortField) params.set("sortField", newFilters.sortField);
     
     setFilters(newFilters);
-    router.push(`/filter?${params.toString()}`, { scroll: false });
+    const queryString = params.toString();
+    router.push(queryString ? `/filter?${queryString}` : "/filter", { scroll: false });
     setCurrentPage(1);
   };
 
   useEffect(() => { fetchFilterData(); }, [fetchFilterData]);
   useEffect(() => {
     const p = searchParams.get('page');
-    if (p) setCurrentPage(parseInt(p, 10));
-  }, [searchParams]);
+    if (p) {
+      setCurrentPage(parseInt(p, 10));
+    } else {
+      setCurrentPage(1);
+    }
+  }, [searchParams.get('page')]);
   useEffect(() => { fetchMovies(currentPage); }, [fetchMovies, currentPage]);
 
   return (

@@ -62,7 +62,14 @@ export default function FilterPanel({ theLoaiList, quocGiaList, initialFilters, 
     if (initialFilters) {
       setSelectedFilters(initialFilters);
     }
-  }, [initialFilters]);
+  }, [
+    initialFilters?.theLoaiSlug,
+    initialFilters?.quocGiaSlug,
+    initialFilters?.year,
+    initialFilters?.loaiPhim,
+    initialFilters?.phienBan,
+    initialFilters?.sortField
+  ]);
 
   const handleFilterSelect = (
     type: keyof typeof selectedFilters,
