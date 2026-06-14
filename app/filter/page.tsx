@@ -28,6 +28,15 @@ const DANH_MUC_LIST = [
 function FilterContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const handleBack = () => {
+    const hasReferrer = typeof document !== 'undefined' && document.referrer && document.referrer.includes(window.location.host);
+    if (hasReferrer) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
   const [movies, setMovies] = useState<MovieListResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -145,7 +154,19 @@ function FilterContent() {
   useEffect(() => { fetchMovies(currentPage); }, [fetchMovies, currentPage]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 pl-16 md:pl-4">
+      {/* Top Bar with Back Button */}
+      <div className="fixed top-[76px] left-4 z-40 pointer-events-none flex items-start">
+        <button 
+          onClick={handleBack}
+          className="pointer-events-auto bg-black/60 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10 shadow-lg hover:scale-105 active:scale-95"
+          title="Quay lại"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
       <div className="mb-6">
         <FilterPanel
           theLoaiList={theLoaiList}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import MovieCardWrapper from "@/components/MovieCardWrapper";
 import type { Movie } from "@/types/api";
 
@@ -26,6 +27,17 @@ interface SearchGridProps {
 }
 
 export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) {
+  const router = useRouter();
+  
+  const handleBack = () => {
+    const hasReferrer = typeof document !== 'undefined' && document.referrer && document.referrer.includes(window.location.host);
+    if (hasReferrer) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
+
   const [movies, setMovies] = useState<ExtendedMovie[]>(initialMovies);
   const [isLoadingNguonC, setIsLoadingNguonC] = useState(true);
   const [selectedSource, setSelectedSource] = useState<string>("all");
@@ -339,6 +351,18 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
   if (filteredMovies.length === 0 && !isLoadingNguonC) {
     return (
       <div>
+        {/* Top Bar with Back Button */}
+        <div className="fixed top-[76px] left-4 z-40 pointer-events-none flex items-start">
+          <button 
+            onClick={handleBack}
+            className="pointer-events-auto bg-black/60 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10 shadow-lg hover:scale-105 active:scale-95"
+            title="Quay lại"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </div>
         {/* Source Filter Tabs */}
         <div className="flex flex-wrap gap-2 mb-8 justify-center sm:justify-start">
           {sourceFilters.map((tab) => (
@@ -366,6 +390,18 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
   return (
     <div>
+      {/* Top Bar with Back Button */}
+      <div className="fixed top-[76px] left-4 z-40 pointer-events-none flex items-start">
+        <button 
+          onClick={handleBack}
+          className="pointer-events-auto bg-black/60 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10 shadow-lg hover:scale-105 active:scale-95"
+          title="Quay lại"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
       {/* Source Filter Tabs */}
       <div className="flex flex-wrap gap-2 mb-8 justify-center sm:justify-start">
         {sourceFilters.map((tab) => (

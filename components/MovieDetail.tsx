@@ -157,12 +157,21 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
         // --- SMART CROSS-API MATCHING (FALLBACK) ---
         if (!data?.movie?.episodes && active) {
           const originName = movie.origin_name || movie.name;
+          const movieName = movie.name;
           if (originName) {
             const searchRes = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(originName)}`);
             if (searchRes.ok && active) {
               const searchData = await searchRes.json();
+              const normalizeCompare = (s1: string | undefined, s2: string | undefined): boolean => {
+                if (!s1 || !s2) return false;
+                const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+                return clean(s1) === clean(s2);
+              };
               const match = searchData?.items?.find((m: { original_name?: string; name?: string; slug: string }) => 
-                (m.original_name?.toLowerCase() === originName.toLowerCase() || m.name?.toLowerCase() === originName.toLowerCase())
+                normalizeCompare(m.original_name, originName) || 
+                normalizeCompare(m.name, originName) ||
+                normalizeCompare(m.original_name, movieName) ||
+                normalizeCompare(m.name, movieName)
               );
               if (match && match.slug !== movie.slug && active) {
                 res = await fetch(`https://phim.nguonc.com/api/film/${match.slug}`);

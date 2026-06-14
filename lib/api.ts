@@ -514,6 +514,12 @@ async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
 export async function getChiTietPhim(
   slug: string
 ): Promise<ApiResponse<{ item: MovieDetail }> | null> {
+  const normalizeCompare = (s1: string | undefined, s2: string | undefined): boolean => {
+    if (!s1 || !s2) return false;
+    const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+    return clean(s1) === clean(s2);
+  };
+
   let [ophimRes, phimapiRes, nguonCMovie] = await Promise.all([
     fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 86400, MOVIE_SOURCES.OPHIM.url),
     fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 86400, MOVIE_SOURCES.PHIMAPI.url),
@@ -525,6 +531,7 @@ export async function getChiTietPhim(
   // --- SMART CROSS-API MATCHING (FALLBACK) ---
   if (baseMovie) {
     const originName = baseMovie.origin_name || baseMovie.name;
+    const movieName = baseMovie.name;
     
     if ((!ophimRes?.data?.item || !phimapiRes?.data?.item || !nguonCMovie) && originName) {
       // Step 1: Parallelize searches
@@ -548,7 +555,10 @@ export async function getChiTietPhim(
 
       if (searchOphim?.data?.items) {
         const match = searchOphim.data.items.find(m => 
-          (m.origin_name?.toLowerCase() === originName.toLowerCase() || m.name?.toLowerCase() === originName.toLowerCase())
+          normalizeCompare(m.origin_name, originName) || 
+          normalizeCompare(m.name, originName) ||
+          normalizeCompare(m.origin_name, movieName) ||
+          normalizeCompare(m.name, movieName)
         );
         if (match && match.slug !== slug) {
           fetchOphimPromise = fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${match.slug}`, 86400, MOVIE_SOURCES.OPHIM.url);
@@ -557,7 +567,10 @@ export async function getChiTietPhim(
 
       if (searchPhimapi?.data?.items) {
         const match = searchPhimapi.data.items.find(m => 
-          (m.origin_name?.toLowerCase() === originName.toLowerCase() || m.name?.toLowerCase() === originName.toLowerCase())
+          normalizeCompare(m.origin_name, originName) || 
+          normalizeCompare(m.name, originName) ||
+          normalizeCompare(m.origin_name, movieName) ||
+          normalizeCompare(m.name, movieName)
         );
         if (match && match.slug !== slug) {
           fetchPhimapiPromise = fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${match.slug}`, 86400, MOVIE_SOURCES.PHIMAPI.url);
@@ -566,7 +579,10 @@ export async function getChiTietPhim(
 
       if (searchNguonc?.items) {
         const match = searchNguonc.items.find((m: any) => 
-          (m.original_name?.toLowerCase() === originName.toLowerCase() || m.name?.toLowerCase() === originName.toLowerCase())
+          normalizeCompare(m.original_name, originName) || 
+          normalizeCompare(m.name, originName) ||
+          normalizeCompare(m.original_name, movieName) ||
+          normalizeCompare(m.name, movieName)
         );
         if (match && match.slug !== slug) {
           fetchNguoncPromise = getChiTietPhimNguonC(match.slug);
