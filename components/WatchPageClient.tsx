@@ -224,6 +224,19 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
     }
   }, [movie, currentEpisode, currentServerIndex, currentEpisodeIndex, isRestored]);
 
+  const [playerMode, setPlayerMode] = useState<"hls" | "iframe">("hls");
+
+  // Auto set player mode based on active server: default NguonC to iframe, others to HLS
+  useEffect(() => {
+    const currentServer = episodes[currentServerIndex];
+    if (currentServer) {
+      const isNguonC = currentServer.server_name.toLowerCase().includes("nguonc") || 
+                       currentServer.server_name.toLowerCase().includes("nguồn c") ||
+                       currentServer.server_name.toLowerCase().includes("nguon c");
+      setPlayerMode(isNguonC ? "iframe" : "hls");
+    }
+  }, [currentServerIndex, episodes]);
+
   const handleEpisodeSelect = (episodeIndex: number) => {
     setCurrentServerIndex(selectedServerIndex);
     setCurrentEpisodeIndex(episodeIndex);
@@ -247,7 +260,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
       <div className="fixed top-[76px] left-4 z-40 pointer-events-none flex items-start">
         <button 
           onClick={handleBack}
-          className="pointer-events-auto bg-black/60 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10 shadow-lg hover:scale-105 active:scale-95"
+          className="pointer-events-auto opacity-100 md:opacity-0 md:hover:opacity-100 bg-black/60 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10 shadow-lg hover:scale-105 active:scale-95 duration-300"
           title="Quay lại"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,9 +275,9 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
         <div className="mb-8 relative z-10 w-full aspect-video">
           {currentEpisode ? (
             <VideoPlayer
-              key={`${currentServerIndex}-${currentEpisodeIndex}`}
+              key={`${currentServerIndex}-${currentEpisodeIndex}-${playerMode}`}
               poster={posterUrl}
-              videoUrl={currentEpisode.link_m3u8}
+              videoUrl={playerMode === "hls" ? currentEpisode.link_m3u8 : undefined}
               embedUrl={currentEpisode.link_embed}
               hasNextEpisode={currentEpisodeIndex < serverData.length - 1}
               nextVideoUrl={serverData[currentEpisodeIndex + 1]?.link_m3u8}
@@ -283,6 +296,44 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
             </div>
           )}
         </div>
+
+        {/* Player Mode Switcher (Modern glassmorphic tabs) */}
+        {currentEpisode && (currentEpisode.link_m3u8 || currentEpisode.link_embed) && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 p-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl backdrop-blur-md animate-in fade-in duration-300">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Chế độ phát</span>
+            </div>
+            <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-900">
+              <button
+                onClick={() => setPlayerMode("hls")}
+                disabled={!currentEpisode.link_m3u8}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  !currentEpisode.link_m3u8 
+                    ? "opacity-40 cursor-not-allowed text-zinc-600" 
+                    : playerMode === "hls"
+                      ? "bg-blue-600 text-white shadow-md cursor-pointer"
+                      : "text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                }`}
+              >
+                Trình phát HLS (Nâng cao)
+              </button>
+              <button
+                onClick={() => setPlayerMode("iframe")}
+                disabled={!currentEpisode.link_embed}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  !currentEpisode.link_embed 
+                    ? "opacity-40 cursor-not-allowed text-zinc-600" 
+                    : playerMode === "iframe"
+                      ? "bg-blue-600 text-white shadow-md cursor-pointer"
+                      : "text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                }`}
+              >
+                Trình phát Iframe (Dự phòng)
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Movie Info (Below Video Player) */}
         <div className="mb-6">
