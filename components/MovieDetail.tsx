@@ -138,6 +138,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
 
   const [historyItem, setHistoryItem] = useState<any>(null);
   const [episodes, setEpisodes] = useState(sortEpisodes(movie.episodes || []));
+  const [currentOriginName, setCurrentOriginName] = useState(movie.origin_name);
 
   useEffect(() => {
     const history = getWatchHistory();
@@ -146,7 +147,8 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
     setEpisodes(sortEpisodes(movie.episodes || []));
     setNguonCBackdrop(null);
     setNguonCPoster(null);
-  }, [movie.slug, movie.episodes]);
+    setCurrentOriginName(movie.origin_name);
+  }, [movie.slug, movie.origin_name, movie.episodes]);
 
   // Client-side fetch for NguonC to bypass Vercel DataCenter Cloudflare blocks
   useEffect(() => {
@@ -186,6 +188,9 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
         if (active && data?.movie) {
           if (data.movie.poster_url) setNguonCBackdrop(data.movie.poster_url);
           if (data.movie.thumb_url) setNguonCPoster(data.movie.thumb_url);
+          if (data.movie.original_name && (!movie.origin_name || movie.origin_name === movie.name)) {
+            setCurrentOriginName(data.movie.original_name);
+          }
         }
 
         if (active && data?.movie?.episodes) {
@@ -292,8 +297,8 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
                 {movie.name}
               </h1>
-              {movie.origin_name && (
-                <p className="text-lg text-zinc-400">{movie.origin_name}</p>
+              {currentOriginName && (
+                <p className="text-lg text-zinc-400">{currentOriginName}</p>
               )}
             </div>
 

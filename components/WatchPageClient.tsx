@@ -58,6 +58,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
   const [selectedServerIndex, setSelectedServerIndex] = useState(currentServerIndex);
   const [isRestored, setIsRestored] = useState(false);
+  const [currentOriginName, setCurrentOriginName] = useState(movie.origin_name);
 
   // Reset trạng thái khi chuyển phim mới
   useEffect(() => {
@@ -79,7 +80,8 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
     }
     setCurrentServerIndex(initialIdx);
     setSelectedServerIndex(initialIdx);
-  }, [movie.slug, movie.episodes]);
+    setCurrentOriginName(movie.origin_name);
+  }, [movie.slug, movie.origin_name, movie.episodes]);
 
   // Client-side fetch for NguonC to bypass Vercel DataCenter Cloudflare blocks
   useEffect(() => {
@@ -113,6 +115,12 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
                 data = res.ok ? await res.json() : null;
               }
             }
+          }
+        }
+        
+        if (active && data?.movie) {
+          if (data.movie.original_name && (!movie.origin_name || movie.origin_name === movie.name)) {
+            setCurrentOriginName(data.movie.original_name);
           }
         }
         
@@ -284,8 +292,8 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
               : `${movie.name} - ${currentEpisode?.name.toLowerCase().includes("tập") ? currentEpisode.name : `Tập ${currentEpisode?.name || currentEpisodeIndex + 1}`}`
             }
           </h1>
-          {movie.origin_name && (
-            <p className="text-lg text-zinc-400 mb-4">{movie.origin_name}</p>
+          {currentOriginName && (
+            <p className="text-lg text-zinc-400 mb-4">{currentOriginName}</p>
           )}
 
           <div className="flex flex-wrap gap-3 text-sm mb-4">
