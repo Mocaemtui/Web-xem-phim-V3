@@ -144,6 +144,7 @@ function FilterContent() {
     if (newFilters.phienBan) params.set("phienBan", newFilters.phienBan);
     if (newFilters.sortField) params.set("sortField", newFilters.sortField);
     
+    setFilters(newFilters);
     router.push(`/filter?${params.toString()}`, { scroll: false });
     setCurrentPage(1);
   };
