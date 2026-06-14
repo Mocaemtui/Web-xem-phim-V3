@@ -242,15 +242,19 @@ export async function getPhimTrung(
 export async function searchPhim(
   keyword: string
 ): Promise<ApiResponse<MovieListResponse> | null> {
-  const endpoint = `/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}`;
   const cleanKeyword = keyword.trim();
-  const isImdbId = /^tt\d+$/.test(cleanKeyword);
+  const imdbMatch = cleanKeyword.match(/tt\d{7,10}/i);
+  const isImdbId = !!imdbMatch;
+  const imdbId = isImdbId ? imdbMatch[0].toLowerCase() : '';
+  
+  const searchKeyword = isImdbId ? imdbId : cleanKeyword;
+  const endpoint = `/v1/api/tim-kiem?keyword=${encodeURIComponent(searchKeyword)}`;
   
   const tmdbKey = process.env.TMDB_API_KEY;
   let tmdbPromise: Promise<any>;
   if (tmdbKey) {
     if (isImdbId) {
-      tmdbPromise = fetch(`${TMDB_API_BASE_URL}/3/find/${cleanKeyword}?api_key=${tmdbKey}&external_source=imdb_id&language=vi-VN`)
+      tmdbPromise = fetch(`${TMDB_API_BASE_URL}/3/find/${imdbId}?api_key=${tmdbKey}&external_source=imdb_id&language=vi-VN`)
         .then(r => r.ok ? r.json() : null)
         .catch(() => null);
     } else {
@@ -372,8 +376,12 @@ export async function searchPhimWithPagination(
   keyword: string,
   options: { page?: number; limit?: number } = {}
 ): Promise<ApiResponse<MovieListResponse> | null> {
+  const cleanKeyword = keyword.trim();
+  const imdbMatch = cleanKeyword.match(/tt\d{7,10}/i);
+  const searchKeyword = imdbMatch ? imdbMatch[0].toLowerCase() : cleanKeyword;
+
   const params = new URLSearchParams();
-  params.append('keyword', keyword);
+  params.append('keyword', searchKeyword);
   if (options.page !== undefined) params.append('page', options.page.toString());
   if (options.limit !== undefined) params.append('limit', options.limit.toString());
   const endpoint = `/v1/api/tim-kiem?${params.toString()}`;
