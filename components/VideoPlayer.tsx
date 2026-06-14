@@ -17,6 +17,7 @@ interface VideoPlayerProps {
   onAutoNext?: () => void;
   isWatchTogether?: boolean;
   isTheaterMode?: boolean;
+  onError?: () => void;
 }
 
 export default function VideoPlayer({
@@ -32,7 +33,8 @@ export default function VideoPlayer({
   nextVideoUrl,
   onAutoNext,
   isWatchTogether,
-  isTheaterMode
+  isTheaterMode,
+  onError
 }: VideoPlayerProps) {
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const videoRef = externalVideoRef || internalVideoRef;
@@ -309,12 +311,14 @@ export default function VideoPlayer({
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
               if (hls) hls.startLoad();
+              if (onError) onError();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
               if (hls) hls.recoverMediaError();
               break;
             default:
               if (hls) hls.destroy();
+              if (onError) onError();
               break;
           }
         }
@@ -698,6 +702,9 @@ export default function VideoPlayer({
               poster={poster}
               crossOrigin="anonymous"
               controls={isMobile}
+              onError={() => {
+                if (onError) onError();
+              }}
               onTouchStart={(e) => {
                 // Double Tap to Seek on Mobile
                 const touch = e.touches[0];

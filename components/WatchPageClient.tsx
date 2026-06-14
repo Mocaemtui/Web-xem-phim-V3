@@ -286,6 +286,12 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
                   setCurrentEpisodeIndex((prev) => prev + 1);
                 }
               }}
+              onError={() => {
+                if (playerMode === "hls" && currentEpisode.link_embed) {
+                  console.log("HLS playback failed, auto fallback to Iframe");
+                  setPlayerMode("iframe");
+                }
+              }}
             />
           ) : (
             <div className="relative w-full aspect-video bg-zinc-900 rounded-lg flex items-center justify-center">
@@ -296,44 +302,6 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
             </div>
           )}
         </div>
-
-        {/* Player Mode Switcher (Modern glassmorphic tabs) */}
-        {currentEpisode && (currentEpisode.link_m3u8 || currentEpisode.link_embed) && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 p-3 bg-zinc-900/40 border border-zinc-800/40 rounded-xl backdrop-blur-md animate-in fade-in duration-300">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Chế độ phát</span>
-            </div>
-            <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-900">
-              <button
-                onClick={() => setPlayerMode("hls")}
-                disabled={!currentEpisode.link_m3u8}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  !currentEpisode.link_m3u8 
-                    ? "opacity-40 cursor-not-allowed text-zinc-600" 
-                    : playerMode === "hls"
-                      ? "bg-blue-600 text-white shadow-md cursor-pointer"
-                      : "text-zinc-400 hover:text-zinc-200 cursor-pointer"
-                }`}
-              >
-                Trình phát HLS (Nâng cao)
-              </button>
-              <button
-                onClick={() => setPlayerMode("iframe")}
-                disabled={!currentEpisode.link_embed}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  !currentEpisode.link_embed 
-                    ? "opacity-40 cursor-not-allowed text-zinc-600" 
-                    : playerMode === "iframe"
-                      ? "bg-blue-600 text-white shadow-md cursor-pointer"
-                      : "text-zinc-400 hover:text-zinc-200 cursor-pointer"
-                }`}
-              >
-                Trình phát Iframe (Dự phòng)
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Movie Info (Below Video Player) */}
         <div className="mb-6">

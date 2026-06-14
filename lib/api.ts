@@ -132,19 +132,33 @@ export const resolveImgUrl = (url: string | undefined): string => {
   return finalUrl;
 };
 
-// Lấy ảnh dọc (Poster) - Ophim và NguonC dùng thumb_url làm poster, PhimAPI dùng poster_url làm poster
+// Lấy ảnh dọc (Poster) - Ophim dùng thumb_url làm poster, PhimAPI và NguonC dùng poster_url làm poster
 export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string }): string => {
-  const isPhimApi = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
-  if (isPhimApi) {
+  const url = movie.thumb_url || movie.poster_url || "";
+  const isStandard = 
+    url.includes('upload/') || 
+    url.includes('phimimg.com') || 
+    url.includes('nguonc.com') || 
+    url.startsWith('public/') || 
+    url.startsWith('/public/');
+    
+  if (isStandard) {
     return resolveImgUrl(movie.poster_url || movie.thumb_url);
   }
   return resolveImgUrl(movie.thumb_url || movie.poster_url);
 };
 
-// Lấy ảnh ngang (Backdrop) - Ophim và NguonC dùng poster_url làm backdrop, PhimAPI dùng thumb_url làm backdrop
+// Lấy ảnh ngang (Backdrop) - Ophim dùng poster_url làm backdrop, PhimAPI và NguonC dùng thumb_url làm backdrop
 export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string }): string => {
-  const isPhimApi = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
-  if (isPhimApi) {
+  const url = movie.thumb_url || movie.poster_url || "";
+  const isStandard = 
+    url.includes('upload/') || 
+    url.includes('phimimg.com') || 
+    url.includes('nguonc.com') || 
+    url.startsWith('public/') || 
+    url.startsWith('/public/');
+    
+  if (isStandard) {
     return resolveImgUrl(movie.thumb_url || movie.poster_url);
   }
   return resolveImgUrl(movie.poster_url || movie.thumb_url);
