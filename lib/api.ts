@@ -13,6 +13,7 @@ import type {
 import { MOVIE_SOURCES, PRIMARY_SOURCE } from "./sources";
 
 const API_BASE_URL = PRIMARY_SOURCE.url;
+const TMDB_API_BASE_URL = process.env.TMDB_API_BASE_URL || "https://api.themoviedb.org";
 
 export async function fetchAPI<T>(
   endpoint: string,
@@ -249,11 +250,11 @@ export async function searchPhim(
   let tmdbPromise: Promise<any>;
   if (tmdbKey) {
     if (isImdbId) {
-      tmdbPromise = fetch(`https://api.themoviedb.org/3/find/${cleanKeyword}?api_key=${tmdbKey}&external_source=imdb_id&language=vi-VN`)
+      tmdbPromise = fetch(`${TMDB_API_BASE_URL}/3/find/${cleanKeyword}?api_key=${tmdbKey}&external_source=imdb_id&language=vi-VN`)
         .then(r => r.ok ? r.json() : null)
         .catch(() => null);
     } else {
-      tmdbPromise = fetch(`https://api.themoviedb.org/3/search/multi?api_key=${tmdbKey}&query=${encodeURIComponent(keyword)}&language=vi-VN`)
+      tmdbPromise = fetch(`${TMDB_API_BASE_URL}/3/search/multi?api_key=${tmdbKey}&query=${encodeURIComponent(keyword)}&language=vi-VN`)
         .then(r => r.ok ? r.json() : null)
         .catch(() => null);
     }
@@ -623,7 +624,7 @@ export async function getChiTietPhim(
     const tmdbId = parts[2];
     
     try {
-      const url = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}?api_key=${tmdbKey}&language=vi-VN`;
+      const url = `${TMDB_API_BASE_URL}/3/${mediaType}/${tmdbId}?api_key=${tmdbKey}&language=vi-VN`;
       const res = await fetch(url);
       if (!res.ok) return null;
       const data = await res.json();
