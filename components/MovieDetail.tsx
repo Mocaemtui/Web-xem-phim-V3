@@ -109,6 +109,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   const [historyItem, setHistoryItem] = useState<any>(null);
   const [episodes, setEpisodes] = useState(sortEpisodes(movie.episodes || []));
   const [currentOriginName, setCurrentOriginName] = useState(movie.origin_name);
+  const [watchedEpisodes, setWatchedEpisodes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const history = getWatchHistory();
@@ -118,6 +119,13 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
     const sortedEps = sortEpisodes(movie.episodes || []);
     setEpisodes(sortedEps);
     setCurrentOriginName(movie.origin_name);
+
+    try {
+      const stored = localStorage.getItem("watched_episodes_v3");
+      if (stored) {
+        setWatchedEpisodes(new Set(JSON.parse(stored)));
+      }
+    } catch {}
   }, [movie.slug, movie.origin_name, movie.episodes]);
 
 
@@ -401,15 +409,19 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                     <p className="text-zinc-400 mb-2 font-medium">{server.server_name}</p>
                     <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                       {server.server_data?.map((episode: any, idx: number) => {
-                        const isWatched = historyItem?.currentServerIndex === sIdx && historyItem?.currentEpisodeIndex === idx;
+                        const epKey = `${movie.slug}_${episode.name}`;
+                        const isCurrentlyWatching = historyItem?.currentServerIndex === sIdx && historyItem?.currentEpisodeIndex === idx;
+                        const isWatched = watchedEpisodes.has(epKey);
                         return (
                           <Link
                             key={`${episode.slug}-${idx}`}
                             href={`/xem-phim/${movie.slug}?tap=${idx + 1}&server=${sIdx}`}
                             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-center cursor-pointer border ${
-                              isWatched 
+                              isCurrentlyWatching 
                                 ? "bg-red-600 text-white border-red-500 shadow-md shadow-red-900/20" 
-                                : "bg-zinc-900 hover:bg-red-600 text-zinc-300 hover:text-white border-transparent"
+                                : isWatched
+                                  ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20 hover:bg-emerald-900/40"
+                                  : "bg-zinc-900 hover:bg-red-600 text-zinc-300 hover:text-white border-transparent"
                             }`}
                           >
                             {episode.name}

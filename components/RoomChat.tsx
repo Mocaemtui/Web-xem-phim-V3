@@ -14,6 +14,7 @@ export default function RoomChat({ messages, typingUsers, onSendMessage, onTypin
   const [text, setText] = useState('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -30,11 +31,16 @@ export default function RoomChat({ messages, typingUsers, onSendMessage, onTypin
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setText(e.target.value);
-    onTyping(true);
+    
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      onTyping(true);
+    }
 
     // Clear typing state after 2s of inactivity
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
       onTyping(false);
     }, 2000);
   };
@@ -51,6 +57,7 @@ export default function RoomChat({ messages, typingUsers, onSendMessage, onTypin
     if (text.trim()) {
       onSendMessage(text);
       setText('');
+      isTypingRef.current = false;
       onTyping(false);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     }

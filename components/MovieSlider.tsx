@@ -41,7 +41,7 @@ export default function MovieSlider({ movies }: MovieSliderProps) {
       {/* Scrollable Container (CSS Snap Scroll, no JS loops) */}
       <div
         ref={sliderRef}
-        className="flex overflow-x-auto no-scrollbar gap-4 pb-6 scroll-smooth snap-x snap-mandatory"
+        className="flex overflow-x-auto overflow-y-visible no-scrollbar gap-4 pb-6 pt-6 px-2 -mx-2 scroll-smooth snap-x snap-mandatory"
       >
         {items.map((movie) => (
           <div

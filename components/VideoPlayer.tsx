@@ -82,8 +82,6 @@ export default function VideoPlayer({
   };
   
   // Progress Save & Resume Watch
-  const [savedTime, setSavedTime] = useState<number | null>(null);
-  const [showResumePrompt, setShowResumePrompt] = useState(false);
   const lastSavedTimeRef = useRef(0);
   const [showIframe, setShowIframe] = useState(false);
   
@@ -252,11 +250,7 @@ export default function VideoPlayer({
           }
         }
       }
-    } catch (e) {
-      console.warn("Could not load playback progress", e);
-    }
-    setSavedTime(null);
-    setShowResumePrompt(false);
+    } catch (e) {}
   }, [videoUrl, videoRef, playbackProgressKey]);
 
   // Prefetch next episode manifest when 90% through current video
@@ -273,16 +267,6 @@ export default function VideoPlayer({
       }
     }
   }, [currentTime, duration, nextVideoUrl]);
-
-  const handleResumePlayback = () => {
-    const video = videoRef.current;
-    if (video && savedTime) {
-      video.currentTime = savedTime;
-      setCurrentTime(savedTime);
-      video.play().catch(() => {});
-    }
-    setShowResumePrompt(false);
-  };
 
   // Setup HLS / Stream source
   useEffect(() => {
@@ -877,29 +861,7 @@ export default function VideoPlayer({
           </div>
         )}
 
-        {/* Resume Playback Prompt */}
-        {showResumePrompt && savedTime && (
-          <div className="absolute bottom-20 left-4 bg-zinc-950/90 border border-zinc-800 text-white px-4 py-3 rounded-xl shadow-2xl z-30 flex items-center gap-3 backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-2">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider">Xem dở lần trước</span>
-              <span className="text-xs font-semibold text-white">Xem tiếp từ {formatTime(savedTime)}?</span>
-            </div>
-            <div className="flex items-center gap-1.5 ml-2">
-              <button
-                onClick={handleResumePlayback}
-                className="bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer active:scale-95 shadow-md"
-              >
-                Xem tiếp
-              </button>
-              <button
-                onClick={() => setShowResumePrompt(false)}
-                className="bg-zinc-850 hover:bg-zinc-800 text-zinc-300 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer active:scale-95 border border-zinc-700/50"
-              >
-                Bỏ qua
-              </button>
-            </div>
-          </div>
-        )}
+
 
         {/* Custom Controls - only show for video element on desktop */}
         {videoUrl && !isMobile && (

@@ -120,18 +120,18 @@ export default function WatchHistoryPage() {
             {history.map((item) => (
               <div
                 key={item.slug}
-                className="group relative"
+                className="group relative transition-all duration-300 hover:scale-105 hover:z-10"
               >
                 <Link
                   href={`/xem-phim/${item.slug}`}
-                  className="block"
+                  className="flex flex-col h-full"
                 >
-                  <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-zinc-900 shadow-lg">
+                  <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-zinc-900 shadow-lg border border-white/5 transition-all duration-300 group-hover:shadow-blue-500/20 group-hover:border-white/10">
                     <Image
                       src={getPosterUrl(item)}
                       alt={item.name}
                       fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="object-cover transition-transform duration-500 ease-out will-change-transform"
                       sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 16vw"
                       unoptimized
                     />
