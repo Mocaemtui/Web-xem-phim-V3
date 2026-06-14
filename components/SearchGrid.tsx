@@ -354,10 +354,10 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
     return (
       <div>
         {/* Top Bar with Back Button */}
-        <div className="fixed top-[76px] left-4 z-40 pointer-events-none flex items-start">
+        <div className="fixed top-[90px] left-4 z-40 pointer-events-none flex items-start">
           <button 
             onClick={handleBack}
-            className="pointer-events-auto bg-black/60 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10 shadow-lg hover:scale-105 active:scale-95"
+            className="pointer-events-auto opacity-100 md:opacity-0 md:hover:opacity-100 bg-black/60 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10 shadow-lg hover:scale-105 active:scale-95 duration-300"
             title="Quay lại"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -393,10 +393,10 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
   return (
     <div>
       {/* Top Bar with Back Button */}
-      <div className="fixed top-[76px] left-4 z-40 pointer-events-none flex items-start">
+      <div className="fixed top-[90px] left-4 z-40 pointer-events-none flex items-start">
         <button 
           onClick={handleBack}
-          className="pointer-events-auto bg-black/60 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10 shadow-lg hover:scale-105 active:scale-95"
+          className="pointer-events-auto opacity-100 md:opacity-0 md:hover:opacity-100 bg-black/60 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-all border border-white/10 shadow-lg hover:scale-105 active:scale-95 duration-300"
           title="Quay lại"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
