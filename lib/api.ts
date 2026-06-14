@@ -239,9 +239,27 @@ export async function searchPhim(
 ): Promise<ApiResponse<MovieListResponse> | null> {
   const endpoint = `/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}`;
   
-  const [ophimRes, phimapiRes] = await Promise.all([
+  const fetchNguoncSearch = async () => {
+    try {
+      const res = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}&page=1`, {
+        next: { revalidate: 3600 },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json'
+        }
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      console.warn("NguonC search fetch failed:", e);
+      return null;
+    }
+  };
+
+  const [ophimRes, phimapiRes, nguoncRes] = await Promise.all([
     fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.OPHIM.url),
-    fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.PHIMAPI.url)
+    fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.PHIMAPI.url),
+    fetchNguoncSearch()
   ]);
 
   const allItems: Movie[] = [];
@@ -260,6 +278,21 @@ export async function searchPhim(
 
   addItems(phimapiRes, 'phimapi');
   addItems(ophimRes, 'ophim');
+
+  if (nguoncRes && nguoncRes.items && Array.isArray(nguoncRes.items)) {
+    nguoncRes.items.forEach((item: any) => {
+      allItems.push({
+        _id: item.id || Math.random().toString(),
+        name: item.name,
+        slug: item.slug,
+        origin_name: item.original_name || item.name,
+        poster_url: item.poster_url || "",
+        thumb_url: item.thumb_url || "",
+        year: item.year || (item.created ? new Date(item.created).getFullYear() : 2024),
+        source: 'nguonc'
+      } as any);
+    });
+  }
 
   if (allItems.length === 0) return null;
 

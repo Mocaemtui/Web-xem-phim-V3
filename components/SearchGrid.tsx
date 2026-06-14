@@ -41,107 +41,12 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
   };
 
   const [movies, setMovies] = useState<ExtendedMovie[]>(initialMovies);
-  const [isLoadingNguonC, setIsLoadingNguonC] = useState(true);
+  const [isLoadingNguonC, setIsLoadingNguonC] = useState(false);
   const [selectedSource, setSelectedSource] = useState<string>("all");
 
   useEffect(() => {
-    let active = true;
-    const fetchNguonC = async () => {
-      try {
-        const res = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}&page=1`);
-        if (!res.ok) {
-          if (active) setIsLoadingNguonC(false);
-          return;
-        }
-        const data = await res.json();
-        
-        if (active && data && data.items && Array.isArray(data.items)) {
-          const allNguonCItems = [...data.items];
-          const totalPages = data.paginate?.total_page || 1;
-          
-          if (totalPages > 1 && active) {
-            const fetchPromises = [];
-            const maxPagesToFetch = Math.min(totalPages, 10);
-            for (let p = 2; p <= maxPagesToFetch; p++) {
-              fetchPromises.push(
-                fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}&page=${p}`)
-                  .then(r => r.ok ? r.json() : null)
-                  .then(pageData => pageData?.items || [])
-                  .catch(() => [])
-              );
-            }
-            const pagesResults = await Promise.all(fetchPromises);
-            if (active) {
-              pagesResults.forEach(items => {
-                allNguonCItems.push(...items);
-              });
-            }
-          }
-          
-          if (active) {
-            // Sort by relevance score first, then by modified date descending
-            const getRelevance = (movie: NguonCMovieItem) => {
-              const kw = keyword.toLowerCase().trim();
-              const name = (movie.name || '').toLowerCase();
-              const orig = (movie.original_name || '').toLowerCase();
-              
-              if (name === kw || orig === kw) return 100;
-              if (name.startsWith(kw) || orig.startsWith(kw)) return 80;
-              if (name.includes(kw) || orig.includes(kw)) return 60;
-              
-              const tokens = kw.split(/\s+/);
-              let matches = 0;
-              tokens.forEach(t => {
-                if (name.includes(t) || orig.includes(t)) matches++;
-              });
-              if (matches > 0) return (matches / tokens.length) * 40;
-              
-              return 0;
-            };
-
-            const sortedNguonC = [...allNguonCItems].sort((a, b) => {
-              const scoreA = getRelevance(a);
-              const scoreB = getRelevance(b);
-              if (scoreA !== scoreB) return scoreB - scoreA;
-              
-              const timeA = a.modified ? new Date(a.modified).getTime() : 0;
-              const timeB = b.modified ? new Date(b.modified).getTime() : 0;
-              return timeB - timeA;
-            });
-
-            const newMovies: ExtendedMovie[] = sortedNguonC.map((item: NguonCMovieItem) => ({
-              _id: item.id || Math.random().toString(),
-              name: item.name,
-              slug: item.slug,
-              origin_name: item.original_name || item.name,
-              poster_url: item.poster_url,
-              thumb_url: item.thumb_url,
-              year: item.year || (item.created ? new Date(item.created).getFullYear() : 2024),
-              source: 'nguonc'
-            }));
-            
-            if (newMovies.length > 0) {
-              setMovies(prev => {
-                const existingKeys = new Set(prev.map(m => `${m.source || 'default'}-${m.slug}`));
-                const filteredNew = newMovies.filter(m => !existingKeys.has(`${m.source || 'default'}-${m.slug}`));
-                return [...prev, ...filteredNew];
-              });
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Lỗi lấy NguonC Search (Client):", error);
-      } finally {
-        if (active) setIsLoadingNguonC(false);
-      }
-    };
-
-    fetchNguonC();
-    return () => {
-      active = false;
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyword, initialMovies]);
+    setMovies(initialMovies);
+  }, [initialMovies]);
 
   // No smart default selection needed, always default to "all" as requested by user
 
