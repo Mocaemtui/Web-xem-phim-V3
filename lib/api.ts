@@ -608,7 +608,7 @@ export async function getChiTietPhim(
 
   if (!baseMovie) return null;
 
-  // Swap primary and alternate images to prioritize PhimAPI, then Ophim (since NguonC images might be broken)
+  // Swap primary and alternate images to prioritize PhimAPI > NguonC > Ophim
   if (phimapiRes?.data?.item) {
     if (baseMovie !== phimapiRes.data.item) {
       // Save original images as alternates
@@ -619,25 +619,35 @@ export async function getChiTietPhim(
       baseMovie.poster_url = phimapiRes.data.item.poster_url;
       baseMovie.thumb_url = phimapiRes.data.item.thumb_url;
     } else {
+      if (nguonCMovie) {
+        baseMovie.alt_poster_url = nguonCMovie.poster_url;
+        baseMovie.alt_thumb_url = nguonCMovie.thumb_url;
+      } else if (ophimRes?.data?.item) {
+        baseMovie.alt_poster_url = ophimRes.data.item.poster_url;
+        baseMovie.alt_thumb_url = ophimRes.data.item.thumb_url;
+      }
+    }
+  } else if (nguonCMovie) {
+    if (baseMovie !== nguonCMovie) {
+      // Save original images as alternates
+      baseMovie.alt_poster_url = baseMovie.poster_url;
+      baseMovie.alt_thumb_url = baseMovie.thumb_url;
+      
+      // Set NguonC's images as primary
+      baseMovie.poster_url = nguonCMovie.poster_url;
+      baseMovie.thumb_url = nguonCMovie.thumb_url;
+    } else {
       if (ophimRes?.data?.item) {
         baseMovie.alt_poster_url = ophimRes.data.item.poster_url;
         baseMovie.alt_thumb_url = ophimRes.data.item.thumb_url;
-      } else if (nguonCMovie) {
-        baseMovie.alt_poster_url = nguonCMovie.poster_url;
-        baseMovie.alt_thumb_url = nguonCMovie.thumb_url;
       }
     }
   } else if (ophimRes?.data?.item) {
     if (baseMovie !== ophimRes.data.item) {
-      // baseMovie is NguonC, but Ophim is available. Use Ophim images as primary because NguonC images might be broken
       baseMovie.alt_poster_url = baseMovie.poster_url;
       baseMovie.alt_thumb_url = baseMovie.thumb_url;
-      
       baseMovie.poster_url = ophimRes.data.item.poster_url;
       baseMovie.thumb_url = ophimRes.data.item.thumb_url;
-    } else if (nguonCMovie) {
-      baseMovie.alt_poster_url = nguonCMovie.poster_url;
-      baseMovie.alt_thumb_url = nguonCMovie.thumb_url;
     }
   }
 

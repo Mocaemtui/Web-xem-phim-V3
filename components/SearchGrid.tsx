@@ -248,17 +248,24 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       });
     };
 
-    // 1. Build a map of fallback images prioritizing PhimAPI, then Ophim
+    // 1. Build a map of fallback images prioritizing PhimAPI > NguonC > Ophim
     const imageMap = new Map<string, { poster_url: string; thumb_url: string; source: string }>();
     
-    // First, populate with Ophim images (lowest priority working images)
+    // First, populate with Ophim images (lowest priority)
     movies.forEach(m => {
       if (m.source === 'ophim' && m.poster_url && m.thumb_url) {
         imageMap.set(getSmartKey(m), { poster_url: m.poster_url, thumb_url: m.thumb_url, source: 'ophim' });
       }
     });
+
+    // Then, populate/overwrite with NguonC images (medium priority)
+    movies.forEach(m => {
+      if (m.source === 'nguonc' && m.poster_url && m.thumb_url) {
+        imageMap.set(getSmartKey(m), { poster_url: m.poster_url, thumb_url: m.thumb_url, source: 'nguonc' });
+      }
+    });
     
-    // Then, overwrite with PhimAPI images (highest priority working images)
+    // Finally, populate/overwrite with PhimAPI images (highest priority)
     movies.forEach(m => {
       if (m.source === 'phimapi' && m.poster_url && m.thumb_url) {
         imageMap.set(getSmartKey(m), { poster_url: m.poster_url, thumb_url: m.thumb_url, source: 'phimapi' });
@@ -270,8 +277,13 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       const key = getSmartKey(movie);
       const mappedImg = imageMap.get(key);
       if (mappedImg && movie.source !== mappedImg.source) {
-        // If current source is NguonC, or if current is Ophim but mapped is PhimAPI
-        if (movie.source === 'nguonc' || (movie.source === 'ophim' && mappedImg.source === 'phimapi')) {
+        const getPriority = (src: string) => {
+          if (src === 'phimapi') return 3;
+          if (src === 'nguonc') return 2;
+          if (src === 'ophim') return 1;
+          return 0;
+        };
+        if (getPriority(mappedImg.source) > getPriority(movie.source || '')) {
           return {
             ...movie,
             poster_url: mappedImg.poster_url,
