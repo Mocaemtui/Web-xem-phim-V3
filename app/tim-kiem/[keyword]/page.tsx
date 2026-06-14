@@ -14,7 +14,7 @@ export default async function SearchPage({ params }: PageProps) {
   const searchResults = await searchPhim(decodedKeyword);
 
   return (
-    <div className="container mx-auto px-4 py-8 pl-16 md:pl-4">
+    <div className="container mx-auto px-4 py-8 pl-16">
       <SectionTitle title={`Kết quả tìm kiếm: "${decodedKeyword}"`} />
       
       <SearchGrid 

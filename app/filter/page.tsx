@@ -156,7 +156,7 @@ function FilterContent() {
   useEffect(() => { fetchMovies(currentPage); }, [fetchMovies, currentPage]);
 
   return (
-    <div className="container mx-auto px-4 py-8 pl-16 md:pl-4">
+    <div className="container mx-auto px-4 py-8 pl-16">
       {/* Top Bar with Back Button */}
       <div className="fixed top-[76px] left-4 z-40 pointer-events-none flex items-start">
         <button 
