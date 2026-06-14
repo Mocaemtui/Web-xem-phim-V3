@@ -855,7 +855,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   {episodes.length > 0 && serverData.length > 0 && (
                     <EpisodeSelector
                       episodes={episodes}
-                      movieSlug={movie.slug}
                       currentServerIndex={selectedServerIndex}
                       currentEpisodeIndex={currentServerIndex === selectedServerIndex ? currentEpisodeIndex : -1}
                       onSelectEpisode={(idx) => {
@@ -866,7 +865,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                       onSelectServer={(idx) => {
                         setSelectedServerIndex(idx);
                       }}
-                      backdropUrl={getBackdropUrl(movie)}
                     />
                   )}
                 </div>
@@ -1088,7 +1086,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             {episodes.length > 0 && serverData.length > 0 && (
               <EpisodeSelector
                 episodes={episodes}
-                movieSlug={movie.slug}
                 currentServerIndex={selectedServerIndex}
                 currentEpisodeIndex={currentServerIndex === selectedServerIndex ? currentEpisodeIndex : -1}
                 onSelectEpisode={(idx) => {
@@ -1099,7 +1096,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 onSelectServer={(idx) => {
                   setSelectedServerIndex(idx);
                 }}
-                backdropUrl={getBackdropUrl(movie)}
               />
             )}
           </div>
