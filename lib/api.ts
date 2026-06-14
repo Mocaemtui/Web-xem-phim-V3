@@ -480,7 +480,7 @@ async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
       year: movie.year || (movie.category && movie.category['3'] ? parseInt(movie.category['3'].list[0]?.name, 10) : 2024),
       quality: movie.quality || "HD",
       lang: movie.language || "Vietsub",
-      time: movie.duration || "",
+      time: movie.time || "",
       episode_current: movie.current_episode || "",
       episode_total: movie.total_episodes?.toString() || "",
       content: movie.description || "",
