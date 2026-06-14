@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageTransition from "@/components/PageTransition";
+import HistoryTracker from "@/components/HistoryTracker";
 
 
 const inter = Inter({
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
       </head>
       <body className="min-h-full flex flex-col bg-zinc-950">
+        <HistoryTracker />
         <Header />
         <PageTransition>{children}</PageTransition>
         <Footer />

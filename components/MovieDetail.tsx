@@ -126,12 +126,14 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   const router = useRouter();
   
   const handleBack = () => {
-    const hasReferrer = typeof document !== 'undefined' && document.referrer && document.referrer.includes(window.location.host);
-    if (hasReferrer) {
-      router.back();
-    } else {
-      router.push("/");
+    if (typeof window !== 'undefined') {
+      const lastBrowse = sessionStorage.getItem("last_browse_page");
+      if (lastBrowse) {
+        router.push(lastBrowse);
+        return;
+      }
     }
+    router.push("/");
   };
 
   const [historyItem, setHistoryItem] = useState<any>(null);

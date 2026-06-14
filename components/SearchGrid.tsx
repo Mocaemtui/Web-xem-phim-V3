@@ -30,12 +30,14 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
   const router = useRouter();
   
   const handleBack = () => {
-    const hasReferrer = typeof document !== 'undefined' && document.referrer && document.referrer.includes(window.location.host);
-    if (hasReferrer) {
-      router.back();
-    } else {
-      router.push("/");
+    if (typeof window !== 'undefined') {
+      const prevBrowse = sessionStorage.getItem("prev_browse_page");
+      if (prevBrowse) {
+        router.push(prevBrowse);
+        return;
+      }
     }
+    router.push("/");
   };
 
   const [movies, setMovies] = useState<ExtendedMovie[]>(initialMovies);

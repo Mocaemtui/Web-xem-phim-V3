@@ -38,12 +38,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
   const router = useRouter();
   
   const handleBack = () => {
-    const hasReferrer = typeof document !== 'undefined' && document.referrer && document.referrer.includes(window.location.host);
-    if (hasReferrer) {
-      router.back();
-    } else {
-      router.push("/");
-    }
+    router.push(`/phim/${movie.slug}`);
   };
 
   const [episodes, setEpisodes] = useState(sortEpisodes(movie.episodes || []));
