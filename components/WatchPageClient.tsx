@@ -219,13 +219,21 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
 
   const isSingleEpisode = currentEpisode?.name.toLowerCase().includes("full") || (episodes.length > 0 && serverData.length === 1 && currentEpisode?.name === "1");
 
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.state && window.history.state.idx > 0) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 overflow-x-hidden">
       {/* Top Bar with Back Button */}
-      <div className="fixed top-0 left-0 right-0 z-50 p-4 pointer-events-none flex items-start">
+      <div className="fixed top-20 left-4 z-50 pointer-events-none flex items-start">
         <button 
-          onClick={() => router.back()}
-          className="pointer-events-auto bg-black/50 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-md transition-colors border border-white/10"
+          onClick={handleBack}
+          className="pointer-events-auto bg-black/70 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-md transition-colors border border-white/10 shadow-lg"
           title="Quay lại"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
