@@ -249,27 +249,10 @@ export async function searchPhim(
   
   const searchKeyword = isImdbId ? imdbId : cleanKeyword;
   const endpoint = `/v1/api/tim-kiem?keyword=${encodeURIComponent(searchKeyword)}`;
-  
-  const tmdbKey = process.env.TMDB_API_KEY;
-  let tmdbPromise: Promise<any>;
-  if (tmdbKey) {
-    if (isImdbId) {
-      tmdbPromise = fetch(`${TMDB_API_BASE_URL}/3/find/${imdbId}?api_key=${tmdbKey}&external_source=imdb_id&language=vi-VN`)
-        .then(r => r.ok ? r.json() : null)
-        .catch(() => null);
-    } else {
-      tmdbPromise = fetch(`${TMDB_API_BASE_URL}/3/search/multi?api_key=${tmdbKey}&query=${encodeURIComponent(keyword)}&language=vi-VN`)
-        .then(r => r.ok ? r.json() : null)
-        .catch(() => null);
-    }
-  } else {
-    tmdbPromise = Promise.resolve(null);
-  }
 
-  const [ophimRes, phimapiRes, tmdbSearchRes] = await Promise.all([
+  const [ophimRes, phimapiRes] = await Promise.all([
     fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.OPHIM.url),
-    fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.PHIMAPI.url),
-    tmdbPromise
+    fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.PHIMAPI.url)
   ]);
 
   const allItems: Movie[] = [];
@@ -288,38 +271,6 @@ export async function searchPhim(
 
   addItems(phimapiRes, 'phimapi');
   addItems(ophimRes, 'ophim');
-
-  if (tmdbSearchRes) {
-    let results: any[] = [];
-    if (tmdbSearchRes.results) {
-      results = tmdbSearchRes.results;
-    } else if (isImdbId) {
-      const movieResults = (tmdbSearchRes.movie_results || []).map((m: any) => ({ ...m, media_type: 'movie' }));
-      const tvResults = (tmdbSearchRes.tv_results || []).map((t: any) => ({ ...t, media_type: 'tv' }));
-      results = [...movieResults, ...tvResults];
-    }
-
-    results.forEach((r: any) => {
-      if (r.media_type === 'movie' || r.media_type === 'tv') {
-        const title = r.name || r.title;
-        const originTitle = r.original_name || r.original_title;
-        allItems.push({
-          _id: `tmdb-${r.media_type}-${r.id}`,
-          name: title,
-          slug: `tmdb-${r.media_type}-${r.id}`,
-          origin_name: originTitle || title,
-          poster_url: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : "",
-          thumb_url: r.backdrop_path ? `https://image.tmdb.org/t/p/w500${r.backdrop_path}` : "",
-          year: r.first_air_date || r.release_date ? new Date(r.first_air_date || r.release_date).getFullYear() : 2024,
-          source: 'tmdb',
-          tmdb: {
-            type: r.media_type,
-            id: r.id
-          }
-        } as any);
-      }
-    });
-  }
 
   if (allItems.length === 0) return null;
 

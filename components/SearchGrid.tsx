@@ -233,7 +233,6 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
     { id: "all", name: "Tất cả" },
     { id: "phimapi", name: "PhimAPI" },
     { id: "ophim", name: "Ophim" },
-    { id: "tmdb", name: "TMDB (Quốc tế)" },
   ];
 
   if (filteredMovies.length === 0) {
