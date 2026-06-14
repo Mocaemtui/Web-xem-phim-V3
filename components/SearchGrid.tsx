@@ -163,34 +163,32 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
     // 3. Filter or Deduplicate based on selectedSource
     if (selectedSource === "all") {
-      const addedKeys = new Set<string>();
-      const result: ExtendedMovie[] = [];
+      // Assign stable sort indexes
+      const indexedMovies = resolvedMovies.map((m, idx) => ({ ...m, originalIndex: idx }));
 
-      resolvedMovies.forEach(movie => {
+      // Sort by source priority: phimapi (3) > nguonc (2) > ophim (1)
+      const sorted = [...indexedMovies].sort((a, b) => {
+        const priority: Record<string, number> = { phimapi: 3, nguonc: 2, ophim: 1 };
+        const priorityA = (a.source && priority[a.source]) || 0;
+        const priorityB = (b.source && priority[b.source]) || 0;
+        
+        if (priorityA !== priorityB) {
+          return priorityB - priorityA;
+        }
+        return a.originalIndex - b.originalIndex;
+      });
+
+      // Deduplicate (first occurrence wins)
+      const itemsMap = new Map<string, ExtendedMovie>();
+      sorted.forEach(movie => {
         const key = getSmartKey(movie);
-        if (!addedKeys.has(key)) {
-          // Find all duplicates for this key
-          const duplicates = resolvedMovies.filter(m => getSmartKey(m) === key);
-          
-          // Find the one with highest priority source: phimapi (3) > nguonc (2) > ophim (1)
-          const priority: Record<string, number> = { phimapi: 3, nguonc: 2, ophim: 1 };
-          let bestMovie = movie;
-          let bestPriority = (movie.source && priority[movie.source]) || 0;
-
-          duplicates.forEach(dup => {
-            const dupPriority = (dup.source && priority[dup.source]) || 0;
-            if (dupPriority > bestPriority) {
-              bestMovie = dup;
-              bestPriority = dupPriority;
-            }
-          });
-
-          result.push(bestMovie);
-          addedKeys.add(key);
+        if (!itemsMap.has(key)) {
+          const { originalIndex, ...rest } = movie as any;
+          itemsMap.set(key, rest);
         }
       });
 
-      return result;
+      return Array.from(itemsMap.values());
     } else {
       // Show all movies from that source directly, but with resolved images
       return resolvedMovies.filter((movie: ExtendedMovie) => movie.source === selectedSource);
