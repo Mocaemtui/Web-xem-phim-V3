@@ -428,6 +428,37 @@ export async function getDanhSach(
 }
 
 
+async function getAnimeMalIds(originalName: string, seasonCount: number): Promise<Record<number, number>> {
+  const malIds: Record<number, number> = {};
+  try {
+    const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(originalName)}&limit=15`);
+    if (!res.ok) return malIds;
+    const data = await res.json();
+    if (data.data && data.data.length > 0) {
+      let tvShows = data.data.filter((item: any) => item.type === "TV" || item.type === "ONA" || item.type === "TV Special");
+      if (tvShows.length === 0) {
+        tvShows = data.data;
+      }
+      
+      tvShows.sort((a: any, b: any) => {
+        const dateA = a.aired?.from ? new Date(a.aired.from).getTime() : 0;
+        const dateB = b.aired?.from ? new Date(b.aired.from).getTime() : 0;
+        return dateA - dateB;
+      });
+      
+      for (let s = 1; s <= seasonCount; s++) {
+        const matchedAnime = tvShows[s - 1];
+        if (matchedAnime) {
+          malIds[s] = matchedAnime.mal_id;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("getAnimeMalIds error:", e);
+  }
+  return malIds;
+}
+
 export async function getChiTietPhim(
   slug: string
 ): Promise<ApiResponse<{ item: MovieDetail }> | null> {
@@ -463,6 +494,14 @@ export async function getChiTietPhim(
       const iconColor = "B20710";
       const icons = "vid";
       
+      const isAnime = data.genres?.some((g: any) => g.id === 16 || g.name?.toLowerCase().includes("hoạt hình") || g.name?.toLowerCase().includes("animation")) && 
+                      (data.original_language === 'ja' || data.origin_country?.includes('JP'));
+
+      let animeMalIds: Record<number, number> = {};
+      if (isAnime && mediaType === 'tv') {
+        animeMalIds = await getAnimeMalIds(originTitle || title, data.seasons?.length || 1);
+      }
+
       const serverEpisodes: any[] = [];
       
       if (mediaType === 'movie') {
@@ -482,14 +521,20 @@ export async function getChiTietPhim(
           data.seasons.forEach((season: any) => {
             if (season.season_number > 0 && season.episode_count > 0) {
               const seasonNum = season.season_number;
+              const malId = animeMalIds[seasonNum];
+              
               const server_data = Array.from({ length: season.episode_count }, (_, idx) => {
                 const epNum = idx + 1;
+                const embedUrl = malId 
+                  ? `https://vidlink.pro/anime/${malId}/${epNum}/sub?fallback=true&primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`
+                  : `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`;
+                
                 return {
                   name: `Tập ${epNum}`,
                   slug: `tap-${epNum}`,
                   filename: `Tập ${epNum}`,
                   link: "",
-                  link_embed: `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
+                  link_embed: embedUrl,
                   link_m3u8: ""
                 };
               });
