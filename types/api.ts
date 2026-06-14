@@ -9,6 +9,7 @@ export interface Movie {
   name: string;
   slug: string;
   origin_name: string;
+  type?: string;
   poster_url: string;
   thumb_url: string;
   year: number;

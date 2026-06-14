@@ -234,13 +234,24 @@ export async function searchPhim(
   keyword: string
 ): Promise<ApiResponse<MovieListResponse> | null> {
   const endpoint = `/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}`;
+  const cleanKeyword = keyword.trim();
+  const isImdbId = /^tt\d+$/.test(cleanKeyword);
   
   const tmdbKey = process.env.TMDB_API_KEY;
-  const tmdbPromise = tmdbKey
-    ? fetch(`https://api.themoviedb.org/3/search/multi?api_key=${tmdbKey}&query=${encodeURIComponent(keyword)}&language=vi-VN`)
+  let tmdbPromise: Promise<any>;
+  if (tmdbKey) {
+    if (isImdbId) {
+      tmdbPromise = fetch(`https://api.themoviedb.org/3/find/${cleanKeyword}?api_key=${tmdbKey}&external_source=imdb_id&language=vi-VN`)
         .then(r => r.ok ? r.json() : null)
-        .catch(() => null)
-    : Promise.resolve(null);
+        .catch(() => null);
+    } else {
+      tmdbPromise = fetch(`https://api.themoviedb.org/3/search/multi?api_key=${tmdbKey}&query=${encodeURIComponent(keyword)}&language=vi-VN`)
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null);
+    }
+  } else {
+    tmdbPromise = Promise.resolve(null);
+  }
 
   const [ophimRes, phimapiRes, tmdbSearchRes] = await Promise.all([
     fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.OPHIM.url),
@@ -265,8 +276,17 @@ export async function searchPhim(
   addItems(phimapiRes, 'phimapi');
   addItems(ophimRes, 'ophim');
 
-  if (tmdbSearchRes?.results) {
-    tmdbSearchRes.results.forEach((r: any) => {
+  if (tmdbSearchRes) {
+    let results: any[] = [];
+    if (tmdbSearchRes.results) {
+      results = tmdbSearchRes.results;
+    } else if (isImdbId) {
+      const movieResults = (tmdbSearchRes.movie_results || []).map((m: any) => ({ ...m, media_type: 'movie' }));
+      const tvResults = (tmdbSearchRes.tv_results || []).map((t: any) => ({ ...t, media_type: 'tv' }));
+      results = [...movieResults, ...tvResults];
+    }
+
+    results.forEach((r: any) => {
       if (r.media_type === 'movie' || r.media_type === 'tv') {
         const title = r.name || r.title;
         const originTitle = r.original_name || r.original_title;
@@ -428,19 +448,72 @@ export async function getDanhSach(
 }
 
 
+const animeMalCache: Record<string, Record<number, number>> = {};
+
+const getMatchScore = (anime: any, query: string): number => {
+  const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
+  const queryWords = clean(query).split(/\s+/).filter(w => w.length > 2);
+  if (queryWords.length === 0) return 1.0;
+  
+  const titles = [
+    anime.title,
+    anime.title_english,
+    anime.title_japanese,
+    ...(anime.title_synonyms || [])
+  ].filter(Boolean).map(t => clean(t));
+  
+  let maxScore = 0;
+  for (const title of titles) {
+    let matches = 0;
+    for (const word of queryWords) {
+      if (title.includes(word)) {
+        matches++;
+      }
+    }
+    const score = matches / queryWords.length;
+    if (score > maxScore) {
+      maxScore = score;
+    }
+  }
+  return maxScore;
+};
+
 async function getAnimeMalIds(originalName: string, seasonCount: number): Promise<Record<number, number>> {
+  const cacheKey = originalName.toLowerCase().trim();
+  if (animeMalCache[cacheKey]) {
+    return animeMalCache[cacheKey];
+  }
+
   const malIds: Record<number, number> = {};
   try {
-    const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(originalName)}&limit=15`);
+    let attempt = 0;
+    let res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(originalName)}&limit=15`);
+    
+    while (res.status === 429 && attempt < 2) {
+      attempt++;
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(originalName)}&limit=15`);
+    }
+
     if (!res.ok) return malIds;
     const data = await res.json();
     if (data.data && data.data.length > 0) {
-      let tvShows = data.data.filter((item: any) => item.type === "TV" || item.type === "ONA" || item.type === "TV Special");
+      let tvShows = data.data.filter((item: any) => {
+        const isCorrectType = item.type === "TV" || item.type === "ONA" || item.type === "TV Special";
+        const score = getMatchScore(item, originalName);
+        return isCorrectType && score >= 0.15;
+      });
+      
       if (tvShows.length === 0) {
         tvShows = data.data;
       }
       
       tvShows.sort((a: any, b: any) => {
+        const scoreA = getMatchScore(a, originalName);
+        const scoreB = getMatchScore(b, originalName);
+        if (Math.abs(scoreB - scoreA) > 0.01) {
+          return scoreB - scoreA;
+        }
         const dateA = a.aired?.from ? new Date(a.aired.from).getTime() : 0;
         const dateB = b.aired?.from ? new Date(b.aired.from).getTime() : 0;
         return dateA - dateB;
@@ -452,6 +525,7 @@ async function getAnimeMalIds(originalName: string, seasonCount: number): Promis
           malIds[s] = matchedAnime.mal_id;
         }
       }
+      animeMalCache[cacheKey] = malIds;
     }
   } catch (e) {
     console.warn("getAnimeMalIds error:", e);
@@ -669,6 +743,71 @@ export async function getChiTietPhim(
   baseMovie = phimapiRes?.data?.item || ophimRes?.data?.item || null;
 
   if (!baseMovie) return null;
+
+  // Inject Server Quốc tế (VidLink) if TMDB ID is available on the domestic movie
+  if (baseMovie.tmdb?.id) {
+    const tmdbId = baseMovie.tmdb.id.toString();
+    const mediaType = baseMovie.tmdb.type || 'movie';
+    const isTv = mediaType === 'tv' || (baseMovie.episodes?.[0]?.server_data?.length || 0) > 1;
+    
+    const primaryColor = "B20710";
+    const secondaryColor = "170000";
+    const iconColor = "B20710";
+    const icons = "vid";
+    
+    const hasJapan = baseMovie.country?.some(c => c.name?.toLowerCase().includes('nhật') || c.slug === 'nhat-ban') || false;
+    const isAnime = (baseMovie.type === 'hoathinh' || 
+                    baseMovie.category?.some(c => c.name?.toLowerCase().includes('hoạt hình') || c.name?.toLowerCase().includes('anime')) || false) && hasJapan;
+    
+    let vidLinkServerData: any[] = [];
+    if (!isTv) {
+      // Movie
+      vidLinkServerData = [{
+        name: "Full",
+        slug: "full",
+        filename: "Full",
+        link: "",
+        link_embed: `https://vidlink.pro/movie/${tmdbId}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
+        link_m3u8: ""
+      }];
+    } else {
+      // TV Show - use the first available domestic server to get base episode names
+      const baseServer = baseMovie.episodes?.[0] || (phimapiRes?.data?.item?.episodes?.[0] || ophimRes?.data?.item?.episodes?.[0]);
+      if (baseServer && baseServer.server_data) {
+        const seasonNum = baseMovie.tmdb.season || 1;
+        let malId: number | undefined = undefined;
+        
+        if (isAnime) {
+          const originTitle = baseMovie.origin_name || baseMovie.name;
+          const animeMalIds = await getAnimeMalIds(originTitle, seasonNum);
+          malId = animeMalIds[seasonNum];
+        }
+        
+        vidLinkServerData = baseServer.server_data.map((ep: any, idx: number) => {
+          const epNum = idx + 1;
+          const embedUrl = malId 
+            ? `https://vidlink.pro/anime/${malId}/${epNum}/sub?fallback=true&primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`
+            : `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`;
+          
+          return {
+            name: ep.name,
+            slug: ep.slug,
+            filename: ep.name,
+            link: "",
+            link_embed: embedUrl,
+            link_m3u8: ""
+          };
+        });
+      }
+    }
+    
+    if (vidLinkServerData.length > 0) {
+      allEpisodes.push({
+        server_name: "Server Quốc tế (VidLink)",
+        server_data: vidLinkServerData
+      });
+    }
+  }
 
   // Swap primary and alternate images to prioritize PhimAPI > Ophim
   if (phimapiRes?.data?.item) {

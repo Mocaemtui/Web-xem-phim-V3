@@ -53,61 +53,13 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
     setCurrentEpisodeIndex(0);
     const sortedEps = sortEpisodes(movie.episodes || []);
     
-    // Inject Server Quốc tế (VidLink) if TMDB ID is available
-    if (movie.tmdb?.id) {
-      const tmdbId = movie.tmdb.id.toString();
-      const isTv = movie.tmdb.type === "tv" || (movie.episodes?.[0]?.server_data?.length || 0) > 1;
-      
-      const primaryColor = "B20710"; // theme-primary red
-      const secondaryColor = "170000";
-      const iconColor = "B20710";
-      const icons = "vid";
-      
-      let vidLinkServerData = [];
-      if (!isTv) {
-        // Movie
-        vidLinkServerData = [{
-          name: "Full",
-          slug: "full",
-          filename: "Full",
-          link: "",
-          link_embed: `https://vidlink.pro/movie/${tmdbId}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
-          link_m3u8: ""
-        }];
-      } else {
-        // TV Show - Mirror the episodes from the first available server
-        const baseServer = sortedEps[0];
-        if (baseServer && baseServer.server_data) {
-          const season = movie.tmdb.season || 1;
-          vidLinkServerData = baseServer.server_data.map((ep: any, idx: number) => {
-            const epNum = idx + 1;
-            return {
-              name: ep.name,
-              slug: ep.slug,
-              filename: ep.name,
-              link: "",
-              link_embed: `https://vidlink.pro/tv/${tmdbId}/${season}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
-              link_m3u8: ""
-            };
-          });
-        }
-      }
-      
-      if (vidLinkServerData.length > 0) {
-        sortedEps.push({
-          server_name: "Server Quốc tế (VidLink)",
-          server_data: vidLinkServerData
-        });
-      }
-    }
-    
     setEpisodes(sortedEps);
     // Luôn chọn server đầu tiên (đã sắp xếp theo thứ tự ưu tiên: PhimAPI > Ophim)
     // khi mở phim mới, trừ phi được phục hồi từ lịch sử xem của chính phim này.
     setCurrentServerIndex(0);
     setSelectedServerIndex(0);
     setCurrentOriginName(movie.origin_name);
-  }, [movie.slug, movie.origin_name, movie.episodes, movie.tmdb]);
+  }, [movie.slug, movie.origin_name, movie.episodes]);
 
 
 
@@ -217,7 +169,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
       if (eventData.type === "PLAYER_EVENT" && eventData.data) {
         const { event: eventType, currentTime, duration } = eventData.data;
 
-        if (currentServer?.server_name === "Server Quốc tế (VidLink)" && currentEpisode) {
+        if (currentServer?.server_name.includes("(VidLink)") && currentEpisode) {
           const baseEmbedUrl = currentEpisode.link_embed;
           if (eventType === "timeupdate" || eventType === "pause" || eventType === "seeked") {
             try {
@@ -270,7 +222,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
 
   // Dynamically resolve startAt for VidLink if there is saved progress
   let finalEmbedUrl = currentEpisode?.link_embed;
-  if (currentServer?.server_name === "Server Quốc tế (VidLink)" && finalEmbedUrl) {
+  if (currentServer?.server_name.includes("(VidLink)") && finalEmbedUrl) {
     if (typeof window !== "undefined") {
       const savedProgress = localStorage.getItem(`playback_progress_${finalEmbedUrl}`);
       if (savedProgress) {
