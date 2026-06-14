@@ -9,17 +9,6 @@ import { getWatchHistory } from "@/lib/watchHistory";
 
 import { getPosterUrl, getBackdropUrl, resolveImgUrl, sortEpisodes } from "@/lib/api";
 
-interface NguonCEpisodeItem {
-  name: string;
-  slug: string;
-  embed: string;
-  m3u8?: string;
-}
-
-interface NguonCEpisodeServer {
-  server_name: string;
-  items: NguonCEpisodeItem[];
-}
 
 interface MovieDetailProps {
   movie: MovieDetail;
@@ -31,8 +20,6 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   // 0 = Primary, 1 = TMDB, 2 = Alternate
   const [backdropSource, setBackdropSource] = useState<0 | 1 | 2>(0);
   const [posterSource, setPosterSource] = useState<0 | 1 | 2>(0);
-  const [nguonCBackdrop, setNguonCBackdrop] = useState<string | null>(null);
-  const [nguonCPoster, setNguonCPoster] = useState<string | null>(null);
 
   const primaryPosterUrl = getBackdropUrl(movie);
   const primaryThumbUrl = getPosterUrl(movie);
@@ -50,15 +37,6 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   const tmdbBackdropBase = images?.image_sizes?.backdrop?.w1280 || "https://image.tmdb.org/t/p/w1280";
   const tmdbBackdropUrl = tmdbBackdropFile ? `${tmdbBackdropBase}${tmdbBackdropFile}` : null;
 
-  const resolveNguonCUrl = (url: string | null | undefined): string | null => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    if (url.startsWith('/')) return `https://phim.nguonc.com${url}`;
-    return `https://phim.nguonc.com/${url}`;
-  };
-
-  const nguonCBackdropUrl = resolveNguonCUrl(nguonCBackdrop);
-  const nguonCPosterUrl = resolveNguonCUrl(nguonCPoster);
 
   // Determine available options
   const hasAltBackdrop = Boolean(altPosterUrl && altPosterUrl !== primaryPosterUrl);
@@ -74,10 +52,6 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
     availableBackdrops.push(altPosterUrl!);
     backdropNames.push("Ophim");
   }
-  if (nguonCBackdropUrl && nguonCBackdropUrl !== primaryPosterUrl) {
-    availableBackdrops.push(nguonCBackdropUrl);
-    backdropNames.push("NguonC");
-  }
 
   const availablePosters = [primaryThumbUrl];
   const posterNames = ["PhimAPI"];
@@ -88,10 +62,6 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   if (hasAltPoster) {
     availablePosters.push(altThumbUrl!);
     posterNames.push("Ophim");
-  }
-  if (nguonCPosterUrl && nguonCPosterUrl !== primaryThumbUrl) {
-    availablePosters.push(nguonCPosterUrl);
-    posterNames.push("NguonC");
   }
 
   // Current active images
@@ -145,86 +115,10 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
     const item = history.find((i: any) => i.slug === movie.slug);
     setHistoryItem(item || null);
     setEpisodes(sortEpisodes(movie.episodes || []));
-    setNguonCBackdrop(null);
-    setNguonCPoster(null);
     setCurrentOriginName(movie.origin_name);
   }, [movie.slug, movie.origin_name, movie.episodes]);
 
-  // Client-side fetch for NguonC to bypass Vercel DataCenter Cloudflare blocks
-  useEffect(() => {
-    let active = true;
-    const fetchNguonC = async () => {
-      try {
-        let res = await fetch(`https://phim.nguonc.com/api/film/${movie.slug}`);
-        let data = res.ok ? await res.json() : null;
 
-        // --- SMART CROSS-API MATCHING (FALLBACK) ---
-        if (!data?.movie?.episodes && active) {
-          const originName = movie.origin_name || movie.name;
-          const movieName = movie.name;
-          if (originName) {
-            const searchRes = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(originName)}`);
-            if (searchRes.ok && active) {
-              const searchData = await searchRes.json();
-              const normalizeCompare = (s1: string | undefined, s2: string | undefined): boolean => {
-                if (!s1 || !s2) return false;
-                const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-                return clean(s1) === clean(s2);
-              };
-              const match = searchData?.items?.find((m: { original_name?: string; name?: string; slug: string }) => 
-                normalizeCompare(m.original_name, originName) || 
-                normalizeCompare(m.name, originName) ||
-                normalizeCompare(m.original_name, movieName) ||
-                normalizeCompare(m.name, movieName)
-              );
-              if (match && match.slug !== movie.slug && active) {
-                res = await fetch(`https://phim.nguonc.com/api/film/${match.slug}`);
-                data = res.ok ? await res.json() : null;
-              }
-            }
-          }
-        }
-        
-        if (active && data?.movie) {
-          if (data.movie.poster_url) setNguonCBackdrop(data.movie.poster_url);
-          if (data.movie.thumb_url) setNguonCPoster(data.movie.thumb_url);
-          if (data.movie.original_name && (!movie.origin_name || movie.origin_name === movie.name)) {
-            setCurrentOriginName(data.movie.original_name);
-          }
-        }
-
-        if (active && data?.movie?.episodes) {
-          const nguonCEps = data.movie.episodes.map((epServer: NguonCEpisodeServer) => ({
-            server_name: `NguonC - ${epServer.server_name}`,
-            server_data: epServer.items.map((item: NguonCEpisodeItem) => ({
-              name: item.name,
-              slug: item.slug,
-              filename: item.name,
-              link: "",
-              link_embed: item.embed,
-              link_m3u8: item.m3u8 || ""
-            }))
-          }));
-          
-          setEpisodes(prev => {
-            if (prev.some(e => e.server_name.startsWith('NguonC'))) return prev;
-            return sortEpisodes([...prev, ...nguonCEps]);
-          });
-        }
-      } catch (error) {
-        console.error("Lỗi tải NguonC (Client):", error);
-      }
-    };
-
-    if (!episodes.some(e => e.server_name.startsWith('NguonC'))) {
-      fetchNguonC();
-    }
-    
-    return () => {
-      active = false;
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movie.slug]);
 
 
   return (

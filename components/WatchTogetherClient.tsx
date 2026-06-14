@@ -87,10 +87,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   const [showHostSyncPrompt, setShowHostSyncPrompt] = useState(false);
   const [hostSavedTime, setHostSavedTime] = useState<number | null>(null);
 
-  const episodes = (movie.episodes || []).filter(e => {
-    const lower = e.server_name.toLowerCase();
-    return !lower.includes("nguonc") && !lower.includes("nguồn c") && !lower.includes("nguon c");
-  });
+  const episodes = movie.episodes || [];
   const currentServer = episodes[currentServerIndex];
   const serverData = currentServer?.server_data || [];
   const currentEpisode = serverData[currentEpisodeIndex];

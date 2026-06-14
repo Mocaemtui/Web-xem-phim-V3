@@ -15,17 +15,6 @@ const VideoPlayer = dynamic(() => import("@/components/VideoPlayer"), {
   )
 });
 
-interface NguonCEpisodeItem {
-  name: string;
-  slug: string;
-  embed: string;
-  m3u8?: string;
-}
-
-interface NguonCEpisodeServer {
-  server_name: string;
-  items: NguonCEpisodeItem[];
-}
 
 interface WatchPageClientProps {
   movie: MovieDetail;
@@ -36,9 +25,8 @@ import { useRouter } from "next/navigation";
 
 const getServerPriority = (name: string) => {
   const lower = name.toLowerCase();
-  if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) return 3;
-  if (lower.includes("ophim")) return 2;
-  if (lower.includes("nguonc") || lower.includes("nguồn c") || lower.includes("nguon c")) return 1;
+  if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) return 2;
+  if (lower.includes("ophim")) return 1;
   return 0;
 };
 
@@ -50,7 +38,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
   };
 
   const [episodes, setEpisodes] = useState(sortEpisodes(movie.episodes || []));
-  const [isLoadingNguonC, setIsLoadingNguonC] = useState(true);
+
   
   const [currentServerIndex, setCurrentServerIndex] = useState(0);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
@@ -62,140 +50,20 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsRestored(false);
-    setIsLoadingNguonC(true);
     setCurrentEpisodeIndex(0);
     const sortedEps = sortEpisodes(movie.episodes || []);
     setEpisodes(sortedEps);
-    // Luôn chọn server đầu tiên (đã sắp xếp theo thứ tự ưu tiên: PhimAPI > Ophim > NguonC)
+    // Luôn chọn server đầu tiên (đã sắp xếp theo thứ tự ưu tiên: PhimAPI > Ophim)
     // khi mở phim mới, trừ phi được phục hồi từ lịch sử xem của chính phim này.
     setCurrentServerIndex(0);
     setSelectedServerIndex(0);
     setCurrentOriginName(movie.origin_name);
   }, [movie.slug, movie.origin_name, movie.episodes]);
 
-  // Client-side fetch for NguonC to bypass Vercel DataCenter Cloudflare blocks
-  useEffect(() => {
-    let active = true;
-    const fetchNguonC = async () => {
-      try {
-        let res = await fetch(`https://phim.nguonc.com/api/film/${movie.slug}`);
-        let data = res.ok ? await res.json() : null;
 
-        // --- SMART CROSS-API MATCHING (FALLBACK) ---
-        if (!data?.movie?.episodes && active) {
-          const originName = movie.origin_name || movie.name;
-          const movieName = movie.name;
-          if (originName) {
-            const searchRes = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(originName)}`);
-            if (searchRes.ok && active) {
-              const searchData = await searchRes.json();
-              const normalizeCompare = (s1: string | undefined, s2: string | undefined): boolean => {
-                if (!s1 || !s2) return false;
-                const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-                return clean(s1) === clean(s2);
-              };
-              const match = searchData?.items?.find((m: { original_name?: string; name?: string; slug: string }) => 
-                normalizeCompare(m.original_name, originName) || 
-                normalizeCompare(m.name, originName) ||
-                normalizeCompare(m.original_name, movieName) ||
-                normalizeCompare(m.name, movieName)
-              );
-              if (match && match.slug !== movie.slug && active) {
-                res = await fetch(`https://phim.nguonc.com/api/film/${match.slug}`);
-                data = res.ok ? await res.json() : null;
-              }
-            }
-          }
-        }
-        
-        if (active && data?.movie) {
-          if (data.movie.original_name && (!movie.origin_name || movie.origin_name === movie.name)) {
-            setCurrentOriginName(data.movie.original_name);
-          }
-        }
-        
-        if (active && data?.movie?.episodes) {
-          const nguonCEps = data.movie.episodes.map((epServer: NguonCEpisodeServer) => ({
-            server_name: `NguonC - ${epServer.server_name}`,
-            server_data: epServer.items.map((item: NguonCEpisodeItem) => ({
-              name: item.name,
-              slug: item.slug,
-              filename: item.name,
-              link: "",
-              link_embed: item.embed,
-              link_m3u8: item.m3u8 || ""
-            }))
-          }));
-          
-          setEpisodes(prev => {
-            if (prev.some(e => e.server_name.startsWith('NguonC'))) return prev;
-            const updated = sortEpisodes([...prev, ...nguonCEps]);
-            
-            // Try to restore from watch history again now that NguonC has loaded!
-            const history = getWatchHistory();
-            const item = history.find(i => i.slug === movie.slug);
-            let restored = false;
-
-            if (item) {
-              const targetServerName = item.serverName || 
-                (item.currentServerIndex === 1 ? "NguonC" : 
-                 item.currentServerIndex === 2 ? "Ophim" : 
-                 item.currentServerIndex === 0 ? "PhimAPI" : undefined);
-              if (targetServerName) {
-                const sIdx = updated.findIndex(e => e.server_name === targetServerName || 
-                               (targetServerName.startsWith("NguonC") && e.server_name.startsWith("NguonC")) ||
-                               (targetServerName.startsWith("Ophim") && e.server_name.startsWith("Ophim")) ||
-                               (targetServerName.startsWith("PhimAPI") && e.server_name.startsWith("PhimAPI")));
-                if (sIdx !== -1) {
-                  const sData = updated[sIdx].server_data || [];
-                  const eIdx = item.episodeName ? sData.findIndex((ep: any) => ep.name === item.episodeName) : item.currentEpisodeIndex;
-                  if (eIdx !== -1 && sData[eIdx]) {
-                    setCurrentServerIndex(sIdx);
-                    setSelectedServerIndex(sIdx);
-                    setCurrentEpisodeIndex(eIdx);
-                    restored = true;
-                  }
-                }
-              }
-            }
-
-            // If we didn't restore NguonC from history, adjust the active playing server's index
-            // so it doesn't shift due to sorting
-            if (!restored) {
-              const currentPlayingServerName = prev[currentServerIndex]?.server_name;
-              if (currentPlayingServerName) {
-                const newIdx = updated.findIndex(e => e.server_name === currentPlayingServerName);
-                if (newIdx !== -1) {
-                  setCurrentServerIndex(newIdx);
-                  setSelectedServerIndex(newIdx);
-                }
-              } else {
-                // Nếu chưa có server nào phát (prev rỗng), chọn server đầu tiên có sẵn trong danh sách đã xếp thứ tự ưu tiên
-                if (updated.length > 0) {
-                  setCurrentServerIndex(0);
-                  setSelectedServerIndex(0);
-                }
-              }
-            }
-            return updated;
-          });
-        }
-      } catch (error) {
-        // Suppressed error log to keep UI/console cleaner
-      } finally {
-        if (active) setIsLoadingNguonC(false);
-      }
-    };
-
-    fetchNguonC();
-    return () => {
-      active = false;
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movie.slug]);
 
   useEffect(() => {
-    if (!isLoadingNguonC && !isRestored) {
+    if (!isRestored) {
       // Check query parameters first (e.g. ?tap=3&server=0)
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
@@ -228,13 +96,11 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
         let foundEpisodeIdx = -1;
 
         const targetServerName = item.serverName || 
-          (item.currentServerIndex === 1 ? "NguonC" : 
-           item.currentServerIndex === 2 ? "Ophim" : 
+          (item.currentServerIndex === 2 ? "Ophim" : 
            item.currentServerIndex === 0 ? "PhimAPI" : undefined);
 
         if (targetServerName) {
           foundServerIdx = episodes.findIndex(e => e.server_name === targetServerName || 
-                           (targetServerName.startsWith("NguonC") && e.server_name.startsWith("NguonC")) ||
                            (targetServerName.startsWith("Ophim") && e.server_name.startsWith("Ophim")) ||
                            (targetServerName.startsWith("PhimAPI") && e.server_name.startsWith("PhimAPI")));
         }
@@ -260,7 +126,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
       }
       setIsRestored(true);
     }
-  }, [movie, isRestored, episodes, isLoadingNguonC]);
+  }, [movie, isRestored, episodes]);
 
   const currentServer = episodes[currentServerIndex];
   const serverData = currentServer?.server_data || [];
@@ -281,16 +147,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
 
   const [playerMode, setPlayerMode] = useState<"hls" | "iframe">("hls");
 
-  // Auto set player mode based on active server: default NguonC to iframe, others to HLS
-  useEffect(() => {
-    const currentServer = episodes[currentServerIndex];
-    if (currentServer) {
-      const isNguonC = currentServer.server_name.toLowerCase().includes("nguonc") || 
-                       currentServer.server_name.toLowerCase().includes("nguồn c") ||
-                       currentServer.server_name.toLowerCase().includes("nguon c");
-      setPlayerMode(isNguonC ? "iframe" : "hls");
-    }
-  }, [currentServerIndex, episodes]);
+
 
   const handleEpisodeSelect = (episodeIndex: number) => {
     setCurrentServerIndex(selectedServerIndex);

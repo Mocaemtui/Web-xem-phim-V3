@@ -116,9 +116,7 @@ export const resolveImgUrl = (url: string | undefined): string => {
     finalUrl = url;
   } else if (url.startsWith('upload/')) {
     finalUrl = `https://phimimg.com/${url}`;
-  } else if (url.startsWith('public/') || url.startsWith('/public/')) {
-    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    finalUrl = `https://phim.nguonc.com${cleanUrl}`;
+
   } else {
     const cleanOphimUrl = url.startsWith('movies/') ? url : `movies/${url}`;
     finalUrl = `https://img.ophim.live/uploads/${cleanOphimUrl}`;
@@ -132,19 +130,19 @@ export const resolveImgUrl = (url: string | undefined): string => {
   return finalUrl;
 };
 
-// Lấy ảnh dọc (Poster) - Ophim dùng thumb_url làm poster; PhimAPI và NguonC dùng poster_url làm poster
+// Lấy ảnh dọc (Poster) - Ophim dùng thumb_url làm poster; PhimAPI dùng poster_url làm poster
 export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string }): string => {
-  const isPhimApiOrNguonC = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com') || movie.thumb_url?.includes('nguonc') || movie.poster_url?.includes('nguonc');
-  if (isPhimApiOrNguonC) {
+  const isPhimApi = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
+  if (isPhimApi) {
     return resolveImgUrl(movie.poster_url || movie.thumb_url);
   }
   return resolveImgUrl(movie.thumb_url || movie.poster_url);
 };
 
-// Lấy ảnh ngang (Backdrop) - Ophim dùng poster_url làm backdrop; PhimAPI và NguonC dùng thumb_url làm backdrop
+// Lấy ảnh ngang (Backdrop) - Ophim dùng poster_url làm backdrop; PhimAPI dùng thumb_url làm backdrop
 export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string }): string => {
-  const isPhimApiOrNguonC = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com') || movie.thumb_url?.includes('nguonc') || movie.poster_url?.includes('nguonc');
-  if (isPhimApiOrNguonC) {
+  const isPhimApi = movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
+  if (isPhimApi) {
     return resolveImgUrl(movie.thumb_url || movie.poster_url);
   }
   return resolveImgUrl(movie.poster_url || movie.thumb_url);
@@ -153,17 +151,15 @@ export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string 
 export function sortEpisodes(eps: any[]): any[] {
   if (!eps) return [];
   const priority: Record<string, number> = {
-    phimapi: 3,
-    kkphim: 3,
-    ophim: 2,
-    nguonc: 1
+    phimapi: 2,
+    kkphim: 2,
+    ophim: 1
   };
   
   return [...eps].sort((a, b) => {
     const getPriority = (name: string) => {
       const lower = name.toLowerCase();
       if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) return priority.phimapi;
-      if (lower.includes("nguonc") || lower.includes("nguồn c") || lower.includes("nguon c")) return priority.nguonc;
       if (lower.includes("ophim")) return priority.ophim;
       return 0;
     };
@@ -239,27 +235,9 @@ export async function searchPhim(
 ): Promise<ApiResponse<MovieListResponse> | null> {
   const endpoint = `/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}`;
   
-  const fetchNguoncSearch = async () => {
-    try {
-      const res = await fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(keyword)}&page=1`, {
-        next: { revalidate: 3600 },
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'application/json'
-        }
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch (e) {
-      console.warn("NguonC search fetch failed:", e);
-      return null;
-    }
-  };
-
-  const [ophimRes, phimapiRes, nguoncRes] = await Promise.all([
+  const [ophimRes, phimapiRes] = await Promise.all([
     fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.OPHIM.url),
-    fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.PHIMAPI.url),
-    fetchNguoncSearch()
+    fetchAPI<MovieListResponse>(endpoint, 60, MOVIE_SOURCES.PHIMAPI.url)
   ]);
 
   const allItems: Movie[] = [];
@@ -278,21 +256,6 @@ export async function searchPhim(
 
   addItems(phimapiRes, 'phimapi');
   addItems(ophimRes, 'ophim');
-
-  if (nguoncRes && nguoncRes.items && Array.isArray(nguoncRes.items)) {
-    nguoncRes.items.forEach((item: any) => {
-      allItems.push({
-        _id: item.id || Math.random().toString(),
-        name: item.name,
-        slug: item.slug,
-        origin_name: item.original_name || item.name,
-        poster_url: item.poster_url || "",
-        thumb_url: item.thumb_url || "",
-        year: item.year || (item.created ? new Date(item.created).getFullYear() : 2024),
-        source: 'nguonc'
-      } as any);
-    });
-  }
 
   if (allItems.length === 0) return null;
 
@@ -434,117 +397,6 @@ export async function getDanhSach(
 }
 
 
-interface NguonCEpisodeItem {
-  name: string;
-  slug: string;
-  embed: string;
-  m3u8?: string;
-}
-
-interface NguonCEpisodeServer {
-  server_name: string;
-  items: NguonCEpisodeItem[];
-}
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[đĐ]/g, "d")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .trim();
-}
-
-async function getChiTietPhimNguonC(slug: string): Promise<MovieDetail | null> {
-  try {
-    const res = await fetch(`https://phim.nguonc.com/api/film/${slug}`, {
-      next: { revalidate: 86400 },
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-      }
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data || !data.movie) return null;
-
-    const movie = data.movie;
-
-    // Parse categories (Thể loại)
-    const categoryList: any[] = [];
-    if (movie.category) {
-      const genres = movie.category["2"]?.list;
-      if (Array.isArray(genres)) {
-        genres.forEach((g: any) => {
-          categoryList.push({
-            id: g.id || Math.random().toString(),
-            name: g.name,
-            slug: g.name ? slugify(g.name) : ""
-          });
-        });
-      }
-    }
-
-    // Parse countries (Quốc gia)
-    const countryList: any[] = [];
-    if (movie.category) {
-      const countries = movie.category["4"]?.list;
-      if (Array.isArray(countries)) {
-        countries.forEach((c: any) => {
-          countryList.push({
-            id: c.id || Math.random().toString(),
-            name: c.name,
-            slug: c.name ? slugify(c.name) : ""
-          });
-        });
-      }
-    }
-
-    // Director and Actor lists
-    const directorList = movie.director ? movie.director.split(',').map((d: string) => d.trim()).filter(Boolean) : [];
-    const actorList = movie.casts ? movie.casts.split(',').map((a: string) => a.trim()).filter(Boolean) : [];
-    
-    const standardMovie: MovieDetail = {
-      _id: movie.id || movie.slug,
-      name: movie.name,
-      slug: movie.slug,
-      origin_name: movie.original_name || movie.name,
-      poster_url: movie.poster_url || "",
-      thumb_url: movie.thumb_url || "",
-      year: movie.year || (movie.category && movie.category['3'] ? parseInt(movie.category['3'].list[0]?.name, 10) : 2024),
-      quality: movie.quality || "HD",
-      lang: movie.language || "Vietsub",
-      time: movie.time || "",
-      episode_current: movie.current_episode || "",
-      episode_total: movie.total_episodes?.toString() || "",
-      content: movie.description || "",
-      category: categoryList,
-      country: countryList,
-      director: directorList,
-      actor: actorList,
-      episodes: movie.episodes?.map((epServer: NguonCEpisodeServer) => ({
-        server_name: `NguonC - ${epServer.server_name || "NguonC"}`,
-        server_data: epServer.items?.map((ep: NguonCEpisodeItem) => ({
-          name: ep.name,
-          slug: ep.slug,
-          filename: ep.name,
-          link: "",
-          link_embed: ep.embed || "",
-          link_m3u8: ep.m3u8 || "",
-        })) || []
-      })) || []
-    };
-
-    return standardMovie;
-  } catch (error) {
-    // Suppressed error log to keep console clean
-    return null;
-  }
-}
-
 export async function getChiTietPhim(
   slug: string
 ): Promise<ApiResponse<{ item: MovieDetail }> | null> {
@@ -554,38 +406,31 @@ export async function getChiTietPhim(
     return clean(s1) === clean(s2);
   };
 
-  let [ophimRes, phimapiRes, nguonCMovie] = await Promise.all([
+  let [ophimRes, phimapiRes] = await Promise.all([
     fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 86400, MOVIE_SOURCES.OPHIM.url),
-    fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 86400, MOVIE_SOURCES.PHIMAPI.url),
-    getChiTietPhimNguonC(slug)
+    fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 86400, MOVIE_SOURCES.PHIMAPI.url)
   ]);
 
-  let baseMovie: MovieDetail | null = phimapiRes?.data?.item || nguonCMovie || ophimRes?.data?.item || null;
+  let baseMovie: MovieDetail | null = phimapiRes?.data?.item || ophimRes?.data?.item || null;
 
   // --- SMART CROSS-API MATCHING (FALLBACK) ---
   if (baseMovie) {
     const originName = baseMovie.origin_name || baseMovie.name;
     const movieName = baseMovie.name;
     
-    if ((!ophimRes?.data?.item || !phimapiRes?.data?.item || !nguonCMovie) && originName) {
+    if ((!ophimRes?.data?.item || !phimapiRes?.data?.item) && originName) {
       // Step 1: Parallelize searches
-      const [searchOphim, searchPhimapi, searchNguonc] = await Promise.all([
+      const [searchOphim, searchPhimapi] = await Promise.all([
         !ophimRes?.data?.item 
           ? fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(originName)}`, 60, MOVIE_SOURCES.OPHIM.url) 
           : Promise.resolve(null),
         !phimapiRes?.data?.item 
           ? fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(originName)}`, 60, MOVIE_SOURCES.PHIMAPI.url) 
-          : Promise.resolve(null),
-        !nguonCMovie
-          ? fetch(`https://phim.nguonc.com/api/films/search?keyword=${encodeURIComponent(originName)}`)
-              .then(r => r.ok ? r.json() : null)
-              .catch(() => null)
           : Promise.resolve(null)
       ]);
 
       let fetchOphimPromise: Promise<ApiResponse<{ item: MovieDetail }> | null> | null = null;
       let fetchPhimapiPromise: Promise<ApiResponse<{ item: MovieDetail }> | null> | null = null;
-      let fetchNguoncPromise: Promise<MovieDetail | null> | null = null;
 
       if (searchOphim?.data?.items) {
         const match = searchOphim.data.items.find(m => 
@@ -611,29 +456,15 @@ export async function getChiTietPhim(
         }
       }
 
-      if (searchNguonc?.items) {
-        const match = searchNguonc.items.find((m: any) => 
-          normalizeCompare(m.original_name, originName) || 
-          normalizeCompare(m.name, originName) ||
-          normalizeCompare(m.original_name, movieName) ||
-          normalizeCompare(m.name, movieName)
-        );
-        if (match && match.slug !== slug) {
-          fetchNguoncPromise = getChiTietPhimNguonC(match.slug);
-        }
-      }
-
       // Step 2: Parallelize detail fetches
-      if (fetchOphimPromise || fetchPhimapiPromise || fetchNguoncPromise) {
-        const [fallbackOphim, fallbackPhimapi, fallbackNguonc] = await Promise.all([
+      if (fetchOphimPromise || fetchPhimapiPromise) {
+        const [fallbackOphim, fallbackPhimapi] = await Promise.all([
           fetchOphimPromise || Promise.resolve(null),
-          fetchPhimapiPromise || Promise.resolve(null),
-          fetchNguoncPromise || Promise.resolve(null)
+          fetchPhimapiPromise || Promise.resolve(null)
         ]);
         
         if (fallbackOphim?.data?.item) ophimRes = fallbackOphim;
         if (fallbackPhimapi?.data?.item) phimapiRes = fallbackPhimapi;
-        if (fallbackNguonc) nguonCMovie = fallbackNguonc;
       }
     }
   }
@@ -645,20 +476,16 @@ export async function getChiTietPhim(
     allEpisodes.push(...(phimapiRes.data.item.episodes?.map(e => ({ ...e, server_name: `PhimAPI - ${e.server_name}` })) || []));
   }
 
-  if (nguonCMovie) {
-    allEpisodes.push(...(nguonCMovie.episodes || []));
-  }
-
   if (ophimRes?.data?.item) {
     allEpisodes.push(...(ophimRes.data.item.episodes?.map(e => ({ ...e, server_name: `Ophim - ${e.server_name}` })) || []));
   }
 
-  // Re-evaluate baseMovie based on priority: PhimAPI > NguonC > Ophim
-  baseMovie = phimapiRes?.data?.item || nguonCMovie || ophimRes?.data?.item || null;
+  // Re-evaluate baseMovie based on priority: PhimAPI > Ophim
+  baseMovie = phimapiRes?.data?.item || ophimRes?.data?.item || null;
 
   if (!baseMovie) return null;
 
-  // Swap primary and alternate images to prioritize PhimAPI > NguonC > Ophim
+  // Swap primary and alternate images to prioritize PhimAPI > Ophim
   if (phimapiRes?.data?.item) {
     if (baseMovie !== phimapiRes.data.item) {
       // Save original images as alternates
@@ -668,24 +495,6 @@ export async function getChiTietPhim(
       // Set PhimAPI's images as primary
       baseMovie.poster_url = phimapiRes.data.item.poster_url;
       baseMovie.thumb_url = phimapiRes.data.item.thumb_url;
-    } else {
-      if (nguonCMovie) {
-        baseMovie.alt_poster_url = nguonCMovie.poster_url;
-        baseMovie.alt_thumb_url = nguonCMovie.thumb_url;
-      } else if (ophimRes?.data?.item) {
-        baseMovie.alt_poster_url = ophimRes.data.item.poster_url;
-        baseMovie.alt_thumb_url = ophimRes.data.item.thumb_url;
-      }
-    }
-  } else if (nguonCMovie) {
-    if (baseMovie !== nguonCMovie) {
-      // Save original images as alternates
-      baseMovie.alt_poster_url = baseMovie.poster_url;
-      baseMovie.alt_thumb_url = baseMovie.thumb_url;
-      
-      // Set NguonC's images as primary
-      baseMovie.poster_url = nguonCMovie.poster_url;
-      baseMovie.thumb_url = nguonCMovie.thumb_url;
     } else {
       if (ophimRes?.data?.item) {
         baseMovie.alt_poster_url = ophimRes.data.item.poster_url;

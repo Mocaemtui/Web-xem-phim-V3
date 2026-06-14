@@ -9,17 +9,6 @@ interface ExtendedMovie extends Movie {
   source?: string;
 }
 
-interface NguonCMovieItem {
-  id: string;
-  name: string;
-  slug: string;
-  original_name?: string;
-  poster_url: string;
-  thumb_url: string;
-  year?: number;
-  created?: string;
-  modified?: string;
-}
 
 interface SearchGridProps {
   initialMovies: Movie[];
@@ -41,7 +30,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
   };
 
   const [movies, setMovies] = useState<ExtendedMovie[]>(initialMovies);
-  const [isLoadingNguonC, setIsLoadingNguonC] = useState(false);
+
   const [selectedSource, setSelectedSource] = useState<string>("all");
 
   useEffect(() => {
@@ -167,7 +156,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       });
     };
 
-    // 1. Build a map of fallback images prioritizing PhimAPI > NguonC > Ophim
+    // 1. Build a map of fallback images prioritizing PhimAPI > Ophim
     const imageMap = new Map<string, { poster_url: string; thumb_url: string; source: string }>();
     
     // First, populate with Ophim images (lowest priority)
@@ -177,12 +166,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       }
     });
 
-    // Then, populate/overwrite with NguonC images (medium priority)
-    movies.forEach(m => {
-      if (m.source === 'nguonc' && m.poster_url && m.thumb_url) {
-        imageMap.set(getSmartKey(m), { poster_url: m.poster_url, thumb_url: m.thumb_url, source: 'nguonc' });
-      }
-    });
+
     
     // Finally, populate/overwrite with PhimAPI images (highest priority)
     movies.forEach(m => {
@@ -197,8 +181,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       const mappedImg = imageMap.get(key);
       if (mappedImg && movie.source !== mappedImg.source) {
         const getPriority = (src: string) => {
-          if (src === 'phimapi') return 3;
-          if (src === 'nguonc') return 2;
+          if (src === 'phimapi') return 2;
           if (src === 'ophim') return 1;
           return 0;
         };
@@ -215,19 +198,17 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
     // 3. Extract and sort movies for each source
     const phimapiMovies = resolvedMovies.filter(m => m.source === 'phimapi');
-    const sortedNguonCMovies = sortMovies(resolvedMovies.filter(m => m.source === 'nguonc'));
     const ophimMovies = resolvedMovies.filter(m => m.source === 'ophim');
 
     // 4. Return results based on selectedSource
     if (selectedSource === "all") {
-      // Group movies by source priority: phimapi (first) -> nguonc (second) -> ophim (third)
+      // Group movies by source priority: phimapi (first) -> ophim (second)
       const sortedGroupedMovies = [
         ...phimapiMovies,
-        ...sortedNguonCMovies,
         ...ophimMovies
       ];
 
-      // Deduplicate (first occurrence wins, which will be phimapi if available, then nguonc, then ophim)
+      // Deduplicate (first occurrence wins, which will be phimapi if available, then ophim)
       const itemsMap = new Map<string, ExtendedMovie>();
       sortedGroupedMovies.forEach(movie => {
         const key = getSmartKey(movie);
@@ -239,8 +220,6 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       return Array.from(itemsMap.values());
     } else if (selectedSource === "phimapi") {
       return phimapiMovies; // Original API relevance order
-    } else if (selectedSource === "nguonc") {
-      return sortedNguonCMovies; // Sorted by relevance + modified time
     } else if (selectedSource === "ophim") {
       return ophimMovies; // Original API relevance order (no sorting)
     } else {
@@ -251,11 +230,10 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
   const sourceFilters = [
     { id: "all", name: "Tất cả" },
     { id: "phimapi", name: "PhimAPI" },
-    { id: "nguonc", name: "NguonC" },
     { id: "ophim", name: "Ophim" },
   ];
 
-  if (filteredMovies.length === 0 && !isLoadingNguonC) {
+  if (filteredMovies.length === 0) {
     return (
       <div>
         {/* Top Bar with Back Button */}
@@ -331,17 +309,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
           <MovieCardWrapper key={`${movie.source || 'default'}-${movie.slug || movie._id}`} movie={movie} />
         ))}
       </div>
-      {isLoadingNguonC && (
-        <div className="mt-8 flex justify-center">
-          <div className="flex items-center gap-2 text-zinc-500">
-            <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span className="text-sm">Đang quét thêm nguồn backup...</span>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
