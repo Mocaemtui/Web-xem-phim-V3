@@ -329,12 +329,8 @@ export default function VideoPlayer({
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = videoUrl;
-      playVideo = () => {
-        if (isMountedRef.current) {
-          video.play().catch(() => {});
-        }
-      };
-      video.addEventListener("loadedmetadata", playVideo);
+      // Do not force programmatical autoplay on loadedmetadata in iOS Safari to avoid locking the media element.
+      // Let the native controls or user tap initialize the gesture context.
     } else {
       video.src = videoUrl;
     }
@@ -342,9 +338,6 @@ export default function VideoPlayer({
     return () => {
       if (hls) {
         hls.destroy();
-      }
-      if (playVideo) {
-        video.removeEventListener("loadedmetadata", playVideo);
       }
     };
   }, [videoUrl, embedUrl]);
@@ -761,15 +754,9 @@ export default function VideoPlayer({
                 }
               }}
               onClick={(e) => {
-                const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
-                if (isMobile) {
-                  if (!showControls) {
-                    setShowControls(true);
-                    resetControlsTimer();
-                  } else {
-                    togglePlay();
-                  }
-                } else {
+                // On mobile, let the native controls handle all play/pause actions.
+                // Do not intercept or perform state mutations to avoid Safari user gesture cancellation.
+                if (!isMobile) {
                   togglePlay();
                 }
               }}
