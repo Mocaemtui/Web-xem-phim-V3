@@ -42,6 +42,17 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     setIsMobileDevice(/Mobi|Android|iPhone/i.test(navigator.userAgent));
   }, []);
 
+  const lastSyncTimeRef = useRef<number>(0);
+  const lastSyncTimestampRef = useRef<number>(0);
+  const lastSyncPlayingRef = useRef<boolean>(false);
+  const [isOutOfSync, setIsOutOfSync] = useState<boolean>(false);
+
+  const handleLocalStateSync = (time: number, playing: boolean) => {
+    lastSyncTimeRef.current = time;
+    lastSyncTimestampRef.current = Date.now();
+    lastSyncPlayingRef.current = playing;
+  };
+
   // Auto-hide Top Controls in Theater Mode on inactivity
   const [showTopControls, setShowTopControls] = useState(true);
   const topControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -287,6 +298,41 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     onChangeEpisodeRef,
   } = useWatchTogether(isJoined ? roomId : "", username, true);
 
+  useEffect(() => {
+    if (!isJoined) return;
+    
+    const interval = setInterval(() => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      if (watchers.length <= 1) {
+        setIsOutOfSync(false);
+        return;
+      }
+
+      if (lastSyncTimestampRef.current === 0) {
+        setIsOutOfSync(false);
+        return;
+      }
+
+      let estimatedHostTime = lastSyncTimeRef.current;
+      if (lastSyncPlayingRef.current) {
+        estimatedHostTime += (Date.now() - lastSyncTimestampRef.current) / 1000;
+      }
+
+      const timeDiff = Math.abs(video.currentTime - estimatedHostTime);
+      const isPlayStateMismatch = video.paused === lastSyncPlayingRef.current;
+      
+      if (timeDiff > 3 || (isPlayStateMismatch && timeDiff > 1.5)) {
+        setIsOutOfSync(true);
+      } else {
+        setIsOutOfSync(false);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isJoined, watchers.length]);
+
   const lastMessageCountRef = useRef(0);
   const lastBufferTimeRef = useRef(0);
 
@@ -364,6 +410,9 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
           videoRef.current.currentTime = time;
         }
         videoRef.current.play().catch(() => {});
+        lastSyncTimeRef.current = time;
+        lastSyncTimestampRef.current = Date.now();
+        lastSyncPlayingRef.current = true;
         setTimeout(() => { isReceivingEvent.current = false; }, 500);
       }
     };
@@ -372,6 +421,9 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
       if (videoRef.current) {
         isReceivingEvent.current = true;
         videoRef.current.pause();
+        lastSyncTimeRef.current = videoRef.current.currentTime;
+        lastSyncTimestampRef.current = Date.now();
+        lastSyncPlayingRef.current = false;
         setTimeout(() => { isReceivingEvent.current = false; }, 500);
       }
     };
@@ -380,6 +432,8 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
       if (videoRef.current) {
         isReceivingEvent.current = true;
         videoRef.current.currentTime = time;
+        lastSyncTimeRef.current = time;
+        lastSyncTimestampRef.current = Date.now();
         setTimeout(() => { isReceivingEvent.current = false; }, 500);
       }
     };
@@ -408,6 +462,11 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     onSyncResponseRef.current = (data) => {
       if (hasSynced.current) return;
       hasSynced.current = true;
+
+      // Update sync tracking refs
+      lastSyncTimeRef.current = data.time;
+      lastSyncTimestampRef.current = Date.now();
+      lastSyncPlayingRef.current = data.isPlaying;
 
       const isEpisodeDifferent = data.serverIndex !== currentServerIndexRef.current || data.episodeIndex !== currentEpisodeIndexRef.current;
 
@@ -735,12 +794,20 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               <div className="relative">
                 <button
                   onClick={() => {
+                    if (isOutOfSync) {
+                      handleSyncClick();
+                    }
                     setShowWatchers(prev => !prev);
                     setShowEmojis(false);
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${showWatchers ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${
+                    isOutOfSync 
+                      ? "bg-red-950/20 border-red-500/50 text-red-400 hover:bg-red-900/35 animate-pulse" 
+                      : "bg-emerald-950/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-900/35"
+                  }`}
+                  title={isOutOfSync ? "Bị lệch hình! Click để đồng bộ lại" : "Kết nối ổn định"}
                 >
-                  <Users className="w-3.5 h-3.5" />
+                  <Users className={`w-3.5 h-3.5 ${isOutOfSync ? "text-red-500 animate-bounce" : "text-emerald-400"}`} />
                   <span>{watchers.length}</span>
                 </button>
 
@@ -836,13 +903,22 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 isWatchTogether={true}
                 isTheaterMode={isTheaterMode}
                 onPlaySync={() => {
-                  if (hasSynced.current && !isReceivingEvent.current && videoRef.current) triggerPlay(videoRef.current.currentTime);
+                  if (hasSynced.current && !isReceivingEvent.current && videoRef.current) {
+                    triggerPlay(videoRef.current.currentTime);
+                    handleLocalStateSync(videoRef.current.currentTime, true);
+                  }
                 }}
                 onPauseSync={() => {
-                  if (hasSynced.current && !isReceivingEvent.current) triggerPause();
+                  if (hasSynced.current && !isReceivingEvent.current && videoRef.current) {
+                    triggerPause();
+                    handleLocalStateSync(videoRef.current.currentTime, false);
+                  }
                 }}
                 onSeekSync={(time) => {
-                  if (hasSynced.current && !isReceivingEvent.current) triggerSeek(time);
+                  if (hasSynced.current && !isReceivingEvent.current) {
+                    triggerSeek(time);
+                    handleLocalStateSync(time, lastSyncPlayingRef.current);
+                  }
                 }}
                 onBuffering={handleBuffering}
                 hasNextEpisode={currentEpisodeIndex < serverData.length - 1}
@@ -883,8 +959,20 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 Tập phim
               </button>
               <button
-                onClick={() => setActiveMobileTab("watchers")}
-                className={`flex-1 py-2.5 text-center text-xs font-semibold border-b-2 transition-colors ${activeMobileTab === "watchers" ? "border-red-500 text-red-400" : "border-transparent text-zinc-400 hover:text-zinc-200"}`}
+                onClick={() => {
+                  if (isOutOfSync) {
+                    handleSyncClick();
+                  }
+                  setActiveMobileTab("watchers");
+                }}
+                className={`flex-1 py-2.5 text-center text-xs font-semibold border-b-2 transition-all ${
+                  activeMobileTab === "watchers" 
+                    ? "border-red-500 text-red-400" 
+                    : isOutOfSync 
+                      ? "border-red-500 text-red-500 animate-pulse font-bold" 
+                      : "border-transparent text-zinc-400 hover:text-zinc-200"
+                }`}
+                title={isOutOfSync ? "Bị lệch hình! Click để đồng bộ lại" : "Kết nối ổn định"}
               >
                 Người xem ({watchers.length})
               </button>
@@ -993,12 +1081,20 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             <div className="relative">
               <button
                 onClick={() => {
+                  if (isOutOfSync) {
+                    handleSyncClick();
+                  }
                   setShowWatchers(prev => !prev);
                   setShowEmojis(false);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${showWatchers ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${
+                  isOutOfSync 
+                    ? "bg-red-950/20 border-red-500/50 text-red-400 hover:bg-red-900/35 animate-pulse" 
+                    : "bg-emerald-950/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-900/35"
+                }`}
+                title={isOutOfSync ? "Bị lệch hình! Click để đồng bộ lại" : "Kết nối ổn định"}
               >
-                <Users className="w-3.5 h-3.5" />
+                <Users className={`w-3.5 h-3.5 ${isOutOfSync ? "text-red-500 animate-bounce" : "text-emerald-400"}`} />
                 <span>{watchers.length}</span>
               </button>
 
@@ -1097,12 +1193,20 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 <div className="relative">
                   <button
                     onClick={() => {
+                      if (isOutOfSync) {
+                        handleSyncClick();
+                      }
                       setShowWatchers(prev => !prev);
                       setShowEmojis(false);
                     }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all border cursor-pointer ${showWatchers ? "bg-zinc-800 border-zinc-700 text-red-500" : "bg-zinc-900/50 border-zinc-800/50 text-zinc-400 hover:text-zinc-200"}`}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all border cursor-pointer ${
+                      isOutOfSync 
+                        ? "bg-red-950/20 border-red-500/50 text-red-400 hover:bg-red-900/35 animate-pulse" 
+                        : "bg-emerald-950/20 border-emerald-500/50 text-emerald-400 hover:bg-emerald-900/35"
+                    }`}
+                    title={isOutOfSync ? "Bị lệch hình! Click để đồng bộ lại" : "Kết nối ổn định"}
                   >
-                    <Users className="w-3.5 h-3.5" />
+                    <Users className={`w-3.5 h-3.5 ${isOutOfSync ? "text-red-500 animate-bounce" : "text-emerald-400"}`} />
                     <span>Người xem</span>
                   </button>
 
