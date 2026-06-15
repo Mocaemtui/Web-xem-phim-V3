@@ -21,16 +21,32 @@ export async function fetchAPI<T>(
   customBaseUrl?: string
 ): Promise<ApiResponse<T> | null> {
   try {
+    const isBrowser = typeof window !== "undefined";
     const baseUrl = customBaseUrl || API_BASE_URL;
+
+    if (isBrowser) {
+      try {
+        const proxyUrl = `/api/proxy?endpoint=${encodeURIComponent(endpoint)}&baseUrl=${encodeURIComponent(baseUrl)}&revalidate=${revalidate}`;
+        const response = await fetch(proxyUrl);
+        if (!response.ok) return null;
+        return await response.json();
+      } catch (err) {
+        console.error('Client proxy fetch error:', err);
+        return null;
+      }
+    }
+
     const hasQuery = endpoint.includes('?');
     const url = `${baseUrl}${endpoint}${hasQuery ? '&' : '?'}cb=1`;
     
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    };
+
     const options = {
       next: { revalidate },
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-      }
+      headers
     };
 
     let response = await fetch(url, options);
@@ -387,303 +403,12 @@ export async function getDanhSach(
 }
 
 
-const animeMalCache: Record<string, Record<number, number>> = {};
 
-const getMatchScore = (anime: any, query: string): number => {
-  const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
-  const queryWords = clean(query).split(/\s+/).filter(w => w.length > 2);
-  if (queryWords.length === 0) return 1.0;
-  
-  const titles = [
-    anime.title,
-    anime.title_english,
-    anime.title_japanese,
-    ...(anime.title_synonyms || [])
-  ].filter(Boolean).map(t => clean(t));
-  
-  let maxScore = 0;
-  for (const title of titles) {
-    let matches = 0;
-    for (const word of queryWords) {
-      if (title.includes(word)) {
-        matches++;
-      }
-    }
-    const score = matches / queryWords.length;
-    if (score > maxScore) {
-      maxScore = score;
-    }
-  }
-  return maxScore;
-};
-
-async function getAnimeMalIds(originalName: string, seasonCount: number): Promise<Record<number, number>> {
-  const cacheKey = originalName.toLowerCase().trim();
-  if (animeMalCache[cacheKey]) {
-    return animeMalCache[cacheKey];
-  }
-
-  const malIds: Record<number, number> = {};
-
-  // 1. Try AniList GraphQL API first (Fast, Stable, No Rate Limit timeouts)
-  try {
-    const query = `
-      query ($search: String) {
-        Page(page: 1, perPage: 15) {
-          media(search: $search, type: ANIME, format_in: [TV, ONA]) {
-            id
-            idMal
-            title {
-              romaji
-              english
-            }
-            startDate {
-              year
-            }
-          }
-        }
-      }
-    `;
-    
-    const response = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        query: query,
-        variables: {
-          search: originalName
-        }
-      }),
-      next: { revalidate: 86400 }
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      const mediaList = result.data?.Page?.media || [];
-      
-      if (mediaList.length > 0) {
-        const tvShows = mediaList.filter((item: any) => item.idMal !== null);
-        
-        tvShows.sort((a: any, b: any) => {
-          const scoreA = getMatchScore({ title: a.title.romaji, title_english: a.title.english }, originalName);
-          const scoreB = getMatchScore({ title: b.title.romaji, title_english: b.title.english }, originalName);
-          if (Math.abs(scoreB - scoreA) > 0.01) {
-            return scoreB - scoreA;
-          }
-          const yearA = a.startDate?.year || 0;
-          const yearB = b.startDate?.year || 0;
-          return yearA - yearB;
-        });
-        
-        for (let s = 1; s <= seasonCount; s++) {
-          const matchedAnime = tvShows[s - 1];
-          if (matchedAnime) {
-            malIds[s] = matchedAnime.idMal;
-          }
-        }
-        
-        if (Object.keys(malIds).length > 0) {
-          animeMalCache[cacheKey] = malIds;
-          return malIds;
-        }
-      }
-    }
-  } catch (e) {
-    console.warn("AniList query error, falling back to Jikan:", e);
-  }
-
-  // 2. Fallback to Jikan API (Legacy)
-  try {
-    let attempt = 0;
-    let res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(originalName)}&limit=15`);
-    
-    while (res.status === 429 && attempt < 2) {
-      attempt++;
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(originalName)}&limit=15`);
-    }
-
-    if (!res.ok) return malIds;
-    const data = await res.json();
-    if (data.data && data.data.length > 0) {
-      let tvShows = data.data.filter((item: any) => {
-        const isCorrectType = item.type === "TV" || item.type === "ONA" || item.type === "TV Special";
-        const score = getMatchScore(item, originalName);
-        return isCorrectType && score >= 0.15;
-      });
-      
-      if (tvShows.length === 0) {
-        tvShows = data.data;
-      }
-      
-      tvShows.sort((a: any, b: any) => {
-        const scoreA = getMatchScore(a, originalName);
-        const scoreB = getMatchScore(b, originalName);
-        if (Math.abs(scoreB - scoreA) > 0.01) {
-          return scoreB - scoreA;
-        }
-        const dateA = a.aired?.from ? new Date(a.aired.from).getTime() : 0;
-        const dateB = b.aired?.from ? new Date(b.aired.from).getTime() : 0;
-        return dateA - dateB;
-      });
-      
-      for (let s = 1; s <= seasonCount; s++) {
-        const matchedAnime = tvShows[s - 1];
-        if (matchedAnime) {
-          malIds[s] = matchedAnime.mal_id;
-        }
-      }
-      animeMalCache[cacheKey] = malIds;
-    }
-  } catch (e) {
-    console.warn("getAnimeMalIds Jikan fallback error:", e);
-  }
-  return malIds;
-}
 
 export async function getChiTietPhim(
   slug: string
 ): Promise<ApiResponse<{ item: MovieDetail }> | null> {
-  const tmdbKey = process.env.TMDB_API_KEY;
-  if (slug.startsWith("tmdb-") && tmdbKey) {
-    const parts = slug.split("-");
-    const mediaType = parts[1]; // 'tv' or 'movie'
-    const tmdbId = parts[2];
-    
-    try {
-      const url = `${TMDB_API_BASE_URL}/3/${mediaType}/${tmdbId}?api_key=${tmdbKey}&language=vi-VN`;
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      const data = await res.json();
-      
-      const title = data.name || data.title;
-      const originTitle = data.original_name || data.original_title;
-      
-      const categoryList = data.genres?.map((g: any) => ({
-        id: g.id.toString(),
-        name: g.name,
-        slug: g.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
-      })) || [];
-      
-      const countryList = data.production_countries?.map((c: any) => ({
-        id: c.iso_3166_1.toLowerCase(),
-        name: c.name,
-        slug: c.iso_3166_1.toLowerCase()
-      })) || [];
 
-      const primaryColor = "B20710"; // theme-primary red
-      const secondaryColor = "170000";
-      const iconColor = "B20710";
-      const icons = "vid";
-      
-      const isAnime = data.genres?.some((g: any) => g.id === 16 || g.name?.toLowerCase().includes("hoạt hình") || g.name?.toLowerCase().includes("animation")) && 
-                      (data.original_language === 'ja' || data.origin_country?.includes('JP'));
-
-      let animeMalIds: Record<number, number> = {};
-      if (isAnime && mediaType === 'tv') {
-        animeMalIds = await getAnimeMalIds(originTitle || title, data.seasons?.length || 1);
-      }
-
-      const serverEpisodes: any[] = [];
-      
-      if (mediaType === 'movie') {
-        serverEpisodes.push({
-          server_name: "Server Quốc tế (VidLink)",
-          server_data: [{
-            name: "Full",
-            slug: "full",
-            filename: "Full",
-            link: "",
-            link_embed: `https://vidlink.pro/movie/${tmdbId}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
-            link_m3u8: ""
-          }]
-        });
-      } else {
-        if (data.seasons && data.seasons.length > 0) {
-          data.seasons.forEach((season: any) => {
-            if (season.season_number > 0 && season.episode_count > 0) {
-              const seasonNum = season.season_number;
-              const malId = animeMalIds[seasonNum];
-              
-              if (malId) {
-                // Server Quốc tế Anime (MAL-based)
-                const anime_server_data = Array.from({ length: season.episode_count }, (_, idx) => {
-                  const epNum = idx + 1;
-                  return {
-                    name: `Tập ${epNum}`,
-                    slug: `tap-${epNum}`,
-                    filename: `Tập ${epNum}`,
-                    link: "",
-                    link_embed: `https://vidlink.pro/anime/${malId}/${epNum}/sub?fallback=true&primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
-                    link_m3u8: ""
-                  };
-                });
-                serverEpisodes.push({
-                  server_name: `Mùa ${seasonNum} (VidLink Anime)`,
-                  server_data: anime_server_data
-                });
-              }
-
-              // Server Quốc tế TV (TMDB-based)
-              const tv_server_data = Array.from({ length: season.episode_count }, (_, idx) => {
-                const epNum = idx + 1;
-                return {
-                  name: `Tập ${epNum}`,
-                  slug: `tap-${epNum}`,
-                  filename: `Tập ${epNum}`,
-                  link: "",
-                  link_embed: `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
-                  link_m3u8: ""
-                };
-              });
-              serverEpisodes.push({
-                server_name: `Mùa ${seasonNum} (VidLink)`,
-                server_data: tv_server_data
-              });
-            }
-          });
-        }
-      }
-
-      const movieDetail: MovieDetail = {
-        _id: slug,
-        name: title,
-        slug: slug,
-        origin_name: originTitle || title,
-        poster_url: data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : "",
-        thumb_url: data.backdrop_path ? `https://image.tmdb.org/t/p/w1280${data.backdrop_path}` : "",
-        year: data.first_air_date || data.release_date ? new Date(data.first_air_date || data.release_date).getFullYear() : 2024,
-        quality: "HD",
-        lang: "Vietsub/Mutilsub",
-        time: data.episode_run_time ? `${data.episode_run_time[0] || ""} phút` : (data.runtime ? `${data.runtime} phút` : ""),
-        episode_current: mediaType === 'movie' ? "Full" : `Hoàn tất (${data.number_of_episodes || 0} tập)`,
-        episode_total: mediaType === 'movie' ? "1" : (data.number_of_episodes?.toString() || ""),
-        content: data.overview || "Chưa có tóm tắt tiếng Việt cho phim này.",
-        category: categoryList,
-        country: countryList,
-        director: [],
-        actor: [],
-        episodes: serverEpisodes,
-        tmdb: {
-          type: mediaType,
-          id: parseInt(tmdbId, 10),
-          vote_average: data.vote_average || 0,
-          vote_count: data.vote_count || 0
-        }
-      };
-      
-      return {
-        status: "success",
-        data: { item: movieDetail }
-      };
-    } catch (e) {
-      console.error("TMDB getChiTietPhim error:", e);
-      return null;
-    }
-  }
 
   const normalizeCompare = (s1: string | undefined, s2: string | undefined): boolean => {
     if (!s1 || !s2) return false;
@@ -770,84 +495,7 @@ export async function getChiTietPhim(
 
   if (!baseMovie) return null;
 
-  // Inject Server Quốc tế (VidLink) if TMDB ID is available on the domestic movie
-  if (baseMovie.tmdb?.id) {
-    const tmdbId = baseMovie.tmdb.id.toString();
-    const mediaType = baseMovie.tmdb.type || 'movie';
-    const isTv = mediaType === 'tv' || (baseMovie.episodes?.[0]?.server_data?.length || 0) > 1;
-    
-    const primaryColor = "B20710";
-    const secondaryColor = "170000";
-    const iconColor = "B20710";
-    const icons = "vid";
-    
-    const hasJapan = baseMovie.country?.some(c => c.name?.toLowerCase().includes('nhật') || c.slug === 'nhat-ban') || false;
-    const isAnime = (baseMovie.type === 'hoathinh' || 
-                    baseMovie.category?.some(c => c.name?.toLowerCase().includes('hoạt hình') || c.name?.toLowerCase().includes('anime')) || false) && hasJapan;
-    
-    if (!isTv) {
-      // Movie
-      const vidLinkServerData = [{
-        name: "Full",
-        slug: "full",
-        filename: "Full",
-        link: "",
-        link_embed: `https://vidlink.pro/movie/${tmdbId}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
-        link_m3u8: ""
-      }];
-      allEpisodes.push({
-        server_name: "Server Quốc tế (VidLink)",
-        server_data: vidLinkServerData
-      });
-    } else {
-      // TV Show - use the first available domestic server to get base episode names
-      const baseServer = baseMovie.episodes?.[0] || (phimapiRes?.data?.item?.episodes?.[0] || ophimRes?.data?.item?.episodes?.[0]);
-      if (baseServer && baseServer.server_data) {
-        const seasonNum = baseMovie.tmdb.season || 1;
-        let malId: number | undefined = undefined;
-        
-        if (isAnime) {
-          const originTitle = baseMovie.origin_name || baseMovie.name;
-          const animeMalIds = await getAnimeMalIds(originTitle, seasonNum);
-          malId = animeMalIds[seasonNum];
-        }
-        
-        if (malId) {
-          const animeServerData = baseServer.server_data.map((ep: any, idx: number) => {
-            const epNum = idx + 1;
-            return {
-              name: ep.name,
-              slug: ep.slug,
-              filename: ep.name,
-              link: "",
-              link_embed: `https://vidlink.pro/anime/${malId}/${epNum}/sub?fallback=true&primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
-              link_m3u8: ""
-            };
-          });
-          allEpisodes.push({
-            server_name: "Server Quốc tế (VidLink Anime)",
-            server_data: animeServerData
-          });
-        }
 
-        const tvServerData = baseServer.server_data.map((ep: any, idx: number) => {
-          const epNum = idx + 1;
-          return {
-            name: ep.name,
-            slug: ep.slug,
-            filename: ep.name,
-            link: "",
-            link_embed: `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}?primaryColor=${primaryColor}&secondaryColor=${secondaryColor}&iconColor=${iconColor}&icons=${icons}&autoplay=false`,
-            link_m3u8: ""
-          };
-        });
-        allEpisodes.push({
-          server_name: "Server Quốc tế (VidLink)",
-          server_data: tvServerData
-        });
-      }
-    }
-  }
 
   // Swap primary and alternate images to prioritize PhimAPI > Ophim
   if (phimapiRes?.data?.item) {

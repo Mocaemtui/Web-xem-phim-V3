@@ -17,7 +17,7 @@ export default async function Home() {
     longTiengData,
     thuyetMinhData,
   ] = await Promise.all([
-    getPhimMoi(1, 18), // Fetch 18 items to take 6 for Hero and 12 for Slider
+    getPhimMoi(1, 30), // Fetch 30 items to ensure enough Âu Mỹ/Nhật matches for Hero and remaining for Slider
     getDanhSach("phim-bo", { page: 1, limit: 12, country: "viet-nam" }),
     getDanhSach("phim-le", { page: 1, limit: 12, country: "au-my" }),
     getDanhSach("phim-bo", { page: 1, limit: 12, country: "han-quoc" }),
@@ -46,22 +46,31 @@ export default async function Home() {
   const heroMovies: any[] = [];
   const sliderPhimMoi: any[] = [];
   
-  // Fetch song song để kiểm tra phim nào có trailer
+  // Fetch song song để kiểm tra phim nào có trailer và quốc gia hợp lệ (Âu Mỹ hoặc Nhật)
   const movieDetailsPromises = allPhimMoi.map(async (movie: any) => {
     try {
       const res = await fetch(`https://phimapi.com/phim/${movie.slug}`, { next: { revalidate: 3600 } });
       const data = await res.json();
-      const isTrungQuoc = data.movie?.country?.some((c: any) => c.slug === 'trung-quoc') || false;
-      return { movie, hasTrailer: !!data.movie?.trailer_url, isTrungQuoc };
+      
+      const countries = data.movie?.country || [];
+      const allowedCountrySlugs = [
+        'au-my', 'nhat-ban', 'my', 'anh', 'canada', 'phap', 'duc', 'uc', 'y', 
+        'tay-ban-nha', 'ha-lan', 'mexico', 'thuy-dien', 'dan-mach', 'thuy-si', 
+        'ukraina', 'ba-lan', 'bo-dao-nha', 'na-uy', 'nga', 'brazil'
+      ];
+      const isAuMyOrNhat = countries.some((c: any) => allowedCountrySlugs.includes(c.slug));
+      const hasTrailer = !!data.movie?.trailer_url;
+      
+      return { movie, hasTrailer, isAuMyOrNhat };
     } catch (e) {
-      return { movie, hasTrailer: false, isTrungQuoc: false };
+      return { movie, hasTrailer: false, isAuMyOrNhat: false };
     }
   });
   
   const movieDetails = await Promise.all(movieDetailsPromises);
   
-  for (const { movie, hasTrailer, isTrungQuoc } of movieDetails) {
-    if (hasTrailer && !isTrungQuoc && heroMovies.length < 6) {
+  for (const { movie, hasTrailer, isAuMyOrNhat } of movieDetails) {
+    if (hasTrailer && isAuMyOrNhat && heroMovies.length < 6) {
       heroMovies.push(movie);
     } else {
       sliderPhimMoi.push(movie);

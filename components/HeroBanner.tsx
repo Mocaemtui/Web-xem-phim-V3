@@ -6,7 +6,7 @@ import Image from "next/image";
 import type { Movie } from "@/types/api";
 import { getBackdropUrl } from "@/lib/api";
 import { Play, Info, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 
 import YouTube from "react-youtube";
 
@@ -23,7 +23,9 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
   const [isMobile, setIsMobile] = useState(false);
   const playerRef = useRef<any>(null);
 
-
+  // Parallax effect
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, [0, 800], [0, -100]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -268,7 +270,10 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
       )}
 
       {/* Content */}
-      <div className="container mx-auto px-4 relative z-10 w-full">
+      <motion.div 
+        style={{ y: isMobile ? 0 : y }}
+        className="container mx-auto px-4 relative z-10 w-full"
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={`content-${movie._id}`}
@@ -363,7 +368,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
             ))}
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

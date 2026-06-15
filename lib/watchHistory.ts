@@ -8,6 +8,8 @@ export interface WatchHistoryItem {
   thumb_url: string;
   year: number;
   country?: string;
+  time?: string;
+  quality?: string;
   episodeName?: string;
   serverName?: string;
   currentServerIndex: number;
@@ -34,7 +36,7 @@ export function getWatchHistory(): WatchHistoryItem[] {
 }
 
 export function saveWatchHistory(
-  movie: Pick<Movie, "slug" | "name" | "origin_name" | "poster_url" | "thumb_url" | "year" | "country">,
+  movie: Pick<Movie, "slug" | "name" | "origin_name" | "poster_url" | "thumb_url" | "year" | "country" | "time" | "quality">,
   episodeName: string,
   serverName: string,
   currentServerIndex: number,
@@ -55,6 +57,8 @@ export function saveWatchHistory(
       thumb_url: movie.thumb_url,
       year: movie.year,
       country: movie.country?.[0]?.name,
+      time: movie.time,
+      quality: movie.quality,
       episodeName,
       serverName,
       currentServerIndex,

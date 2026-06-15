@@ -140,7 +140,7 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
 
     if (isSingle) {
       if (movie.time && movie.time !== "Đang cập nhật") {
-        return movie.time.replace(/phút/gi, "p").replace(/\s+/g, "");
+        return movie.time.replace(/phút/gi, "p").replace(/ph/gi, "p").replace(/giờ/gi, "g").replace(/\s+/g, "");
       }
       return movie.quality || "Phim Lẻ";
     }
@@ -188,10 +188,10 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
 
   return (
     <Tilt
-      tiltMaxAngleX={8}
-      tiltMaxAngleY={8}
-      perspective={1000}
-      scale={1.03}
+      tiltMaxAngleX={15}
+      tiltMaxAngleY={15}
+      perspective={800}
+      scale={1.05}
       transitionSpeed={400}
       gyroscope={true}
       className="h-full z-10 hover:z-30 relative"

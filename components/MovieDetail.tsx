@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Play, Share2, Plus, Clock, Calendar, Star, Languages, Users } from "lucide-react";
@@ -29,7 +29,9 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   const [isMobile, setIsMobile] = useState(false);
   const [selectedServerIndex, setSelectedServerIndex] = useState(0);
 
-
+  // Parallax effect
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, [0, 800], [0, -100]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -274,7 +276,10 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 mt-6 sm:-mt-32 relative z-10">
+      <motion.div 
+        style={{ y: isMobile ? 0 : y }}
+        className="container mx-auto px-4 mt-6 sm:-mt-32 relative z-10"
+      >
         <div className="grid md:grid-cols-[300px_1fr] gap-8">
           {/* Poster Desktop */}
           <div className="hidden md:block">
@@ -303,11 +308,6 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                   alt={movie.name}
                   className={`w-full h-full object-cover transition-opacity duration-300 ease-in-out ${posterFade ? "opacity-100" : "opacity-0"}`}
                 />
-                {availablePosters.length > 1 && (
-                  <div className="absolute top-2 right-2 z-30" onClick={(e) => { e.preventDefault(); togglePoster(); }}>
-                    <ImageToggle onToggle={togglePoster} label="Đổi" />
-                  </div>
-                )}
               </Link>
             </div>
 
@@ -348,9 +348,9 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             {movie.category && movie.category.length > 0 && (
               <div className="flex flex-wrap gap-2 items-center">
                 <span className="text-zinc-400 font-medium text-sm">Thể loại:</span>
-                {movie.category.map((cat) => (
+                {movie.category.map((cat, index) => (
                   <div
-                    key={cat.id}
+                    key={`${cat.id || cat.slug}-${index}`}
                     className="inline-flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800/80 border border-zinc-800 rounded-full px-3 py-1 text-sm transition-colors text-zinc-300"
                   >
                     <Link
@@ -369,9 +369,9 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             {/* Countries */}
             {movie.country && movie.country.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {movie.country.map((country) => (
+                {movie.country.map((country, index) => (
                   <span
-                    key={country.id}
+                    key={`${country.id || country.slug}-${index}`}
                     className="text-sm text-zinc-400"
                   >
                     {country.name}
@@ -576,7 +576,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
 
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

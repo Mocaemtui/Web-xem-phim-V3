@@ -163,60 +163,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
 
   const [playerMode, setPlayerMode] = useState<"hls" | "iframe">("hls");
 
-  // Listen to message events from VidLink iframe
-  useEffect(() => {
-    if (typeof window === "undefined") return;
 
-    const handleVidLinkMessage = (event: MessageEvent) => {
-      if (event.origin !== "https://vidlink.pro") return;
-
-      const eventData = event.data;
-      if (!eventData) return;
-
-      if (eventData.type === "MEDIA_DATA" && eventData.data) {
-        try {
-          localStorage.setItem("vidLinkProgress", JSON.stringify(eventData.data));
-        } catch (e) {
-          console.warn("Failed to save vidLinkProgress", e);
-        }
-      }
-
-      if (eventData.type === "PLAYER_EVENT" && eventData.data) {
-        const { event: eventType, currentTime, duration } = eventData.data;
-
-        if (currentServer?.server_name.includes("(VidLink)") && currentEpisode) {
-          const progressKey = `playback_progress_${movie.slug}_ep_${currentEpisodeIndex}`;
-          if (eventType === "timeupdate" || eventType === "pause" || eventType === "seeked") {
-            try {
-              localStorage.setItem(progressKey, currentTime.toString());
-              
-              saveWatchHistory(
-                movie,
-                currentEpisode.name || `Tập ${currentEpisodeIndex + 1}`,
-                currentServer.server_name,
-                currentServerIndex,
-                currentEpisodeIndex
-              );
-            } catch (e) {}
-          }
-          
-          if (eventType === "ended") {
-            try {
-              localStorage.removeItem(progressKey);
-              if (currentEpisodeIndex < serverData.length - 1) {
-                setCurrentEpisodeIndex((prev) => prev + 1);
-              }
-            } catch (e) {}
-          }
-        }
-      }
-    };
-
-    window.addEventListener("message", handleVidLinkMessage);
-    return () => {
-      window.removeEventListener("message", handleVidLinkMessage);
-    };
-  }, [currentServer, currentEpisode, currentServerIndex, currentEpisodeIndex, serverData, movie]);
 
 
 
@@ -235,20 +182,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
     }
   };
 
-  // Dynamically resolve startAt for VidLink if there is saved progress
-  let finalEmbedUrl = currentEpisode?.link_embed;
-  if (currentServer?.server_name.includes("(VidLink)") && finalEmbedUrl) {
-    if (typeof window !== "undefined") {
-      const progressKey = `playback_progress_${movie.slug}_ep_${currentEpisodeIndex}`;
-      const savedProgress = localStorage.getItem(progressKey);
-      if (savedProgress) {
-        const seconds = Math.round(parseFloat(savedProgress));
-        if (seconds > 10) {
-          finalEmbedUrl = `${finalEmbedUrl}&startAt=${seconds}`;
-        }
-      }
-    }
-  }
+  const finalEmbedUrl = currentEpisode?.link_embed;
 
   const isSingleEpisode = currentEpisode?.name.toLowerCase().includes("full") || (episodes.length > 0 && serverData.length === 1 && currentEpisode?.name === "1");
 

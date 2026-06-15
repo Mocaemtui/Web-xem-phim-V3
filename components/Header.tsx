@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Search, Menu, X, Filter, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Movie } from "@/types/api";
-import { getPosterUrl } from "@/lib/api";
+import { getPosterUrl, searchPhim } from "@/lib/api";
 
 export default function Header() {
   const router = useRouter();
@@ -29,9 +29,9 @@ export default function Header() {
     searchTimeoutRef.current = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await fetch(`https://phimapi.com/v1/api/tim-kiem?keyword=${encodeURIComponent(searchKeyword)}&limit=5`);
-        const data = await res.json();
-        setSearchResults(data.data?.items || []);
+        const data = await searchPhim(searchKeyword);
+        const items = data?.data?.items || [];
+        setSearchResults(items.slice(0, 8));
       } catch (error) {
         console.error("Search error:", error);
       } finally {
