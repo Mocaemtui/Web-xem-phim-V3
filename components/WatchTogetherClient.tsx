@@ -255,8 +255,18 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   const pendingSyncTimeRef = useRef<number | null>(null);
   const pendingSyncPlayingRef = useRef<boolean | null>(null);
   const isLocalEpisodeChangeRef = useRef<boolean>(false);
+
+  const [isHost, setIsHost] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem('host_' + roomId) === 'true';
+    }
+    return false;
+  });
+  const isHostRef = useRef(isHost);
+  useEffect(() => {
+    isHostRef.current = isHost;
+  }, [isHost]);
   
-  // Mọi người đều là Host
   const {
     watchers,
     messages,
@@ -278,15 +288,21 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     onRequestSyncRef,
     onSyncResponseRef,
     onChangeEpisodeRef,
-  } = useWatchTogether(isJoined ? roomId : "", username, true);
+    myId,
+    triggerChangeHost,
+    onChangeHostRef,
+  } = useWatchTogether(isJoined ? roomId : "", username, typeof window !== "undefined" && sessionStorage.getItem('host_' + roomId) === 'true');
+
+  const watchersRef = useRef(watchers);
+  useEffect(() => {
+    watchersRef.current = watchers;
+  }, [watchers]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const handleLoadedMetadata = () => {
-      const isHost = typeof window !== "undefined" && sessionStorage.getItem('host_' + roomId) === 'true';
-
       if (pendingSyncTimeRef.current !== null) {
         isReceivingEvent.current = true;
         video.currentTime = pendingSyncTimeRef.current;
@@ -300,7 +316,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         hasSynced.current = true;
         setTimeout(() => { isReceivingEvent.current = false; }, 500);
       } else {
-        if (isLocalEpisodeChangeRef.current || isHost || watchers.length <= 1) {
+        if (isLocalEpisodeChangeRef.current || isHostRef.current || watchersRef.current.length <= 1) {
           hasSynced.current = true;
           isLocalEpisodeChangeRef.current = false;
         } else {
@@ -314,7 +330,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     return () => {
       video.removeEventListener("loadedmetadata", handleLoadedMetadata);
     };
-  }, [currentEpisode, videoRef, watchers.length, roomId]);
+  }, [videoRef, roomId]);
 
   useEffect(() => {
     if (!isJoined) return;
@@ -537,7 +553,19 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
       setSelectedServerIndex(serverIndex);
       setCurrentEpisodeIndex(episodeIndex);
     };
-  }, [onPlayRef, onPauseRef, onSeekRef, onRequestSyncRef, onSyncResponseRef, onChangeEpisodeRef, roomId]);
+
+    onChangeHostRef.current = (newHostId) => {
+      const isMeNewHost = newHostId === myId;
+      if (isMeNewHost) {
+        sessionStorage.setItem('host_' + roomId, 'true');
+        setIsHost(true);
+        hasSynced.current = true;
+      } else {
+        sessionStorage.removeItem('host_' + roomId);
+        setIsHost(false);
+      }
+    };
+  }, [onPlayRef, onPauseRef, onSeekRef, onRequestSyncRef, onSyncResponseRef, onChangeEpisodeRef, roomId, myId]);
 
   // Sync state for single watchers (hosts)
   useEffect(() => {
@@ -864,8 +892,22 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                     <h4 className="text-[11px] font-semibold text-zinc-400 mb-2 border-b border-zinc-900 pb-1">Người xem ({watchers.length})</h4>
                     <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
                       {watchers.map((w) => (
-                        <div key={w.id} className="text-xs text-zinc-300 py-0.5 truncate">
-                          {w.name}
+                        <div key={w.id} className="flex items-center justify-between gap-2 text-xs text-zinc-300 py-1">
+                          <span className="truncate">
+                            {w.name} {w.isHost && <span className="text-amber-400 font-bold ml-1" title="Host">👑</span>}
+                          </span>
+                          {isHostRef.current && !w.isHost && (
+                            <button
+                              onClick={() => {
+                                if (confirm(`Bạn muốn chuyển quyền Host cho ${w.name}?`)) {
+                                  triggerChangeHost(w.id, w.name);
+                                }
+                              }}
+                              className="text-[9px] bg-zinc-800 hover:bg-amber-600 text-zinc-400 hover:text-white px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                            >
+                              Làm Host
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1095,10 +1137,24 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                     <Users className="w-4 h-4 text-red-400" />
                     <h3 className="font-semibold text-white text-sm">Danh sách người đang xem</h3>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col gap-2">
                     {watchers.map((w) => (
-                      <div key={w.id} className="flex items-center gap-1.5 bg-zinc-850 px-3 py-1.5 rounded-full text-xs">
-                        <span className="text-zinc-200">{w.name}</span>
+                      <div key={w.id} className="flex items-center justify-between gap-3 bg-zinc-850 px-3.5 py-2 rounded-xl text-xs w-full">
+                        <span className="text-zinc-200 truncate flex-1">
+                          {w.name} {w.isHost && <span className="text-amber-400 font-bold ml-1" title="Host">👑</span>}
+                        </span>
+                        {isHostRef.current && !w.isHost && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`Bạn muốn chuyển quyền Host cho ${w.name}?`)) {
+                                triggerChangeHost(w.id, w.name);
+                              }
+                            }}
+                            className="text-[10px] bg-amber-600/20 hover:bg-amber-600 border border-amber-600/30 hover:border-transparent text-amber-400 hover:text-white px-2.5 py-1.5 rounded-lg cursor-pointer transition-all active:scale-95 shrink-0"
+                          >
+                            Làm Host
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1164,8 +1220,22 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   <h4 className="text-[11px] font-semibold text-zinc-400 mb-2 border-b border-zinc-900 pb-1">Người xem ({watchers.length})</h4>
                   <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
                     {watchers.map((w) => (
-                      <div key={w.id} className="text-xs text-zinc-300 py-0.5 truncate">
-                        {w.name}
+                      <div key={w.id} className="flex items-center justify-between gap-2 text-xs text-zinc-300 py-1">
+                        <span className="truncate">
+                          {w.name} {w.isHost && <span className="text-amber-400 font-bold ml-1" title="Host">👑</span>}
+                        </span>
+                        {isHostRef.current && !w.isHost && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`Bạn muốn chuyển quyền Host cho ${w.name}?`)) {
+                                triggerChangeHost(w.id, w.name);
+                              }
+                            }}
+                            className="text-[9px] bg-zinc-800 hover:bg-amber-600 text-zinc-400 hover:text-white px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                          >
+                            Làm Host
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1274,8 +1344,22 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                       <h4 className="text-[10px] font-bold text-zinc-500 mb-2 border-b border-zinc-900 pb-1 uppercase tracking-wider">Đang xem ({watchers.length})</h4>
                       <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
                         {watchers.map((w) => (
-                          <div key={w.id} className="text-xs text-zinc-300 py-0.5 truncate">
-                            {w.name}
+                          <div key={w.id} className="flex items-center justify-between gap-2 text-xs text-zinc-300 py-1">
+                            <span className="truncate">
+                              {w.name} {w.isHost && <span className="text-amber-400 font-bold ml-1" title="Host">👑</span>}
+                            </span>
+                            {isHostRef.current && !w.isHost && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Bạn muốn chuyển quyền Host cho ${w.name}?`)) {
+                                    triggerChangeHost(w.id, w.name);
+                                  }
+                                }}
+                                className="text-[9px] bg-zinc-800 hover:bg-amber-600 text-zinc-400 hover:text-white px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                              >
+                                Làm Host
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>

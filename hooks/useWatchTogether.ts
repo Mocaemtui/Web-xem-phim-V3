@@ -26,6 +26,7 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [myId, setMyId] = useState<string>('');
   
   const pusherRef = useRef<Pusher | null>(null);
   const channelRef = useRef<any>(null);
@@ -36,6 +37,7 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
   const onRequestSyncRef = useRef<(() => void) | null>(null);
   const onSyncResponseRef = useRef<((data: { time: number, isPlaying: boolean, serverIndex?: number, episodeIndex?: number }) => void) | null>(null);
   const onChangeEpisodeRef = useRef<((serverIndex: number, episodeIndex: number) => void) | null>(null);
+  const onChangeHostRef = useRef<((newHostId: string) => void) | null>(null);
 
   const addSystemMessage = (text: string) => {
     setMessages((prev) => [
@@ -74,6 +76,7 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
     channelRef.current = channel;
 
     channel.bind('pusher:subscription_succeeded', (members: any) => {
+      setMyId(members.myID);
       const initialWatchers: Watcher[] = [];
       members.each((member: any) => {
         initialWatchers.push({
@@ -160,6 +163,20 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
       });
     });
 
+    // Host Change Event
+    channel.bind('client-change-host', (data: { newHostId: string, newHostName: string }) => {
+      setWatchers((prev) =>
+        prev.map((w) => ({
+          ...w,
+          isHost: w.id === data.newHostId,
+        }))
+      );
+      addSystemMessage(`${data.newHostName} đã trở thành Host mới.`);
+      if (onChangeHostRef.current) {
+        onChangeHostRef.current(data.newHostId);
+      }
+    });
+
     return () => {
       channel.unbind_all();
       channel.unsubscribe();
@@ -225,6 +242,20 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
     triggerTyping(false);
   };
 
+  const triggerChangeHost = (newHostId: string, newHostName: string) => {
+    channelRef.current?.trigger('client-change-host', { newHostId, newHostName });
+    setWatchers((prev) =>
+      prev.map((w) => ({
+        ...w,
+        isHost: w.id === newHostId,
+      }))
+    );
+    addSystemMessage(`${newHostName} đã trở thành Host mới.`);
+    if (onChangeHostRef.current) {
+      onChangeHostRef.current(newHostId);
+    }
+  };
+
   return {
     watchers,
     messages,
@@ -246,6 +277,9 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
     onRequestSyncRef,
     onSyncResponseRef,
     onChangeEpisodeRef,
+    myId,
+    triggerChangeHost,
+    onChangeHostRef,
   };
 };
 
