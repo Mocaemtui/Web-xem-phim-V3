@@ -476,7 +476,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             }
             setTimeout(() => {
               triggerSeek(parsed);
-              sendMessage(`[Hệ thống] Host đã tự động đồng bộ mốc xem dở từ trước (${formatTime(parsed)}) cho cả phòng.`);
             }, 1500);
           }
         }
@@ -490,7 +489,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         videoRef.current.currentTime = hostSavedTime;
       }
       triggerSeek(hostSavedTime);
-      sendMessage(`[Hệ thống] Host đã đồng bộ mốc xem dở từ trước (${formatTime(hostSavedTime)}) cho cả phòng.`);
     }
     setShowHostSyncPrompt(false);
   };

@@ -374,10 +374,10 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
         style={{ y: isMobile ? 0 : y }}
         className="container mx-auto px-4 mt-6 sm:-mt-32 relative z-10"
       >
-        <div className="grid md:grid-cols-[300px_1fr] gap-8">
-          {/* Poster Desktop */}
-          <div className="hidden md:block">
-            <Link href={`/xem-phim/${movie.slug}`} className="block relative aspect-[2/3] rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)] group bg-zinc-900 transition-transform duration-300 hover:scale-105 border border-white/10 hover:border-[var(--color-cyan-neon)]">
+        <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[140px_1fr] md:grid-cols-[300px_1fr] gap-x-4 gap-y-6 md:gap-8">
+          {/* Poster */}
+          <div className="col-span-1 row-span-1 md:row-span-2">
+            <Link href={`/xem-phim/${movie.slug}`} className="block relative aspect-[2/3] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.6)] md:shadow-[0_0_30px_rgba(0,0,0,0.8)] group bg-zinc-900 transition-transform duration-300 md:hover:scale-105 border border-white/10 hover:border-[var(--color-cyan-neon)]">
               <img
                 src={currentPosterUrl}
                 alt={movie.name}
@@ -393,97 +393,71 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             </Link>
           </div>
 
-          {/* Info */}
-          <div className="flex flex-col gap-6">
-            {/* Mobile Header Block: Poster on Left, Title on Right, Buttons Row below */}
-            <div className="md:hidden flex flex-col gap-4 mb-2">
-              {/* Row 1: Poster on Left, Title on Right */}
-              <div className="flex gap-4 items-start">
-                {/* Mobile Poster on Left */}
-                <Link href={`/xem-phim/${movie.slug}`} className="block shrink-0 relative w-[110px] aspect-[2/3] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.6)] group bg-zinc-900 border border-white/10">
-                  <img
-                    src={currentPosterUrl}
-                    alt={movie.name}
-                    className={`w-full h-full object-cover transition-opacity duration-300 ease-in-out ${posterFade ? "opacity-100" : "opacity-0"}`}
-                    onError={handlePosterError}
-                  />
-                </Link>
+          {/* Title & Mobile Actions */}
+          <div className="col-start-2 flex flex-col justify-start">
+            <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2 line-clamp-2 md:line-clamp-none leading-snug md:leading-tight">
+              {movie.origin_name || movie.name}
+            </h1>
+            {movie.origin_name && (
+              <p className="text-sm md:text-lg text-zinc-400 font-medium truncate md:whitespace-normal">{movie.name}</p>
+            )}
+
+            {/* Mobile Action Buttons */}
+            {episodes && 
+            episodes.length > 0 && 
+            episodes[0].server_data && 
+            episodes[0].server_data.length > 0 &&
+            (episodes[0].server_data[0].link_m3u8 || episodes[0].server_data[0].link_embed) && (
+              <div className="md:hidden flex flex-col gap-2 mt-auto pt-2">
+                {movie.slug && (
+                  <Link
+                    href={`/xem-phim/${movie.slug}`}
+                    className="inline-flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2 rounded-lg transition-colors active:scale-95 shadow-md shadow-red-900/20 w-full"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    </svg>
+                    <span>Xem ngay</span>
+                  </Link>
+                )}
                 
-                {/* Title on Right */}
-                <div className="flex-1 min-w-0 flex flex-col gap-1">
-                  <h1 className="text-xl font-bold text-white line-clamp-2 leading-snug">
-                    {movie.origin_name || movie.name}
-                  </h1>
-                  {movie.origin_name && (
-                    <p className="text-sm text-zinc-400 font-medium truncate mt-0.5">{movie.name}</p>
+                <div className="flex gap-2 items-center w-full">
+                  {movie.slug && (
+                    <button
+                      onClick={handleSubscribeToggle}
+                      disabled={subLoading}
+                      title={isSubscribed ? "Hủy nhận thông báo tập mới" : "Nhận thông báo tập mới"}
+                      className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-all border active:scale-95 cursor-pointer shrink-0 ${
+                        isSubscribed
+                          ? "bg-emerald-950/20 text-emerald-400 border-emerald-500/20"
+                          : "bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700"
+                      }`}
+                    >
+                      {isSubscribed ? <BellOff size={16} /> : <Bell size={16} />}
+                    </button>
+                  )}
+                  {movie.slug && (
+                    <button
+                      onClick={() => {
+                        const roomId = Math.random().toString(36).substring(2, 9);
+                        sessionStorage.setItem(`host_${roomId}`, 'true');
+                        window.location.href = `/watch-together/${movie.slug}/${roomId}`;
+                      }}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-sm py-2 rounded-lg transition-colors border border-zinc-700 active:scale-95 cursor-pointer h-9"
+                    >
+                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span>Xem chung</span>
+                    </button>
                   )}
                 </div>
               </div>
+            )}
+          </div>
 
-              {/* Row 2: Quick Action Buttons (Xem ngay on separate row, Xem chung + Bell below it) */}
-              {episodes && 
-              episodes.length > 0 && 
-              episodes[0].server_data && 
-              episodes[0].server_data.length > 0 &&
-              (episodes[0].server_data[0].link_m3u8 || episodes[0].server_data[0].link_embed) && (
-                <div className="flex flex-col gap-2 w-full">
-                  {movie.slug && (
-                    <Link
-                      href={`/xem-phim/${movie.slug}`}
-                      className="inline-flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs py-2.5 rounded-lg transition-colors active:scale-95 shadow-md shadow-red-900/20 w-full"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      </svg>
-                      <span>Xem ngay</span>
-                    </Link>
-                  )}
-                  
-                  <div className="flex gap-2 items-center w-full">
-                    {movie.slug && (
-                      <button
-                        onClick={handleSubscribeToggle}
-                        disabled={subLoading}
-                        title={isSubscribed ? "Hủy nhận thông báo tập mới" : "Nhận thông báo tập mới"}
-                        className={`inline-flex items-center justify-center w-[34px] h-[34px] rounded-lg transition-all border active:scale-95 cursor-pointer shrink-0 ${
-                          isSubscribed
-                            ? "bg-emerald-950/20 text-emerald-400 border-emerald-500/20"
-                            : "bg-zinc-800 border-zinc-700 text-white"
-                        }`}
-                      >
-                        {isSubscribed ? <BellOff size={16} /> : <Bell size={16} />}
-                      </button>
-                    )}
-                    {movie.slug && (
-                      <button
-                        onClick={() => {
-                          const roomId = Math.random().toString(36).substring(2, 9);
-                          sessionStorage.setItem(`host_${roomId}`, 'true');
-                          window.location.href = `/watch-together/${movie.slug}/${roomId}`;
-                        }}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs py-2 rounded-lg transition-colors border border-zinc-700 active:scale-95 cursor-pointer h-[34px]"
-                      >
-                        <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        <span>Xem chung</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Title Desktop */}
-            <div className="hidden md:block">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 line-clamp-2">
-                {movie.origin_name || movie.name}
-              </h1>
-              {movie.origin_name && (
-                <p className="text-lg text-zinc-400 font-medium">{movie.name}</p>
-              )}
-            </div>
-
+          {/* Info Container (Full width on mobile, right column on desktop) */}
+          <div className="col-span-2 md:col-span-1 md:col-start-2 flex flex-col gap-4 md:gap-6">
             {/* Meta Info */}
             <div className="flex flex-wrap gap-3 text-sm">
               <span className="px-3 py-1 bg-zinc-800 text-zinc-300 rounded-full">
