@@ -2,9 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import PageTransition from "@/components/PageTransition";
 import HistoryTracker from "@/components/HistoryTracker";
-
 
 const inter = Inter({
   subsets: ["latin"],
@@ -39,11 +37,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://img.ophim.live" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://ophim1.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet" />
+        <style dangerouslySetInnerHTML={{ __html: `
+          :root {
+            --font-outfit: "Outfit", sans-serif;
+          }
+        `}} />
       </head>
-      <body className="min-h-full flex flex-col bg-zinc-950">
+      <body className="min-h-full flex flex-col bg-black text-white font-sans">
         <HistoryTracker />
         <Header />
-        <PageTransition>{children}</PageTransition>
+        {children}
         <Footer />
       </body>
     </html>

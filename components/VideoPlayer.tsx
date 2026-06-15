@@ -16,9 +16,9 @@ interface VideoPlayerProps {
   nextVideoUrl?: string;
   onAutoNext?: () => void;
   isWatchTogether?: boolean;
-  isTheaterMode?: boolean;
   onError?: () => void;
   playbackProgressKey?: string;
+  isTheaterMode?: boolean;
 }
 
 export default function VideoPlayer({
@@ -34,7 +34,6 @@ export default function VideoPlayer({
   nextVideoUrl,
   onAutoNext,
   isWatchTogether,
-  isTheaterMode,
   onError,
   playbackProgressKey
 }: VideoPlayerProps) {
@@ -675,7 +674,7 @@ export default function VideoPlayer({
       {/* Player Container */}
       <div 
         className={`relative w-full h-full max-h-full bg-transparent rounded-lg group flex items-center justify-center ${
-          isFullscreen || isTheaterMode || isWatchTogether ? "overflow-visible" : "overflow-hidden"
+          isFullscreen || isWatchTogether ? "overflow-visible" : "overflow-hidden"
         }`}
         style={{ zIndex: 2 }}
         onMouseMove={resetControlsTimer}

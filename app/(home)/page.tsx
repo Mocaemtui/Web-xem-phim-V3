@@ -17,7 +17,7 @@ export default async function Home() {
     longTiengData,
     thuyetMinhData,
   ] = await Promise.all([
-    getPhimMoi(1, 17), // Fetch 17 items to take 5 for Hero and 12 for Slider
+    getPhimMoi(1, 18), // Fetch 18 items to take 6 for Hero and 12 for Slider
     getDanhSach("phim-bo", { page: 1, limit: 12, country: "viet-nam" }),
     getDanhSach("phim-le", { page: 1, limit: 12, country: "au-my" }),
     getDanhSach("phim-bo", { page: 1, limit: 12, country: "han-quoc" }),
@@ -42,11 +42,11 @@ export default async function Home() {
   }
 
   const allPhimMoi = phimMoiData.data.items;
-  const heroMovies = allPhimMoi.slice(0, 5); // top 5 movies for hero carousel
-  const sliderPhimMoi = allPhimMoi.slice(5);
+  const heroMovies = allPhimMoi.slice(0, 6); // top 6 movies for hero carousel
+  const sliderPhimMoi = allPhimMoi.slice(6);
 
   return (
-    <div className="overflow-hidden bg-zinc-950 pb-16">
+    <div className="overflow-hidden bg-black pb-16">
       {/* Hero Banner (Featured Movies Carousel) */}
       {heroMovies.length > 0 && <HeroBanner movies={heroMovies} />}
 

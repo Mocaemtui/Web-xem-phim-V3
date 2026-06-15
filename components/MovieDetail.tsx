@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Play, Share2, Plus, Clock, Calendar, Star, Languages, Users } from "lucide-react";
 import type { MovieDetail, MovieImages, MoviePeoples } from "@/types/api";
 import ImageToggle from "./ImageToggle";
+import YouTube from "react-youtube";
 import { getWatchHistory } from "@/lib/watchHistory";
 
 import { getPosterUrl, getBackdropUrl, resolveImgUrl, sortEpisodes } from "@/lib/api";
@@ -20,6 +22,23 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   // 0 = Primary, 1 = TMDB, 2 = Alternate
   const [backdropSource, setBackdropSource] = useState<0 | 1 | 2>(0);
   const [posterSource, setPosterSource] = useState<0 | 1 | 2>(0);
+  const [isPlayingTrailer, setIsPlayingTrailer] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+  const [trailerVideoId, setTrailerVideoId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!movie.trailer_url) return;
+    let videoId = "";
+    const url = movie.trailer_url;
+    if (url.includes("youtube.com/watch?v=")) {
+      videoId = url.split("v=")[1].split("&")[0];
+    } else if (url.includes("youtu.be/")) {
+      videoId = url.split("youtu.be/")[1].split("?")[0];
+    } else if (url.includes("youtube.com/embed/")) {
+      videoId = url.split("embed/")[1].split("?")[0];
+    }
+    if (videoId) setTrailerVideoId(videoId);
+  }, [movie.trailer_url]);
 
   const primaryPosterUrl = getBackdropUrl(movie);
   const primaryThumbUrl = getPosterUrl(movie);
@@ -146,14 +165,85 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
         </button>
       </div>
       {/* Backdrop */}
-      <div className="relative w-full aspect-video overflow-hidden bg-zinc-950 group">
-        <img
-          src={currentBackdropUrl}
-          alt={movie.name}
-          className={`w-full h-full object-cover transition-opacity duration-300 ease-in-out cursor-pointer md:cursor-default ${backdropFade ? "opacity-100" : "opacity-0"}`}
-          onClick={() => { if (window.innerWidth < 768 && availableBackdrops.length > 1) toggleBackdrop(); }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent pointer-events-none" />
+      <div className="relative z-0 w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] max-h-[85vh] overflow-hidden bg-zinc-950">
+        
+        {/* Youtube Background - clip-path giấu hoàn toàn cho tới khi video phát */}
+        {isPlayingTrailer && trailerVideoId && (
+          <div 
+            className="absolute inset-0 z-0 bg-black"
+            style={{
+              clipPath: isVideoReady ? 'inset(0)' : 'inset(100%)',
+              opacity: isVideoReady ? 1 : 0
+            }}
+          >
+              <YouTube
+                videoId={trailerVideoId}
+                opts={{
+                  height: '100%',
+                  width: '100%',
+                  playerVars: {
+                    autoplay: 1,
+                    controls: 0,
+                    modestbranding: 1,
+                    loop: 1,
+                    playlist: trailerVideoId,
+                    playsinline: 1,
+                    rel: 0,
+                    disablekb: 1,
+                    iv_load_policy: 3,
+                    vq: 'hd1080'
+                  }
+                }}
+                onReady={(e) => {
+                  e.target.setPlaybackQuality('hd1080');
+                }}
+                onPlay={(e) => {
+                  e.target.setPlaybackQuality('hd1080');
+                  setIsVideoReady(true);
+                }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[67.5vw] min-h-[120%] min-w-[213.33%] pointer-events-none"
+              />
+            {/* Click to stop trailer */}
+            <div 
+              className="absolute inset-0 z-30 cursor-pointer" 
+              onClick={() => {
+                setIsPlayingTrailer(false);
+                setIsVideoReady(false);
+              }}
+            />
+          </div>
+        )}
+
+        {/* Bức ảnh nền (Biến mất lập tức khi video chạy) */}
+        <div className={`absolute inset-0 z-10 ${isVideoReady ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <img
+            src={currentBackdropUrl}
+            alt={movie.name}
+            className={`absolute inset-0 z-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out cursor-pointer md:cursor-default ${backdropFade ? "opacity-100" : "opacity-0"}`}
+            onClick={() => { if (window.innerWidth < 768 && availableBackdrops.length > 1) toggleBackdrop(); }}
+          />
+          
+          {/* Nút Play ẩn - chỉ hiện khi đưa chuột vào đúng vùng giữa ảnh */}
+          {trailerVideoId && !isPlayingTrailer && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+              <div 
+                className="w-24 h-24 pointer-events-auto cursor-pointer flex items-center justify-center group/play"
+                onClick={() => setIsPlayingTrailer(true)}
+              >
+                <div className="w-16 h-16 md:w-20 md:h-20 bg-white/20 md:bg-white/10 group-hover/play:bg-[var(--color-cyan-neon)] rounded-full flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] group-hover/play:shadow-[0_0_50px_var(--color-cyan-neon)] transition-all duration-300 text-white/80 md:text-white/30 group-hover/play:text-black opacity-100 md:opacity-0 group-hover/play:opacity-100 scale-100 md:scale-75 group-hover/play:scale-100">
+                  <svg className="w-8 h-8 md:w-10 md:h-10 translate-x-[2px]" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Cinematic Gradients */}
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/50 via-zinc-950/10 to-transparent pointer-events-none z-20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/30 via-transparent to-transparent pointer-events-none z-20" />
+
         {availableBackdrops.length > 1 && (
           <div className="hidden md:flex absolute top-0 right-0 w-48 h-48 z-30 group/corner items-start justify-end p-4">
             <div className="opacity-0 invisible group-hover/corner:opacity-100 group-hover/corner:visible pointer-events-none group-hover/corner:pointer-events-auto transition-all duration-300">
@@ -166,43 +256,49 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
       {/* Content */}
       <div className="container mx-auto px-4 -mt-32 relative z-10">
         <div className="grid md:grid-cols-[300px_1fr] gap-8">
-          {/* Poster */}
+          {/* Poster Desktop */}
           <div className="hidden md:block">
-            <div className="relative aspect-[2/3] rounded-lg overflow-hidden shadow-2xl group bg-zinc-900">
+            <Link href={`/xem-phim/${movie.slug}`} className="block relative aspect-[2/3] rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)] group bg-zinc-900 transition-transform duration-300 hover:scale-105 border border-white/10 hover:border-[var(--color-cyan-neon)]">
               <img
                 src={currentPosterUrl}
                 alt={movie.name}
                 className={`w-full h-full object-cover transition-opacity duration-300 ease-in-out ${posterFade ? "opacity-100" : "opacity-0"}`}
               />
+
               {availablePosters.length > 1 && (
                 <div className="absolute top-3 right-3 z-30 opacity-0 group-hover:opacity-100 invisible group-hover:visible pointer-events-none group-hover:pointer-events-auto transition-all duration-300">
                   <ImageToggle onToggle={togglePoster} label={`Đổi ảnh poster (Nguồn: ${currentPosterName})`} />
                 </div>
               )}
-            </div>
+            </Link>
           </div>
 
           {/* Info */}
           <div className="flex flex-col gap-6">
             {/* Mobile Poster */}
-            <div className="md:hidden">
-              <div className="relative aspect-[2/3] rounded-lg overflow-hidden shadow-2xl max-w-[200px] group bg-zinc-900 cursor-pointer" onClick={() => { if (availablePosters.length > 1) togglePoster(); }}>
+            <div className="md:hidden flex justify-center mb-2">
+              <Link href={`/xem-phim/${movie.slug}`} className="block relative aspect-[2/3] rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)] max-w-[200px] group bg-zinc-900 border border-white/10">
                 <img
                   src={currentPosterUrl}
                   alt={movie.name}
                   className={`w-full h-full object-cover transition-opacity duration-300 ease-in-out ${posterFade ? "opacity-100" : "opacity-0"}`}
                 />
-              </div>
+                {availablePosters.length > 1 && (
+                  <div className="absolute top-2 right-2 z-30" onClick={(e) => { e.preventDefault(); togglePoster(); }}>
+                    <ImageToggle onToggle={togglePoster} label="Đổi" />
+                  </div>
+                )}
+              </Link>
             </div>
 
 
             {/* Title */}
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                {movie.name}
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 line-clamp-2">
+                {movie.origin_name || movie.name}
               </h1>
-              {currentOriginName && (
-                <p className="text-lg text-zinc-400">{currentOriginName}</p>
+              {movie.origin_name && (
+                <p className="text-lg text-zinc-400 font-medium">{movie.name}</p>
               )}
             </div>
 
@@ -247,6 +343,8 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                 ))}
               </div>
             )}
+
+
 
             {/* Countries */}
             {movie.country && movie.country.length > 0 && (

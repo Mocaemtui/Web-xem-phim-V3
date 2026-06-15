@@ -269,7 +269,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
 
       <div className="container mx-auto px-4 py-8 mt-12 md:mt-0">
         
-        {/* Video Player (Moved to very top below back button) */}
+        {/* Video Player */}
         <div className="mb-8 relative z-10 w-full aspect-video">
           {currentEpisode ? (
             <VideoPlayer

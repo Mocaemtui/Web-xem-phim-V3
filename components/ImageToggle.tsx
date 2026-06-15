@@ -10,7 +10,9 @@ interface ImageToggleProps {
 export default function ImageToggle({ onToggle, label }: ImageToggleProps) {
   const [clicked, setClicked] = useState(false);
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setClicked(!clicked);
     onToggle();
   };

@@ -4,11 +4,12 @@ import MovieCardWrapper from "@/components/MovieCardWrapper";
 import type { Metadata } from "next";
 
 type Props = {
-  params: { country: string };
+  params: Promise<{ country: string }>;
 };
 
 export const generateMetadata = async ({ params }: Props): Promise<Metadata> => {
-  const name = params.country.replace(/^phim-/, "").replace(/-/g, " ");
+  const resolvedParams = await params;
+  const name = resolvedParams.country.replace(/^phim-/, "").replace(/-/g, " ");
   return {
     title: `Phim ${name}`,
     description: `Danh sách phim ${name} trên Movie Hub`,
@@ -18,7 +19,8 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
 export default async function CountryPage({ params }: Props) {
   // URL pattern is /phim-<slug>
   // Remove the "phim-" prefix to obtain the country slug used by the API
-  const slug = params.country.replace(/^phim-/, "");
+  const resolvedParams = await params;
+  const slug = resolvedParams.country.replace(/^phim-/, "");
 
   // Fetch movies for the country (page 1, limit 24 by default)
   const data = await getQuocGiaDetails(slug, { page: 1, limit: 24 });

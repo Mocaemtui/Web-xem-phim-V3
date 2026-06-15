@@ -6,6 +6,9 @@ import Image from "next/image";
 import type { Movie } from "@/types/api";
 import { getBackdropUrl } from "@/lib/api";
 import { Play, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+import YouTube from "react-youtube";
 
 interface HeroBannerProps {
   movies: Movie[];
@@ -13,46 +16,149 @@ interface HeroBannerProps {
 
 export default function HeroBanner({ movies }: HeroBannerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [trailerVideoId, setTrailerVideoId] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
+  // Auto slide
   useEffect(() => {
     if (!movies || movies.length <= 1) return;
+    if (isPaused) return; // Dừng đổi phim khi hover
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % movies.length);
-    }, 6000);
+      setIsVideoPlaying(false); // Reset trạng thái video khi đổi phim
+    }, 15000); // Kéo dài lên 15s để xem được trailer
     return () => clearInterval(interval);
-  }, [movies]);
+  }, [movies, isPaused, currentIndex]);
+
+  const movie = movies[currentIndex] || movies[0];
+  const backdropUrl = movie ? getBackdropUrl(movie) : "";
+
+  // Fetch trailer for current hero movie
+  useEffect(() => {
+    if (!movie?.slug) return;
+    setTrailerVideoId(null);
+    setIsVideoPlaying(false);
+    let isMounted = true;
+    
+    fetch(`https://phimapi.com/phim/${movie.slug}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!isMounted) return;
+        if (data.movie?.trailer_url) {
+          let videoId = "";
+          const url = data.movie.trailer_url;
+          if (url.includes("youtube.com/watch?v=")) {
+            videoId = url.split("v=")[1].split("&")[0];
+          } else if (url.includes("youtu.be/")) {
+            videoId = url.split("youtu.be/")[1].split("?")[0];
+          } else if (url.includes("youtube.com/embed/")) {
+            videoId = url.split("embed/")[1].split("?")[0];
+          }
+          if (videoId) {
+            setTrailerVideoId(videoId);
+          }
+        }
+      })
+      .catch(() => {});
+      
+    return () => { isMounted = false; };
+  }, [movie?.slug]);
 
   if (!movies || movies.length === 0) return null;
 
-  const movie = movies[currentIndex];
-  const backdropUrl = getBackdropUrl(movie);
-
   const prevSlide = () => {
     setCurrentIndex((prev) => (prev - 1 + movies.length) % movies.length);
+    setIsVideoPlaying(false);
   };
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % movies.length);
+    setIsVideoPlaying(false);
+  };
+
+  const youtubeOpts = {
+    height: '100%',
+    width: '100%',
+    playerVars: {
+      autoplay: 1 as const,
+      mute: 1 as const,
+      controls: 0 as const,
+      modestbranding: 1 as const,
+      loop: 1 as const,
+      playlist: trailerVideoId || undefined,
+      playsinline: 1 as const,
+      rel: 0 as const,
+      disablekb: 1 as const,
+      iv_load_policy: 3 as const,
+      vq: 'hd1080' as const
+    },
   };
 
   return (
-    <div className="relative w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] max-h-[85vh] flex items-end pb-12 md:pb-24 pt-20 overflow-hidden group">
-      {/* Background Image */}
-      <div key={movie._id} className="absolute inset-0 z-0 animate-in fade-in duration-1000">
-        <Image
-          src={backdropUrl}
-          alt={movie.name}
-          fill
-          className="object-cover"
-          priority
-        />
-        {/* Gradient overlays for cinematic effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/80 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-transparent" />
-        
-        {/* Bottom fade to match body background perfectly */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-zinc-950 to-transparent" />
-      </div>
+    <div 
+      className="relative w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] max-h-[85vh] flex items-end pb-12 md:pb-24 pt-20 overflow-hidden group bg-zinc-950"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      {/* Background Image & Trailer */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={movie._id}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1 }}
+          className="absolute inset-0 z-0"
+        >
+          
+          {/* Youtube Auto-play Background (Always opacity 1, hidden behind image initially) */}
+          {trailerVideoId && (
+            <div 
+              className="absolute inset-0 z-0 overflow-hidden pointer-events-none"
+              style={{ 
+                clipPath: isVideoPlaying ? 'inset(0)' : 'inset(100%)',
+                opacity: isVideoPlaying ? 1 : 0
+              }}
+            >
+              <YouTube
+                videoId={trailerVideoId}
+                opts={youtubeOpts}
+                onReady={(e) => {
+                  e.target.setPlaybackQuality('hd1080');
+                }}
+                onPlay={(e) => {
+                  e.target.setPlaybackQuality('hd1080');
+                  setIsVideoPlaying(true);
+                }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[67.5vw] min-h-[120%] min-w-[213.33%] pointer-events-none"
+              />
+            </div>
+          )}
+
+          {/* Background Image (Fades out strictly ONLY when video starts playing) */}
+          <motion.div
+            animate={{ opacity: isVideoPlaying ? 0 : 1 }}
+            transition={{ duration: 0 }}
+            className="absolute inset-0 z-10"
+          >
+            <Image
+              src={backdropUrl}
+              alt={movie.name}
+              fill
+              className="object-cover animate-ken-burns"
+              priority
+            />
+          </motion.div>
+
+          {/* Gradient overlays for cinematic effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent z-10" />
+          
+          {/* Bottom fade to match body background perfectly */}
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black to-transparent z-10" />
+        </motion.div>
+      </AnimatePresence>
 
       {/* Navigation Arrows */}
       {movies.length > 1 && (
@@ -76,44 +182,70 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
 
       {/* Content */}
       <div className="container mx-auto px-4 relative z-10 w-full">
-        <div key={`content-${movie._id}`} className="max-w-3xl animate-in slide-in-from-bottom-8 duration-700 fade-in zoom-in-95">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 leading-tight drop-shadow-[0_0_15px_rgba(0,0,0,0.8)] tracking-tight line-clamp-2">
-            {movie.name}
-          </h1>
-          
-          <div className="flex items-center gap-3 text-xs sm:text-sm md:text-base text-zinc-200 mb-4 drop-shadow-md">
-            <span className="font-bold text-white">{movie.year}</span>
-            {movie.quality && (
-              <span className="px-2 py-0.5 border border-white/30 rounded bg-white/10 backdrop-blur-md shadow-sm">
-                {movie.quality}
-              </span>
-            )}
-            {movie.lang && <span className="font-medium text-zinc-300">{movie.lang}</span>}
-          </div>
-
-          <p className="text-zinc-300 text-xs sm:text-sm md:text-base line-clamp-2 sm:line-clamp-3 mb-6 drop-shadow-md max-w-xl leading-relaxed">
-            {movie.origin_name && <span className="block mb-1 italic text-zinc-400 font-medium">{movie.origin_name}</span>}
-            Theo dõi ngay tác phẩm nổi bật này. Chúc bạn có những phút giây giải trí tuyệt vời nhất trên Mocaemtui.
-          </p>
-
-          <div className="flex items-center gap-3 sm:gap-4">
-            <Link 
-              href={`/phim/${encodeURIComponent(movie.slug)}`}
-              className="flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-white text-black rounded-xl font-bold hover:bg-zinc-200 transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.3)] text-sm sm:text-base"
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`content-${movie._id}`}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
+            }}
+            className="max-w-3xl"
+          >
+            <motion.h1 
+              variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold font-outfit text-white mb-4 leading-tight drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] tracking-tight line-clamp-2"
             >
-              <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-              Phát Ngay
-            </Link>
+              {movie.origin_name || movie.name}
+            </motion.h1>
             
-            <Link
-              href={`/phim/${encodeURIComponent(movie.slug)}`}
-              className="flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-zinc-600/40 text-white rounded-xl font-bold backdrop-blur-md hover:bg-zinc-600/60 border border-white/10 transition-all hover:scale-105 active:scale-95 text-sm sm:text-base"
+            <motion.div 
+              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+              className="flex items-center gap-3 text-xs sm:text-sm md:text-base text-zinc-200 mb-4 drop-shadow-md"
             >
-              <Info className="w-4 h-4 sm:w-5 sm:h-5" />
-              Chi Tiết
-            </Link>
-          </div>
-        </div>
+              <span className="font-bold text-white">{movie.year}</span>
+              {movie.quality && (
+                <span className="px-2 py-0.5 border border-white/30 rounded bg-white/10 backdrop-blur-md shadow-sm">
+                  {movie.quality}
+                </span>
+              )}
+              {movie.lang && <span className="font-medium text-zinc-300">{movie.lang}</span>}
+            </motion.div>
+
+            <motion.p 
+              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+              className="text-zinc-300 text-xs sm:text-sm md:text-base line-clamp-2 sm:line-clamp-3 mb-6 drop-shadow-md max-w-xl leading-relaxed"
+            >
+              {movie.origin_name && <span className="block mb-1 font-bold text-white text-lg">{movie.name}</span>}
+              Theo dõi ngay tác phẩm nổi bật này. Chúc bạn có những phút giây giải trí tuyệt vời nhất trên Mocaemtui.
+            </motion.p>
+
+            <motion.div 
+              variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+              className="flex items-center gap-3 sm:gap-4"
+            >
+              <Link 
+                href={`/phim/${encodeURIComponent(movie.slug)}`}
+                className="group flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-[var(--color-cyan-neon)] text-black rounded-xl font-bold hover:bg-white transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_var(--color-cyan-neon)] hover:shadow-[0_0_30px_rgba(255,255,255,0.8)] text-sm sm:text-base relative overflow-hidden"
+              >
+                {/* Ping effect background */}
+                <div className="absolute inset-0 bg-[var(--color-cyan-neon)] animate-ping opacity-20 group-hover:opacity-0 transition-opacity" />
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current relative z-10" />
+                <span className="relative z-10">Phát Ngay</span>
+              </Link>
+              
+              <Link
+                href={`/phim/${encodeURIComponent(movie.slug)}`}
+                className="flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-black/40 text-white rounded-xl font-bold backdrop-blur-md hover:bg-black/60 border border-[var(--color-cyan-neon)] transition-all hover:scale-105 active:scale-95 text-sm sm:text-base hover:shadow-[0_0_15px_var(--color-cyan-neon)]"
+              >
+                <Info className="w-4 h-4 sm:w-5 sm:h-5" />
+                Chi Tiết
+              </Link>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
 
         {/* Indicators */}
         {movies.length > 1 && (
@@ -124,7 +256,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
                 onClick={() => setCurrentIndex(idx)}
                 aria-label={`Go to slide ${idx + 1}`}
                 className={`transition-all duration-300 rounded-full ${
-                  currentIndex === idx ? "w-8 h-2 bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.8)]" : "w-2 h-2 bg-white/40 hover:bg-white/70"
+                  currentIndex === idx ? "w-8 h-2 bg-[var(--color-magenta-neon)] shadow-[0_0_15px_var(--color-magenta-neon)]" : "w-2 h-2 bg-white/40 hover:bg-white/70"
                 }`}
               />
             ))}
