@@ -143,10 +143,11 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
     // Đã xem
     if (historyData?.episodeName) {
       const epNum = extractNumber(historyData.episodeName);
+      const totalToDisplay = actualEpisodeCount || total;
       if (epNum) {
-        return `${epNum} / ${actualEpisodeCount || total} Tập`;
+        return `Tập ${epNum}/${totalToDisplay}`;
       }
-      return `${historyData.episodeName} / ${actualEpisodeCount || total} Tập`;
+      return `${historyData.episodeName}/${totalToDisplay}`;
     }
 
     // Chưa xem
