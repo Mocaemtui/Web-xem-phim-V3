@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Play, Share2, Plus, Clock, Calendar, Star, Languages, Users, Bell, BellOff } from "lucide-react";
+import { Play, Share2, Plus, Clock, Calendar, Star, Languages, Users } from "lucide-react";
 import type { MovieDetail, MovieImages, MoviePeoples } from "@/types/api";
 import ImageToggle from "./ImageToggle";
 import YouTube from "react-youtube";
@@ -138,86 +138,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
     }
   };
 
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [subLoading, setSubLoading] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsSubscribed(localStorage.getItem(`subscribed_${movie.slug}`) === "true");
-    }
-  }, [movie.slug]);
-
-  const handleSubscribeToggle = async () => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
-      alert("Trình duyệt của bạn không hỗ trợ nhận thông báo đẩy (Push Notifications).");
-      return;
-    }
-
-    setSubLoading(true);
-    try {
-      if (isSubscribed) {
-        localStorage.removeItem(`subscribed_${movie.slug}`);
-        setIsSubscribed(false);
-        alert("Đã hủy nhận thông báo cho bộ phim này!");
-      } else {
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-          alert("Bạn cần cấp quyền nhận thông báo để sử dụng tính năng này!");
-          setSubLoading(false);
-          return;
-        }
-
-        const registration = await navigator.serviceWorker.ready;
-        
-        const keyRes = await fetch("/api/subscribe");
-        const keyData = await keyRes.json();
-        
-        if (!keyData.publicKey) {
-          throw new Error("Missing public VAPID key from API");
-        }
-
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
-        });
-
-        const saveRes = await fetch("/api/subscribe", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            subscription,
-            movieSlug: movie.slug
-          })
-        });
-
-        if (saveRes.ok) {
-          localStorage.setItem(`subscribed_${movie.slug}`, "true");
-          setIsSubscribed(true);
-          alert("Đăng ký nhận thông báo tập mới thành công! 🎉");
-        } else {
-          alert("Đã có lỗi xảy ra khi lưu đăng ký. Vui lòng thử lại!");
-        }
-      }
-    } catch (err) {
-      console.error("Subscription toggle failed:", err);
-      alert("Đã có lỗi xảy ra trong quá trình thiết lập. Hãy thử lại!");
-    } finally {
-      setSubLoading(false);
-    }
-  };
-
-  function urlBase64ToUint8Array(base64String: string) {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  }
 
   const router = useRouter();
   
@@ -425,20 +346,6 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                 <div className="flex gap-2.5 items-center w-full">
                   {movie.slug && (
                     <button
-                      onClick={handleSubscribeToggle}
-                      disabled={subLoading}
-                      title={isSubscribed ? "Hủy nhận thông báo tập mới" : "Nhận thông báo tập mới"}
-                      className={`inline-flex items-center justify-center w-12 h-12 rounded-xl transition-all border active:scale-95 cursor-pointer shrink-0 ${
-                        isSubscribed
-                          ? "bg-emerald-950/20 text-emerald-400 border-emerald-500/20"
-                          : "bg-zinc-900 border-zinc-850 text-white hover:bg-zinc-800"
-                      }`}
-                    >
-                      {isSubscribed ? <BellOff size={20} /> : <Bell size={20} />}
-                    </button>
-                  )}
-                  {movie.slug && (
-                    <button
                       onClick={() => {
                         const roomId = Math.random().toString(36).substring(2, 9);
                         sessionStorage.setItem(`host_${roomId}`, 'true');
@@ -599,20 +506,6 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                       </svg>
                       Xem ngay
                     </Link>
-                  )}
-                  {movie.slug && (
-                    <button
-                      onClick={handleSubscribeToggle}
-                      disabled={subLoading}
-                      title={isSubscribed ? "Hủy nhận thông báo tập mới" : "Nhận thông báo tập mới"}
-                      className={`inline-flex items-center justify-center w-12 h-12 rounded-lg transition-all border active:scale-95 cursor-pointer shrink-0 ${
-                        isSubscribed
-                          ? "bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-900/30"
-                          : "bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700"
-                      }`}
-                    >
-                      {isSubscribed ? <BellOff size={20} /> : <Bell size={20} />}
-                    </button>
                   )}
                   {movie.slug && (
                     <button
