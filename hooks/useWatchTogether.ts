@@ -169,20 +169,14 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
 
   const triggerPlay = (time: number) => {
     channelRef.current?.trigger('client-play', { time });
-    channelRef.current?.trigger('client-system-action', { text: `${username} vừa tiếp tục video` });
-    addSystemMessage(`Bạn vừa tiếp tục video`);
   };
 
   const triggerPause = () => {
     channelRef.current?.trigger('client-pause', {});
-    channelRef.current?.trigger('client-system-action', { text: `${username} vừa tạm dừng video` });
-    addSystemMessage(`Bạn vừa tạm dừng video`);
   };
 
   const triggerSeek = (time: number) => {
     channelRef.current?.trigger('client-seek', { time });
-    channelRef.current?.trigger('client-system-action', { text: `${username} vừa tua video` });
-    addSystemMessage(`Bạn vừa tua video`);
   };
 
   const triggerRequestSync = () => {
@@ -195,8 +189,6 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
 
   const triggerChangeEpisode = (serverIndex: number, episodeIndex: number) => {
     channelRef.current?.trigger('client-change-episode', { serverIndex, episodeIndex });
-    channelRef.current?.trigger('client-system-action', { text: `${username} đã đổi sang Tập ${episodeIndex + 1}` });
-    addSystemMessage(`Bạn đã đổi sang Tập ${episodeIndex + 1}`);
   };
 
   const triggerReaction = (emoji: string) => {

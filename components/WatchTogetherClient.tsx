@@ -45,7 +45,12 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   const lastSyncTimeRef = useRef<number>(0);
   const lastSyncTimestampRef = useRef<number>(0);
   const lastSyncPlayingRef = useRef<boolean>(false);
+  const isOutOfSyncRef = useRef(false);
   const [isOutOfSync, setIsOutOfSync] = useState<boolean>(false);
+
+  useEffect(() => {
+    isOutOfSyncRef.current = isOutOfSync;
+  }, [isOutOfSync]);
 
   const handleLocalStateSync = (time: number, playing: boolean) => {
     lastSyncTimeRef.current = time;
@@ -441,6 +446,13 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
     // Khi ai đó xin đồng bộ, mình trả lời bằng thời gian hiện tại và tập phim hiện tại của mình
     onRequestSyncRef.current = () => {
+      // LƯU Ý QUAN TRỌNG: Nếu mình đang bị lệch hình (mới vào, hoặc bị lỗi iOS block play), mình TUYỆT ĐỐI KHÔNG trả lời!
+      // Nếu mình trả lời với time = 0, người mới vào sẽ bị tua về 0!
+      if (isOutOfSyncRef.current) return;
+
+      const isHost = typeof window !== "undefined" && sessionStorage.getItem('host_' + roomId) === 'true';
+      if (!hasSynced.current && !isHost) return;
+
       if (videoRef.current) {
         triggerSyncResponse(
           videoRef.current.currentTime,
