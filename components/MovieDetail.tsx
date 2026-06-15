@@ -395,9 +395,10 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
 
           {/* Info */}
           <div className="flex flex-col gap-6">
-            {/* Mobile Poster */}
-            <div className="md:hidden flex justify-center mb-2">
-              <Link href={`/xem-phim/${movie.slug}`} className="block relative aspect-[2/3] rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)] max-w-[200px] group bg-zinc-900 border border-white/10">
+            {/* Mobile Header Block: Poster on Left, Title & Actions on Right */}
+            <div className="md:hidden flex gap-4 items-start mb-2">
+              {/* Mobile Poster on Left */}
+              <Link href={`/xem-phim/${movie.slug}`} className="block shrink-0 relative w-[110px] aspect-[2/3] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.6)] group bg-zinc-900 border border-white/10">
                 <img
                   src={currentPosterUrl}
                   alt={movie.name}
@@ -405,11 +406,72 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                   onError={handlePosterError}
                 />
               </Link>
+              
+              {/* Title & Quick Actions on Right */}
+              <div className="flex-1 min-w-0 flex flex-col gap-3">
+                <div>
+                  <h1 className="text-xl font-bold text-white line-clamp-2 leading-snug">
+                    {movie.origin_name || movie.name}
+                  </h1>
+                  {movie.origin_name && (
+                    <p className="text-xs text-zinc-400 font-medium truncate mt-0.5">{movie.name}</p>
+                  )}
+                </div>
+                
+                {/* Mobile Quick Action Buttons */}
+                {episodes && 
+                episodes.length > 0 && 
+                episodes[0].server_data && 
+                episodes[0].server_data.length > 0 &&
+                (episodes[0].server_data[0].link_m3u8 || episodes[0].server_data[0].link_embed) && (
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {movie.slug && (
+                      <Link
+                        href={`/xem-phim/${movie.slug}`}
+                        className="inline-flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs px-3 py-2 rounded-lg transition-colors active:scale-95 shadow-md shadow-red-900/20"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        </svg>
+                        <span>Xem ngay</span>
+                      </Link>
+                    )}
+                    {movie.slug && (
+                      <button
+                        onClick={handleSubscribeToggle}
+                        disabled={subLoading}
+                        title={isSubscribed ? "Hủy nhận thông báo tập mới" : "Nhận thông báo tập mới"}
+                        className={`inline-flex items-center justify-center w-[32px] h-[32px] rounded-lg transition-all border active:scale-95 cursor-pointer shrink-0 ${
+                          isSubscribed
+                            ? "bg-emerald-950/20 text-emerald-400 border-emerald-500/20"
+                            : "bg-zinc-800 border-zinc-700 text-white"
+                        }`}
+                      >
+                        {isSubscribed ? <BellOff size={16} /> : <Bell size={16} />}
+                      </button>
+                    )}
+                    {movie.slug && (
+                      <button
+                        onClick={() => {
+                          const roomId = Math.random().toString(36).substring(2, 9);
+                          sessionStorage.setItem(`host_${roomId}`, 'true');
+                          window.location.href = `/watch-together/${movie.slug}/${roomId}`;
+                        }}
+                        className="inline-flex items-center justify-center gap-1 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs px-2.5 py-2 rounded-lg transition-colors border border-zinc-700 active:scale-95 cursor-pointer"
+                      >
+                        <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span>Xem chung</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
-
-            {/* Title */}
-            <div>
+            {/* Title Desktop */}
+            <div className="hidden md:block">
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 line-clamp-2">
                 {movie.origin_name || movie.name}
               </h1>
@@ -546,13 +608,13 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             )}
 
             {/* Watch Buttons or Trailer Info */}
-            <div className="flex flex-wrap gap-4 mt-2">
+            <div className="flex flex-col gap-4 mt-2">
               {episodes && 
               episodes.length > 0 && 
               episodes[0].server_data && 
               episodes[0].server_data.length > 0 &&
               (episodes[0].server_data[0].link_m3u8 || episodes[0].server_data[0].link_embed) ? (
-                <>
+                <div className="hidden md:flex flex-wrap gap-4 items-center">
                   {movie.slug && (
                     <Link
                       href={`/xem-phim/${movie.slug}`}
@@ -594,7 +656,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                       Xem chung cùng bạn bè
                     </button>
                   )}
-                </>
+                </div>
               ) : (
                 <div className="flex flex-col gap-3 w-full">
                   <div className="bg-amber-950/20 border border-amber-900/40 rounded-xl p-4 text-amber-200 text-sm max-w-xl">

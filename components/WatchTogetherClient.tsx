@@ -1231,7 +1231,14 @@ function KeyboardAndTheaterHandler({
       
       const root = containerRef.current;
       if (root && window.innerWidth < 768) {
-        root.style.height = `${viewport.height}px`;
+        // Only lock height dynamically if visual viewport is significantly smaller than window height (indicating keyboard is open)
+        // This avoids layout zoom issues in Safari on orientation change
+        const isKeyboardOpen = window.innerHeight - viewport.height > 150;
+        if (isKeyboardOpen) {
+          root.style.height = `${viewport.height}px`;
+        } else {
+          root.style.height = "100dvh";
+        }
       } else if (root) {
         // Reset styles for desktop
         root.style.height = "";
