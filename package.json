@@ -24,7 +24,8 @@
     "react-parallax-tilt": "^1.7.331",
     "react-youtube": "^10.1.0",
     "swr": "^2.4.1",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -32,6 +33,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",

@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import HistoryTracker from "@/components/HistoryTracker";
+import PWARegistration from "@/components/PWARegistration";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}} />
       </head>
       <body className="min-h-full flex flex-col bg-black text-white font-sans">
+        <PWARegistration />
         <HistoryTracker />
         <Header />
         {children}

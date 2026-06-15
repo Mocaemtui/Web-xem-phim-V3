@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Play, Share2, Plus, Clock, Calendar, Star, Languages, Users } from "lucide-react";
+import { Play, Share2, Plus, Clock, Calendar, Star, Languages, Users, Bell, BellOff } from "lucide-react";
 import type { MovieDetail, MovieImages, MoviePeoples } from "@/types/api";
 import ImageToggle from "./ImageToggle";
 import YouTube from "react-youtube";
@@ -137,6 +137,87 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
       setPosterSource(prev => (prev + 1) as 0 | 1 | 2);
     }
   };
+
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsSubscribed(localStorage.getItem(`subscribed_${movie.slug}`) === "true");
+    }
+  }, [movie.slug]);
+
+  const handleSubscribeToggle = async () => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+      alert("Trình duyệt của bạn không hỗ trợ nhận thông báo đẩy (Push Notifications).");
+      return;
+    }
+
+    setSubLoading(true);
+    try {
+      if (isSubscribed) {
+        localStorage.removeItem(`subscribed_${movie.slug}`);
+        setIsSubscribed(false);
+        alert("Đã hủy nhận thông báo cho bộ phim này!");
+      } else {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          alert("Bạn cần cấp quyền nhận thông báo để sử dụng tính năng này!");
+          setSubLoading(false);
+          return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        
+        const keyRes = await fetch("/api/subscribe");
+        const keyData = await keyRes.json();
+        
+        if (!keyData.publicKey) {
+          throw new Error("Missing public VAPID key from API");
+        }
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+        });
+
+        const saveRes = await fetch("/api/subscribe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            subscription,
+            movieSlug: movie.slug
+          })
+        });
+
+        if (saveRes.ok) {
+          localStorage.setItem(`subscribed_${movie.slug}`, "true");
+          setIsSubscribed(true);
+          alert("Đăng ký nhận thông báo tập mới thành công! 🎉");
+        } else {
+          alert("Đã có lỗi xảy ra khi lưu đăng ký. Vui lòng thử lại!");
+        }
+      }
+    } catch (err) {
+      console.error("Subscription toggle failed:", err);
+      alert("Đã có lỗi xảy ra trong quá trình thiết lập. Hãy thử lại!");
+    } finally {
+      setSubLoading(false);
+    }
+  };
+
+  function urlBase64ToUint8Array(base64String: string) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
 
   const router = useRouter();
   
@@ -497,6 +578,20 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                       Xem chung cùng bạn bè
+                    </button>
+                  )}
+                  {movie.slug && (
+                    <button
+                      onClick={handleSubscribeToggle}
+                      disabled={subLoading}
+                      className={`inline-flex items-center justify-center gap-2 font-medium px-6 py-3 rounded-lg transition-all border w-fit active:scale-95 cursor-pointer ${
+                        isSubscribed
+                          ? "bg-emerald-950/20 text-emerald-400 border-emerald-500/20 hover:bg-emerald-900/30"
+                          : "bg-zinc-800 hover:bg-zinc-700 text-white border-zinc-700"
+                      }`}
+                    >
+                      {isSubscribed ? <BellOff size={18} /> : <Bell size={18} />}
+                      {isSubscribed ? "Hủy nhận thông báo" : "Nhận thông báo tập mới"}
                     </button>
                   )}
                 </>

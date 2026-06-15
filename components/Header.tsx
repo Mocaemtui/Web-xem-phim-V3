@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Menu, X, Filter, Clock } from "lucide-react";
+import { Search, Menu, X, Filter, Clock, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Movie } from "@/types/api";
 import { getPosterUrl, searchPhim } from "@/lib/api";
@@ -17,6 +17,46 @@ export default function Header() {
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "Mocaemtui";
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const checkInstallability = () => {
+      if ((window as any).deferredPrompt) {
+        setIsInstallable(true);
+      }
+    };
+
+    const handleInstallable = () => {
+      setIsInstallable(true);
+    };
+
+    window.addEventListener("pwa_installable", handleInstallable);
+    
+    // Check initial state
+    checkInstallability();
+
+    return () => {
+      window.removeEventListener("pwa_installable", handleInstallable);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    const promptEvent = (window as any).deferredPrompt;
+    if (!promptEvent) return;
+
+    // Show prompt
+    promptEvent.prompt();
+
+    // Wait for user choice
+    const { outcome } = await promptEvent.userChoice;
+    console.log(`PWA install user choice outcome: ${outcome}`);
+
+    // Clear prompt event since it can only be used once
+    (window as any).deferredPrompt = null;
+    setIsInstallable(false);
+  };
 
   useEffect(() => {
     if (searchKeyword.trim().length < 2) {
@@ -91,6 +131,15 @@ export default function Header() {
               <Clock size={16} />
               Lịch sử
             </Link>
+            {isInstallable && (
+              <button
+                onClick={handleInstallClick}
+                className="text-sm font-medium text-black bg-[var(--color-cyan-neon)] hover:bg-[var(--color-cyan-neon)]/90 px-3 py-1 rounded-full transition-all flex items-center gap-1.5 shadow-[0_0_12px_var(--color-cyan-neon)] scale-100 hover:scale-105 active:scale-95 duration-300 cursor-pointer"
+              >
+                <Download size={14} />
+                Tải App
+              </button>
+            )}
           </nav>
 
           {/* Search & Mobile Menu */}
@@ -217,6 +266,15 @@ export default function Header() {
                 <Clock size={18} />
                 Lịch sử
               </Link>
+              {isInstallable && (
+                <button
+                  onClick={handleInstallClick}
+                  className="mx-4 my-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-black bg-[var(--color-cyan-neon)] hover:bg-[var(--color-cyan-neon)]/90 transition-colors flex items-center justify-center gap-2 shadow-[0_0_12px_var(--color-cyan-neon)] cursor-pointer"
+                >
+                  <Download size={16} />
+                  Tải App Mocaemtui
+                </button>
+              )}
             </div>
           </nav>
         )}
