@@ -6,7 +6,7 @@ import Image from "next/image";
 import type { Movie } from "@/types/api";
 import { getBackdropUrl } from "@/lib/api";
 import { Play, Info, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import YouTube from "react-youtube";
 
@@ -23,9 +23,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
   const [isMobile, setIsMobile] = useState(false);
   const playerRef = useRef<any>(null);
 
-  // Parallax effect
-  const { scrollY } = useScroll();
-  const y = useTransform(scrollY, [0, 1000], [0, 200]);
+
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -150,7 +148,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
 
   return (
     <div 
-      className="relative w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] min-h-[50vh] lg:min-h-[75vh] max-h-[90vh] flex items-end pb-12 sm:pb-16 md:pb-28 lg:pb-36 pt-16 sm:pt-20 overflow-hidden group bg-zinc-950"
+      className="relative w-full aspect-video flex items-end pb-4 sm:pb-8 md:pb-16 lg:pb-24 pt-12 sm:pt-16 overflow-hidden group bg-zinc-950"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -162,8 +160,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
-          className="absolute -top-[20%] -bottom-[20%] left-0 right-0 z-0"
-          style={{ y: isMobile ? 0 : y }}
+          className="absolute inset-0 z-0"
         >
           
           {/* Youtube Auto-play Background (Always opacity 1, hidden behind image initially) */}
@@ -192,7 +189,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
                   }
                   setIsVideoPlaying(true);
                 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[67.5vw] min-h-[120%] min-w-[213.33%] pointer-events-none scale-[1.20]"
+                className="absolute inset-0 w-full h-full pointer-events-none"
               />
             </div>
           )}
@@ -207,7 +204,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
               src={backdropUrl}
               alt={movie.name}
               fill
-              className="object-cover animate-ken-burns"
+              className="object-cover"
               priority
             />
           </motion.div>
@@ -257,18 +254,18 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
           >
             <motion.h1 
               variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold font-outfit text-white mb-4 leading-tight drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] tracking-tight line-clamp-2"
+              className="text-xl sm:text-4xl md:text-5xl lg:text-7xl font-bold font-outfit text-white mb-2 sm:mb-4 leading-tight drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] tracking-tight line-clamp-2"
             >
               {movie.origin_name || movie.name}
             </motion.h1>
             
             <motion.div 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-              className="flex items-center gap-3 text-xs sm:text-sm md:text-base text-zinc-200 mb-4 drop-shadow-md"
+              className="flex items-center gap-3 text-[10px] sm:text-sm md:text-base text-zinc-200 mb-2 sm:mb-4 drop-shadow-md"
             >
               <span className="font-bold text-white">{movie.year}</span>
               {movie.quality && (
-                <span className="px-2 py-0.5 border border-white/30 rounded bg-white/10 backdrop-blur-md shadow-sm">
+                <span className="px-1.5 py-0.5 border border-white/30 rounded bg-white/10 backdrop-blur-md shadow-sm">
                   {movie.quality}
                 </span>
               )}
@@ -277,7 +274,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
 
             <motion.p 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-              className="text-zinc-300 text-xs sm:text-sm md:text-base line-clamp-2 sm:line-clamp-3 mb-6 drop-shadow-md max-w-xl leading-relaxed"
+              className="text-zinc-300 text-xs sm:text-sm md:text-base line-clamp-2 sm:line-clamp-3 mb-4 sm:mb-6 drop-shadow-md max-w-xl leading-relaxed hidden sm:block"
             >
               {movie.origin_name && <span className="block mb-1 font-bold text-white text-lg">{movie.name}</span>}
               Theo dõi ngay tác phẩm nổi bật này. Chúc bạn có những phút giây giải trí tuyệt vời nhất trên Mocaemtui.
@@ -285,36 +282,36 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
 
             <motion.div 
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-              className="flex items-center gap-3 sm:gap-4"
+              className="flex items-center gap-2 sm:gap-4"
             >
               <Link 
                 href={`/phim/${encodeURIComponent(movie.slug)}`}
-                className="group flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-[var(--color-cyan-neon)] text-black rounded-xl font-bold hover:bg-white transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_var(--color-cyan-neon)] hover:shadow-[0_0_30px_rgba(255,255,255,0.8)] text-sm sm:text-base relative overflow-hidden"
+                className="group flex items-center gap-1.5 px-3 py-1.5 sm:px-6 sm:py-3 bg-[var(--color-cyan-neon)] text-black rounded-lg sm:rounded-xl font-bold hover:bg-white transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_var(--color-cyan-neon)] hover:shadow-[0_0_30px_rgba(255,255,255,0.8)] text-xs sm:text-base relative overflow-hidden"
               >
                 {/* Ping effect background */}
                 <div className="absolute inset-0 bg-[var(--color-cyan-neon)] animate-ping opacity-20 group-hover:opacity-0 transition-opacity" />
-                <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current relative z-10" />
+                <Play className="w-3.5 h-3.5 sm:w-5 sm:h-5 fill-current relative z-10" />
                 <span className="relative z-10">Phát Ngay</span>
               </Link>
               
               <Link
                 href={`/phim/${encodeURIComponent(movie.slug)}`}
-                className="flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-black/40 text-white rounded-xl font-bold backdrop-blur-md hover:bg-black/60 border border-[var(--color-cyan-neon)] transition-all hover:scale-105 active:scale-95 text-sm sm:text-base hover:shadow-[0_0_15px_var(--color-cyan-neon)]"
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-6 sm:py-3 bg-black/40 text-white rounded-lg sm:rounded-xl font-bold backdrop-blur-md hover:bg-black/60 border border-[var(--color-cyan-neon)] transition-all hover:scale-105 active:scale-95 text-xs sm:text-base hover:shadow-[0_0_15px_var(--color-cyan-neon)]"
               >
-                <Info className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Info className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                 Chi Tiết
               </Link>
               
               {trailerVideoId && (
                 <button
                   onClick={toggleMute}
-                  className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-black/40 text-white rounded-xl backdrop-blur-md hover:bg-black/60 border border-white/20 transition-all hover:scale-105 active:scale-95 text-sm sm:text-base hover:border-white/50"
+                  className="flex items-center justify-center w-7 h-7 sm:w-12 sm:h-12 bg-black/40 text-white rounded-lg sm:rounded-xl backdrop-blur-md hover:bg-black/60 border border-white/20 transition-all hover:scale-105 active:scale-95 text-xs sm:text-base hover:border-white/50"
                   aria-label={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
                 >
                   {isMuted ? (
-                    <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <VolumeX className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                   ) : (
-                    <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Volume2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                   )}
                 </button>
               )}
@@ -324,14 +321,14 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
 
         {/* Indicators */}
         {movies.length > 1 && (
-          <div className="flex items-center gap-2 mt-8">
+          <div className="flex items-center gap-1.5 mt-4 sm:mt-8">
             {movies.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
                 aria-label={`Go to slide ${idx + 1}`}
                 className={`transition-all duration-300 rounded-full ${
-                  currentIndex === idx ? "w-8 h-2 bg-[var(--color-magenta-neon)] shadow-[0_0_15px_var(--color-magenta-neon)]" : "w-2 h-2 bg-white/40 hover:bg-white/70"
+                  currentIndex === idx ? "w-6 h-1.5 sm:w-8 sm:h-2 bg-[var(--color-magenta-neon)] shadow-[0_0_15px_var(--color-magenta-neon)]" : "w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white/40 hover:bg-white/70"
                 }`}
               />
             ))}
