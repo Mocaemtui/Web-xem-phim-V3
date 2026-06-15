@@ -393,7 +393,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             </Link>
           </div>
 
-          {/* Title & Mobile Actions */}
+          {/* Title */}
           <div className="col-start-2 flex flex-col justify-start">
             <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2 line-clamp-2 md:line-clamp-none leading-snug md:leading-tight">
               {movie.origin_name || movie.name}
@@ -401,39 +401,40 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             {movie.origin_name && (
               <p className="text-sm md:text-lg text-zinc-400 font-medium truncate md:whitespace-normal">{movie.name}</p>
             )}
+          </div>
 
+          {/* Info Container (Full width on mobile, right column on desktop) */}
+          <div className="col-span-2 md:col-span-1 md:col-start-2 flex flex-col gap-4 md:gap-6">
             {/* Mobile Action Buttons */}
             {episodes && 
             episodes.length > 0 && 
             episodes[0].server_data && 
             episodes[0].server_data.length > 0 &&
             (episodes[0].server_data[0].link_m3u8 || episodes[0].server_data[0].link_embed) && (
-              <div className="md:hidden flex flex-col gap-2 mt-auto pt-2">
+              <div className="md:hidden flex flex-col gap-2.5 w-full">
                 {movie.slug && (
                   <Link
                     href={`/xem-phim/${movie.slug}`}
-                    className="inline-flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2 rounded-lg transition-colors active:scale-95 shadow-md shadow-red-900/20 w-full"
+                    className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-base py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-red-950/40 w-full"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    </svg>
+                    <Play className="w-5 h-5 fill-current" />
                     <span>Xem ngay</span>
                   </Link>
                 )}
                 
-                <div className="flex gap-2 items-center w-full">
+                <div className="flex gap-2.5 items-center w-full">
                   {movie.slug && (
                     <button
                       onClick={handleSubscribeToggle}
                       disabled={subLoading}
                       title={isSubscribed ? "Hủy nhận thông báo tập mới" : "Nhận thông báo tập mới"}
-                      className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-all border active:scale-95 cursor-pointer shrink-0 ${
+                      className={`inline-flex items-center justify-center w-12 h-12 rounded-xl transition-all border active:scale-95 cursor-pointer shrink-0 ${
                         isSubscribed
                           ? "bg-emerald-950/20 text-emerald-400 border-emerald-500/20"
-                          : "bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700"
+                          : "bg-zinc-900 border-zinc-850 text-white hover:bg-zinc-800"
                       }`}
                     >
-                      {isSubscribed ? <BellOff size={16} /> : <Bell size={16} />}
+                      {isSubscribed ? <BellOff size={20} /> : <Bell size={20} />}
                     </button>
                   )}
                   {movie.slug && (
@@ -443,21 +444,15 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                         sessionStorage.setItem(`host_${roomId}`, 'true');
                         window.location.href = `/watch-together/${movie.slug}/${roomId}`;
                       }}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-sm py-2 rounded-lg transition-colors border border-zinc-700 active:scale-95 cursor-pointer h-9"
+                      className="flex-1 inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-855 text-white font-semibold text-sm py-3 rounded-xl transition-colors border border-zinc-800 active:scale-95 cursor-pointer h-12"
                     >
-                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
+                      <Users className="w-5 h-5 text-blue-400" />
                       <span>Xem chung</span>
                     </button>
                   )}
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Info Container (Full width on mobile, right column on desktop) */}
-          <div className="col-span-2 md:col-span-1 md:col-start-2 flex flex-col gap-4 md:gap-6">
             {/* Meta Info */}
             <div className="flex flex-wrap gap-3 text-sm">
               <span className="px-3 py-1 bg-zinc-800 text-zinc-300 rounded-full">
