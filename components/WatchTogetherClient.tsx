@@ -1176,7 +1176,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         )}
 
 
-        <div className={`flex-1 min-h-0 flex flex-col pointer-events-auto ${
+        <div className={`flex-1 min-h-0 h-0 flex flex-col pointer-events-auto ${
           isTheaterMode 
             ? "bg-transparent border-0 shadow-none" 
             : "bg-zinc-900/30 border border-zinc-800/50 rounded-2xl backdrop-blur-md shadow-2xl overflow-hidden"
