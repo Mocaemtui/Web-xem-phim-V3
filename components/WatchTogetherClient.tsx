@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import type { MovieDetail } from "@/types/api";
-import { Users, Copy, Check, RefreshCw, Smile, Eye, EyeOff, MessageSquare } from "lucide-react";
+import { Users, Copy, Check, RefreshCw, Smile, Eye, EyeOff, MessageSquare, LogOut } from "lucide-react";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import { useWatchTogether } from "@/hooks/useWatchTogether";
 import { saveWatchHistory } from "@/lib/watchHistory";
@@ -543,6 +543,13 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             >
               Vào Phòng
             </button>
+
+            <a
+              href={`/phim/${movie.slug}`}
+              className="w-full inline-flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-medium py-3 rounded-lg transition-colors active:scale-95 text-sm"
+            >
+              Thoát
+            </a>
           </form>
         </div>
       </div>
@@ -550,7 +557,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   }
 
   return (
-    <div ref={containerRef} className="relative min-h-screen bg-zinc-950 flex flex-col overflow-y-auto scroll-smooth">
+    <div ref={containerRef} className="relative min-h-screen bg-zinc-950 flex flex-col md:overflow-y-auto overflow-hidden scroll-smooth">
       {/* Global Background Ambient Glow Canvas */}
       {ambientActive && (
         <canvas
@@ -577,7 +584,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
       {/* Room Header: Show when not in theater mode */}
       {!isTheaterMode && (
-        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-6 pt-6 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/40 relative z-20">
+        <div className="hidden md:flex w-full max-w-[1600px] mx-auto px-6 pt-6 pb-4 items-center justify-between gap-4 border-b border-zinc-800/40 relative z-20">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
@@ -611,16 +618,25 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               </svg>
               <span>Phóng to (Enter)</span>
             </button>
+
+            {/* Exit Room Button */}
+            <a
+              href={`/phim/${movie.slug}`}
+              className="flex items-center gap-1.5 bg-red-950/20 hover:bg-red-900/30 border border-red-900/30 text-red-400 hover:text-red-300 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shadow-md active:scale-95 cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Thoát phòng</span>
+            </a>
           </div>
         </div>
       )}
 
 
       {/* Main workspace: Side-by-side Player and Chat Sidebar */}
-      <div className={`w-full flex flex-col md:flex-row shrink-0 relative overflow-hidden ${
+      <div className={`w-full flex flex-col md:flex-row shrink-0 md:shrink relative overflow-hidden ${
         isTheaterMode 
           ? "h-full flex-1" 
-          : "max-w-[1600px] mx-auto px-4 md:px-6 py-6 gap-6 items-stretch min-h-0"
+          : "max-w-[1600px] mx-auto px-4 md:px-6 md:py-6 gap-6 items-stretch min-h-0 flex-1"
       }`}>
         {/* Left Area: Video Player & Controls */}
         <div 
@@ -633,16 +649,65 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         >
 
 
-        {/* Mobile Spacer (holds height for fixed top video player on mobile) */}
+        {/* Mobile Spacer (holds height for absolute top video player on mobile) */}
         {!isTheaterMode && (
-          <div className="h-[calc(56.25vw+16px)] md:hidden shrink-0" />
+          <div className="h-[56.25vw] md:hidden shrink-0" />
+        )}
+
+        {/* Mobile Room Header: Show on mobile below the player spacer */}
+        {!isTheaterMode && (
+          <div className="flex flex-col md:hidden p-3 border-b border-zinc-850 bg-zinc-900/10 shrink-0">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <h1 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse shrink-0 shadow-[0_0_6px_rgba(239,68,68,0.5)]" />
+                  <span className="truncate">Xem Chung: {movie.name}</span>
+                </h1>
+                <p className="text-[10px] text-zinc-400 mt-0.5">
+                  Tập: <span className="text-red-500 font-semibold">{currentEpisode?.name.toLowerCase().includes("tập") ? currentEpisode.name : `Tập ${currentEpisodeIndex + 1}`}</span>
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Copy Link */}
+                <button
+                  onClick={copyLink}
+                  className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+                >
+                  {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-red-500" />}
+                  <span>{copied ? "Đã copy" : "Mời"}</span>
+                </button>
+
+                {/* Theater Mode Toggle Button */}
+                <button
+                  onClick={() => setIsTheaterMode(prev => !prev)}
+                  className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+                  title="Chế độ rạp chiếu (Ẩn/Hiện chat trực tiếp trên video)"
+                >
+                  <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m-11.25 11.25v-4.5m0 4.5h4.5m-4.5 0L9 15m11.25 5.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
+                  </svg>
+                  <span>Rạp chiếu</span>
+                </button>
+
+                {/* Exit Room Button */}
+                <a
+                  href={`/phim/${movie.slug}`}
+                  className="flex items-center gap-1 bg-red-950/20 border border-red-900/30 text-red-400 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>Thoát</span>
+                </a>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Video Player */}
         <div className={`w-full transition-all ${
           isTheaterMode 
             ? "h-full max-h-screen flex items-center justify-end p-0 z-40 fixed inset-0 bg-black" 
-            : "relative aspect-video rounded-2xl overflow-hidden border border-zinc-850 shadow-2xl bg-zinc-950"
+            : "absolute md:relative top-0 left-0 w-full md:w-auto aspect-video rounded-none md:rounded-2xl overflow-hidden border-b md:border border-zinc-850 shadow-2xl bg-zinc-950 z-30"
         }`}>
 
           {/* Floating Horizontal Controller at Top-Right (Only shows when chat is hidden in theater mode) */}
@@ -810,7 +875,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             </div>
 
             {/* Mobile Tab Content Container */}
-            <div className={`flex-1 min-h-0 md:hidden bg-zinc-900/10 rounded-b-xl border-0 p-3 flex flex-col h-[calc(100vh-56.25vw-120px)] min-h-[280px] ${activeMobileTab === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+            <div className={`flex-1 min-h-0 md:hidden bg-zinc-900/10 rounded-b-xl border-0 p-3 flex flex-col min-h-[200px] ${activeMobileTab === 'chat' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
               {activeMobileTab === "chat" && (
                 <div className="flex-1 flex flex-col min-h-0">
                   {/* Emojis Reaction bar inside mobile chat tab */}
@@ -889,16 +954,17 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         />
       )}
 
-      {/* Right Area: Desktop Sidebar */}
+      {/* Right Area: Desktop & Mobile Floating Sidebar */}
       <div 
-        className={`hidden md:flex bg-transparent flex-col min-h-0 shrink-0 z-10 relative transition-all duration-300 ease-in-out ${
-          isChatHidden ? "opacity-0 pointer-events-none" : "opacity-100"
-        } ${isTheaterMode ? "pointer-events-none" : ""}`}
-        style={{ 
-          width: isTheaterMode ? "260px" : `${chatWidth}px`, 
-          padding: isTheaterMode ? "12px" : "0px",
-          gap: isTheaterMode ? "12px" : "0px",
-          overflow: "hidden",
+        className={`bg-transparent flex-col min-h-0 transition-all duration-300 ease-in-out ${
+          isTheaterMode 
+            ? "fixed right-0 top-0 bottom-0 z-50 flex w-[280px] max-w-[80vw] p-3 gap-3 overflow-hidden pointer-events-none" 
+            : "hidden md:flex relative z-10 shrink-0 overflow-hidden"
+        } ${isChatHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+        style={isTheaterMode ? {} : { 
+          width: `${chatWidth}px`, 
+          padding: "0px",
+          gap: "0px",
           backgroundColor: "transparent" 
         }}
       >
