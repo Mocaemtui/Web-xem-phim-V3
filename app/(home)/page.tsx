@@ -42,8 +42,30 @@ export default async function Home() {
   }
 
   const allPhimMoi = phimMoiData.data.items;
-  const heroMovies = allPhimMoi.slice(0, 6); // top 6 movies for hero carousel
-  const sliderPhimMoi = allPhimMoi.slice(6);
+  
+  const heroMovies: any[] = [];
+  const sliderPhimMoi: any[] = [];
+  
+  // Fetch song song để kiểm tra phim nào có trailer
+  const movieDetailsPromises = allPhimMoi.map(async (movie: any) => {
+    try {
+      const res = await fetch(`https://phimapi.com/phim/${movie.slug}`, { next: { revalidate: 3600 } });
+      const data = await res.json();
+      return { movie, hasTrailer: !!data.movie?.trailer_url };
+    } catch (e) {
+      return { movie, hasTrailer: false };
+    }
+  });
+  
+  const movieDetails = await Promise.all(movieDetailsPromises);
+  
+  for (const { movie, hasTrailer } of movieDetails) {
+    if (hasTrailer && heroMovies.length < 6) {
+      heroMovies.push(movie);
+    } else {
+      sliderPhimMoi.push(movie);
+    }
+  }
 
   return (
     <div className="overflow-hidden bg-black pb-16">
