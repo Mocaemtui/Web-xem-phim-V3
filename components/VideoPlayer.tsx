@@ -495,23 +495,23 @@ export default function VideoPlayer({
     if (!isFullscreen) {
       if (container.requestFullscreen) {
         container.requestFullscreen().then(() => {
-          if (typeof screen !== "undefined" && screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock("landscape").catch(() => {});
+          if (typeof screen !== "undefined" && screen.orientation && (screen.orientation as any).lock) {
+            (screen.orientation as any).lock("landscape").catch(() => {});
           }
         }).catch(() => {});
       } else if ((container as any).webkitRequestFullscreen) {
         (container as any).webkitRequestFullscreen();
-        if (typeof screen !== "undefined" && screen.orientation && screen.orientation.lock) {
-          screen.orientation.lock("landscape").catch(() => {});
+        if (typeof screen !== "undefined" && screen.orientation && (screen.orientation as any).lock) {
+          (screen.orientation as any).lock("landscape").catch(() => {});
         }
       } else if ((video as any).webkitEnterFullscreen) {
         (video as any).webkitEnterFullscreen();
       }
       setIsFullscreen(true);
     } else {
-      if (typeof screen !== "undefined" && screen.orientation && screen.orientation.unlock) {
+      if (typeof screen !== "undefined" && screen.orientation && (screen.orientation as any).unlock) {
         try {
-          screen.orientation.unlock();
+          (screen.orientation as any).unlock();
         } catch (e) {}
       }
       if (document.exitFullscreen) {

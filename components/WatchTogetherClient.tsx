@@ -204,20 +204,20 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     if (isTheaterMode) {
       if (containerRef.current && !document.fullscreenElement && containerRef.current.requestFullscreen) {
         containerRef.current.requestFullscreen().then(() => {
-          if (typeof screen !== "undefined" && screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock("landscape").catch(() => {});
+          if (typeof screen !== "undefined" && screen.orientation && (screen.orientation as any).lock) {
+            (screen.orientation as any).lock("landscape").catch(() => {});
           }
         }).catch(() => {});
       } else {
         // Fallback if requestFullscreen is not available or already in fullscreen
-        if (typeof screen !== "undefined" && screen.orientation && screen.orientation.lock) {
-          screen.orientation.lock("landscape").catch(() => {});
+        if (typeof screen !== "undefined" && screen.orientation && (screen.orientation as any).lock) {
+          (screen.orientation as any).lock("landscape").catch(() => {});
         }
       }
     } else {
-      if (typeof screen !== "undefined" && screen.orientation && screen.orientation.unlock) {
+      if (typeof screen !== "undefined" && screen.orientation && (screen.orientation as any).unlock) {
         try {
-          screen.orientation.unlock();
+          (screen.orientation as any).unlock();
         } catch (e) {}
       }
       if (document.fullscreenElement && document.exitFullscreen) {
