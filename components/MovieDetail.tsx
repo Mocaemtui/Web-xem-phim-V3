@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Play, Share2, Plus, Clock, Calendar, Star, Languages, Users } from "lucide-react";
@@ -28,9 +28,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   const [trailerVideoId, setTrailerVideoId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Parallax effect
-  const { scrollY } = useScroll();
-  const y = useTransform(scrollY, [0, 1000], [0, 300]);
+
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -178,9 +176,9 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
         </button>
       </div>
       {/* Backdrop */}
-      <div className="relative z-0 w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] max-h-[85vh] overflow-hidden bg-zinc-950">
+      <div className="relative z-0 w-full aspect-video overflow-hidden bg-zinc-950">
         
-        <motion.div style={{ y: isMobile ? 0 : y }} className="absolute -top-[15%] -bottom-[15%] left-0 right-0 z-0">
+        <div className="absolute inset-0 z-0">
           {/* Youtube Background - clip-path giấu hoàn toàn cho tới khi video phát */}
         {isPlayingTrailer && trailerVideoId && (
           <div 
@@ -215,7 +213,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                   e.target.setPlaybackQuality('hd1080');
                   setIsVideoReady(true);
                 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[67.5vw] min-h-[120%] min-w-[213.33%] pointer-events-none"
+                className="absolute inset-0 w-full h-full pointer-events-none"
               />
             {/* Click to stop trailer */}
             <div 
@@ -253,7 +251,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             </div>
           )}
         </div>
-        </motion.div>
+        </div>
         
         {/* Cinematic Gradients - keep outside parallax to maintain overlay structure */}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/50 via-zinc-950/10 to-transparent pointer-events-none z-20" />
@@ -269,7 +267,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 -mt-32 relative z-10">
+      <div className="container mx-auto px-4 -mt-16 sm:-mt-32 relative z-10">
         <div className="grid md:grid-cols-[300px_1fr] gap-8">
           {/* Poster Desktop */}
           <div className="hidden md:block">
