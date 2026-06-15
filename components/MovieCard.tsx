@@ -32,10 +32,35 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
   const [isHovered, setIsHovered] = useState(false);
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
   const [thumbImageUrl, setThumbImageUrl] = useState<string | null>(null);
+  const [actualEpisodeCount, setActualEpisodeCount] = useState<number | null>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const cardRef = useRef<HTMLAnchorElement>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [historyData, setHistoryData] = useState<{ episodeName?: string; progressPercent?: number } | null>(null);
+
+  useEffect(() => {
+    // Lazily fetch actual episode count for series to fix missing episode_total
+    const isSeries = movie.type !== "single" && movie.episode_total !== "1" && movie.slug;
+    if (isSeries) {
+      const fetchExactCount = async () => {
+        try {
+          const res = await fetch(`https://phimapi.com/phim/${movie.slug}`);
+          const data = await res.json();
+          if (data && data.episodes) {
+             const phimapi = data.episodes.find((e: any) => e.server_name.toLowerCase().includes("phimapi"));
+             if (phimapi) return setActualEpisodeCount(phimapi.server_data.length);
+             const ophim = data.episodes.find((e: any) => e.server_name.toLowerCase().includes("ophim"));
+             if (ophim) return setActualEpisodeCount(ophim.server_data.length);
+             const other = data.episodes.find((e: any) => !e.server_name.toLowerCase().includes("vid"));
+             if (other) return setActualEpisodeCount(other.server_data.length);
+          }
+        } catch (e) {}
+      };
+      // Random delay 500ms -> 2500ms to prevent network congestion when 60 cards mount
+      const timer = setTimeout(fetchExactCount, 500 + Math.random() * 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [movie.slug, movie.type, movie.episode_total]);
 
   useEffect(() => {
     try {
@@ -119,9 +144,9 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
     if (historyData?.episodeName) {
       const epNum = extractNumber(historyData.episodeName);
       if (epNum) {
-        return `${epNum} / ${total} Tập`;
+        return `${epNum} / ${actualEpisodeCount || total} Tập`;
       }
-      return `${historyData.episodeName} / ${total} Tập`;
+      return `${historyData.episodeName} / ${actualEpisodeCount || total} Tập`;
     }
 
     // Chưa xem
@@ -129,6 +154,11 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
     
     if (current.includes("/")) {
       current = current.split("/")[0].trim();
+    }
+
+    // Nếu lấy được số tập thật từ mảng episodes, luôn dùng số đó
+    if (actualEpisodeCount !== null) {
+      return `${actualEpisodeCount} Tập`;
     }
 
     const epNum = extractNumber(current);
