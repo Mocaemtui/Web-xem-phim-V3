@@ -73,7 +73,7 @@ export default async function Home() {
       {/* Hero Banner (Featured Movies Carousel) */}
       {heroMovies.length > 0 && <HeroBanner movies={heroMovies} />}
 
-      <div className="container mx-auto px-4 -mt-10 relative z-20">
+      <div className="container mx-auto px-4 mt-4 sm:-mt-10 relative z-20">
         {/* 1. Lịch Sử Section (Client-side) */}
         <HomeHistorySection />
 
