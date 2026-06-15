@@ -6,7 +6,7 @@ import Image from "next/image";
 import type { Movie } from "@/types/api";
 import { getBackdropUrl } from "@/lib/api";
 import { Play, Info, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 
 import YouTube from "react-youtube";
 
@@ -22,6 +22,10 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
   const [isMuted, setIsMuted] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const playerRef = useRef<any>(null);
+
+  // Parallax effect
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, [0, 1000], [0, 200]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -113,6 +117,19 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
     setIsVideoPlaying(false);
   };
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        prevSlide();
+      } else if (e.key === "ArrowRight") {
+        nextSlide();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [movies.length]);
+
   const youtubeOpts = {
     height: '100%',
     width: '100%',
@@ -145,7 +162,8 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
-          className="absolute inset-0 z-0"
+          className="absolute -top-[20%] -bottom-[20%] left-0 right-0 z-0"
+          style={{ y: isMobile ? 0 : y }}
         >
           
           {/* Youtube Auto-play Background (Always opacity 1, hidden behind image initially) */}
@@ -174,7 +192,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
                   }
                   setIsVideoPlaying(true);
                 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[67.5vw] min-h-[120%] min-w-[213.33%] pointer-events-none scale-[1.35]"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[67.5vw] min-h-[120%] min-w-[213.33%] pointer-events-none scale-[1.20]"
               />
             </div>
           )}

@@ -7,6 +7,7 @@ import Image from "next/image";
 import type { Movie } from "@/types/api";
 import { getPosterUrl } from "@/lib/api";
 import { getWatchHistory } from "@/lib/watchHistory";
+import Tilt from "react-parallax-tilt";
 
 interface MovieCardProps {
   movie: Movie;
@@ -186,14 +187,23 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
   };
 
   return (
-    <Link 
-      ref={cardRef}
-      href={href || `/phim/${encodeURIComponent(movie.slug)}`} 
-      draggable={false}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="group flex flex-col h-full relative z-10 transition-transform duration-300 hover:scale-105 hover:z-20 select-none"
+    <Tilt
+      tiltMaxAngleX={8}
+      tiltMaxAngleY={8}
+      perspective={1000}
+      scale={1.03}
+      transitionSpeed={400}
+      gyroscope={true}
+      className="h-full z-10 hover:z-30 relative"
     >
+      <Link 
+        ref={cardRef}
+        href={href || `/phim/${encodeURIComponent(movie.slug)}`} 
+        draggable={false}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="group flex flex-col h-full relative z-10 select-none"
+      >
       <div 
         className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-900/40 shadow-lg border border-white/5 transition-all duration-500"
         style={{ 
@@ -358,6 +368,7 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
           )}
         </div>
       </div>
-    </Link>
+      </Link>
+    </Tilt>
   );
 }
