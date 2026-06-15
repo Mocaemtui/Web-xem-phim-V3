@@ -89,19 +89,31 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
 
   useEffect(() => {
     if (isHovered) {
+      // Trên thiết bị di động (rộng < 768px), không tải trailer mà tải trực tiếp ảnh thumb
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
       hoverTimerRef.current = setTimeout(async () => {
         try {
           const res = await fetch(`https://phimapi.com/phim/${movie.slug}`);
           const data = await res.json();
-          if (data.movie?.trailer_url) {
-            const embed = getYoutubeEmbedUrl(data.movie.trailer_url);
-            if (embed) {
-              setTrailerUrl(embed);
-              setThumbImageUrl(null);
+          
+          if (isMobile) {
+            // Ép luôn hiện ảnh Thumb trên mobile, không dùng Trailer
+            if (data.movie?.thumb_url) {
+              setThumbImageUrl(data.movie.thumb_url);
             }
-          } else if (data.movie?.thumb_url) {
-            setThumbImageUrl(data.movie.thumb_url);
-            setTrailerUrl(null);
+          } else {
+            // Desktop: Ưu tiên Trailer, nếu không có thì lấy ảnh Thumb
+            if (data.movie?.trailer_url) {
+              const embed = getYoutubeEmbedUrl(data.movie.trailer_url);
+              if (embed) {
+                setTrailerUrl(embed);
+                setThumbImageUrl(null);
+              }
+            } else if (data.movie?.thumb_url) {
+              setThumbImageUrl(data.movie.thumb_url);
+              setTrailerUrl(null);
+            }
           }
         } catch (e) {}
       }, 1200); // Đợi 1.2s hover liên tục mới tải dữ liệu để tránh lag
