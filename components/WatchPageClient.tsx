@@ -267,7 +267,7 @@ export default function WatchPageClient({ movie, posterUrl }: WatchPageClientPro
         </button>
       </div>
 
-      <div className="container mx-auto px-4 py-8 mt-12 md:mt-0">
+      <div className="container mx-auto px-4 py-8 mt-20 md:mt-4">
         
         {/* Video Player */}
         <div className="mb-8 relative z-10 w-full aspect-video">

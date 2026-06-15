@@ -27,6 +27,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [trailerVideoId, setTrailerVideoId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedServerIndex, setSelectedServerIndex] = useState(0);
 
 
 
@@ -149,6 +150,12 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
     const sortedEps = sortEpisodes(movie.episodes || []);
     setEpisodes(sortedEps);
     setCurrentOriginName(movie.origin_name);
+
+    let initialServer = 0;
+    if (item && item.currentServerIndex !== undefined && sortedEps[item.currentServerIndex]) {
+      initialServer = item.currentServerIndex;
+    }
+    setSelectedServerIndex(initialServer);
 
     try {
       const stored = localStorage.getItem("watched_episodes_v3");
@@ -514,34 +521,56 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             {/* Episode Selector for Series Movies directly in Detail Page */}
             {episodes && episodes.length > 0 && (
               <div className="mt-8 border-t border-zinc-900 pt-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Danh sách tập phim</h3>
-                {episodes.map((server: any, sIdx: number) => (
-                  <div key={sIdx} className="mb-6">
-                    <p className="text-zinc-400 mb-2 font-medium">{server.server_name}</p>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                      {server.server_data?.map((episode: any, idx: number) => {
-                        const epKey = `${movie.slug}_${episode.name}`;
-                        const isCurrentlyWatching = historyItem?.currentServerIndex === sIdx && historyItem?.currentEpisodeIndex === idx;
-                        const isWatched = watchedEpisodes.has(epKey);
-                        return (
-                          <Link
-                            key={`${episode.slug}-${idx}`}
-                            href={`/xem-phim/${movie.slug}?tap=${idx + 1}&server=${sIdx}`}
-                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-center cursor-pointer border ${
-                              isCurrentlyWatching 
-                                ? "bg-red-600 text-white border-red-500 shadow-md shadow-red-900/20" 
-                                : isWatched
-                                  ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20 hover:bg-emerald-900/40"
-                                  : "bg-zinc-900 hover:bg-red-600 text-zinc-300 hover:text-white border-transparent"
-                            }`}
-                          >
-                            {episode.name}
-                          </Link>
-                        );
-                      })}
+                <h3 className="text-lg font-semibold text-white mb-4">
+                  {episodes[selectedServerIndex]?.server_data?.length <= 1 ? "Server nguồn / Tập" : "Danh sách tập"}
+                </h3>
+                
+                {/* Server Selection */}
+                {episodes.length > 1 && (
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-2">
+                      {episodes.map((server, sIdx) => (
+                        <button
+                          key={sIdx}
+                          type="button"
+                          onClick={() => setSelectedServerIndex(sIdx)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            selectedServerIndex === sIdx
+                              ? "bg-red-600 text-white shadow-md shadow-red-900/20"
+                              : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                          }`}
+                        >
+                          {server.server_name}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* Episodes selection grid */}
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                  {episodes[selectedServerIndex]?.server_data?.map((episode: any, idx: number) => {
+                    const epKey1 = `${movie.slug}_${episode.name}`;
+                    const epKey2 = episode.link_m3u8 || episode.link_embed || episode.slug;
+                    const isCurrentlyWatching = historyItem?.currentServerIndex === selectedServerIndex && historyItem?.currentEpisodeIndex === idx;
+                    const isWatched = watchedEpisodes.has(epKey1) || watchedEpisodes.has(epKey2);
+                    return (
+                      <Link
+                        key={`${episode.slug}-${idx}`}
+                        href={`/xem-phim/${movie.slug}?tap=${idx + 1}&server=${selectedServerIndex}`}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-center cursor-pointer border ${
+                          isCurrentlyWatching 
+                            ? "bg-red-600 text-white border-red-500 shadow-md shadow-red-900/20" 
+                            : isWatched
+                              ? "bg-emerald-950/30 text-emerald-400 border-emerald-500/20 hover:bg-emerald-900/40"
+                              : "bg-zinc-900 hover:bg-red-600 text-zinc-300 hover:text-white border-transparent"
+                        }`}
+                      >
+                        {episode.name}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
