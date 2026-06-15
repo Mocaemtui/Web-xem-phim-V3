@@ -125,7 +125,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
 
   return (
     <div 
-      className="relative w-full flex flex-col sm:block sm:aspect-video lg:aspect-[21/9] sm:max-h-[85vh] sm:flex-row sm:items-end bg-zinc-950 group overflow-hidden sm:pb-24 pt-[60px] sm:pt-20"
+      className="relative w-full flex flex-col lg:block lg:aspect-[21/9] lg:max-h-[85vh] lg:flex-row lg:items-end bg-zinc-950 group overflow-hidden lg:pb-24 pt-[60px] lg:pt-20"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -137,17 +137,13 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
-          className="relative w-full aspect-video sm:absolute sm:inset-0 z-0 shrink-0"
+          className="relative w-full aspect-video lg:absolute lg:inset-0 z-0 shrink-0"
         >
           
           {/* Youtube Auto-play Background (Always opacity 1, hidden behind image initially) */}
           {trailerVideoId && (
             <div 
               className="absolute inset-0 z-0 overflow-hidden pointer-events-none"
-              style={{ 
-                clipPath: isVideoPlaying ? 'inset(0)' : 'inset(100%)',
-                opacity: isVideoPlaying ? 1 : 0
-              }}
             >
               <YouTube
                 videoId={trailerVideoId}
@@ -166,7 +162,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
                   }
                   setIsVideoPlaying(true);
                 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[105%] aspect-video sm:w-[200%] md:w-[150%] lg:w-[120%] xl:w-[105%] pointer-events-none"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[105%] aspect-video md:w-[150%] lg:w-[120%] xl:w-[105%] pointer-events-none"
               />
             </div>
           )}
@@ -174,7 +170,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
           {/* Background Image (Fades out strictly ONLY when video starts playing) */}
           <motion.div
             animate={{ opacity: isVideoPlaying ? 0 : 1 }}
-            transition={{ duration: 0 }}
+            transition={{ duration: 0.5 }}
             className="absolute inset-0 z-10"
           >
             <Image
@@ -187,11 +183,11 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
           </motion.div>
 
           {/* Gradient overlays for cinematic effect (Hidden on mobile top block, visible on desktop) */}
-          <div className="hidden sm:block absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent z-10" />
-          <div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10" />
+          <div className="hidden lg:block absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent z-10" />
+          <div className="hidden lg:block absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10" />
           
           {/* Bottom fade to match body background perfectly */}
-          <div className="absolute bottom-0 left-0 right-0 h-12 sm:h-32 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
+          <div className="absolute bottom-0 left-0 right-0 h-12 lg:h-32 bg-gradient-to-t from-black via-black/80 to-transparent z-10" />
         </motion.div>
       </AnimatePresence>
 
@@ -200,14 +196,14 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
         <>
           <button 
             onClick={prevSlide}
-            className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-black/40 hover:bg-black/70 text-white rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm border border-white/10"
+            className="hidden lg:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-black/40 hover:bg-black/70 text-white rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm border border-white/10"
             aria-label="Previous movie"
           >
             <ChevronLeft size={24} />
           </button>
           <button 
             onClick={nextSlide}
-            className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-black/40 hover:bg-black/70 text-white rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm border border-white/10"
+            className="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-black/40 hover:bg-black/70 text-white rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm border border-white/10"
             aria-label="Next movie"
           >
             <ChevronRight size={24} />
@@ -216,7 +212,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
       )}
 
       {/* Content */}
-      <div className="container mx-auto px-4 sm:px-6 relative z-10 w-full pb-8 sm:pb-0 flex-1 flex flex-col justify-center">
+      <div className="container mx-auto px-4 md:px-6 relative z-10 w-full pb-8 lg:pb-0 flex-1 flex flex-col justify-center">
         <AnimatePresence mode="wait">
           <motion.div
             key={`content-${movie._id}`}
@@ -227,7 +223,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
               hidden: { opacity: 0 },
               visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
             }}
-            className="max-w-3xl pt-2 sm:pt-20"
+            className="max-w-3xl pt-2 lg:pt-20"
           >
             <motion.h1 
               variants={{ hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } } }}
