@@ -120,7 +120,16 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
     if (total !== "?") {
       return `${total} Tập`;
     }
-    return movie.episode_current || "?";
+    
+    let current = movie.episode_current || "?";
+    if (current.toLowerCase().includes("hoàn tất")) {
+      const match = current.match(/\d+/);
+      if (match) {
+        return `${match[0]} Tập`;
+      }
+      return "Full";
+    }
+    return current;
   };
 
   return (
