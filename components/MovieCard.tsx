@@ -45,7 +45,7 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
     if (isSeries) {
       const fetchExactCount = async () => {
         try {
-          const res = await fetch(`https://phimapi.com/phim/${movie.slug}`);
+          const res = await fetch(`/api/proxy?endpoint=${encodeURIComponent(`/phim/${movie.slug}`)}&baseUrl=primary`);
           const data = await res.json();
           if (data && data.episodes) {
              const phimapi = data.episodes.find((e: any) => e.server_name.toLowerCase().includes("phimapi"));

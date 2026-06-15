@@ -7,7 +7,7 @@ import { Users, Copy, Check, RefreshCw, Smile, Eye, EyeOff, MessageSquare } from
 import EpisodeSelector from "@/components/EpisodeSelector";
 import { useWatchTogether } from "@/hooks/useWatchTogether";
 import { saveWatchHistory } from "@/lib/watchHistory";
-import { getBackdropUrl } from "@/lib/api";
+import { getBackdropUrl, getCleanServerName } from "@/lib/api";
 
 const VideoPlayer = dynamic(() => import("@/components/VideoPlayer"), { ssr: false });
 const RoomChat = dynamic(() => import("@/components/RoomChat"), { ssr: false });
@@ -595,7 +595,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               Xem Chung: {movie.name}
             </h1>
             <p className="text-xs text-zinc-400 mt-1 font-medium">
-              Đang phát: <span className="text-red-500 font-semibold">{currentServer?.server_name}</span>
+              Đang phát: <span className="text-red-500 font-semibold">{getCleanServerName(currentServer?.server_name)}</span>
               <span className="mx-2 text-zinc-700">|</span>
               Tập: <span className="text-red-500 font-semibold">{currentEpisode?.name.toLowerCase().includes("tập") ? currentEpisode.name : `Tập ${currentEpisodeIndex + 1}`}</span>
             </p>

@@ -10,7 +10,7 @@ import ImageToggle from "./ImageToggle";
 import YouTube from "react-youtube";
 import { getWatchHistory } from "@/lib/watchHistory";
 
-import { getPosterUrl, getBackdropUrl, resolveImgUrl, sortEpisodes } from "@/lib/api";
+import { getPosterUrl, getBackdropUrl, resolveImgUrl, sortEpisodes, getCleanServerName } from "@/lib/api";
 
 
 interface MovieDetailProps {
@@ -650,7 +650,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                               : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                           }`}
                         >
-                          {server.server_name}
+                          {getCleanServerName(server.server_name)}
                         </button>
                       ))}
                     </div>

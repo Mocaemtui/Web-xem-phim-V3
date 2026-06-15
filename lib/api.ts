@@ -26,7 +26,17 @@ export async function fetchAPI<T>(
 
     if (isBrowser) {
       try {
-        const proxyUrl = `/api/proxy?endpoint=${encodeURIComponent(endpoint)}&baseUrl=${encodeURIComponent(baseUrl)}&revalidate=${revalidate}`;
+        let encodedBaseUrl = baseUrl;
+        if (baseUrl === 'https://phimapi.com') {
+          encodedBaseUrl = 'primary';
+        } else if (baseUrl === 'https://ophim1.com') {
+          encodedBaseUrl = 'backup';
+        } else {
+          try {
+            encodedBaseUrl = window.btoa(baseUrl);
+          } catch {}
+        }
+        const proxyUrl = `/api/proxy?endpoint=${encodeURIComponent(endpoint)}&baseUrl=${encodeURIComponent(encodedBaseUrl)}&revalidate=${revalidate}`;
         const response = await fetch(proxyUrl);
         if (!response.ok) return null;
         return await response.json();
@@ -200,6 +210,24 @@ export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string;
     : resolveImgUrl(movie.poster_url || movie.thumb_url);
   return url || DEFAULT_BACKDROP;
 };
+
+export function getCleanServerName(rawName: string | undefined): string {
+  if (!rawName) return "Server VIP";
+  const lower = rawName.toLowerCase();
+  
+  let suffix = "";
+  if (rawName.includes(" - ")) {
+    suffix = rawName.split(" - ")[1];
+  }
+  
+  if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) {
+    return `Server Premium ${suffix ? `(${suffix})` : "(VIP)"}`;
+  }
+  if (lower.includes("ophim")) {
+    return `Server FastCDN ${suffix ? `(${suffix})` : "(Dự phòng)"}`;
+  }
+  return rawName;
+}
 
 export function sortEpisodes(eps: any[]): any[] {
   if (!eps) return [];

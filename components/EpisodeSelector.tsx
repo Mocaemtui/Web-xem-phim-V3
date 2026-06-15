@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { getCleanServerName } from "@/lib/api";
 
 interface Episode {
   name: string;
@@ -84,7 +85,7 @@ export default function EpisodeSelector({
                     : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                 }`}
               >
-                {server.server_name}
+                {getCleanServerName(server.server_name)}
               </button>
             ))}
           </div>
