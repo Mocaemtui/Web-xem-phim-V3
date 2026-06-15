@@ -51,16 +51,17 @@ export default async function Home() {
     try {
       const res = await fetch(`https://phimapi.com/phim/${movie.slug}`, { next: { revalidate: 3600 } });
       const data = await res.json();
-      return { movie, hasTrailer: !!data.movie?.trailer_url };
+      const isTrungQuoc = data.movie?.country?.some((c: any) => c.slug === 'trung-quoc') || false;
+      return { movie, hasTrailer: !!data.movie?.trailer_url, isTrungQuoc };
     } catch (e) {
-      return { movie, hasTrailer: false };
+      return { movie, hasTrailer: false, isTrungQuoc: false };
     }
   });
   
   const movieDetails = await Promise.all(movieDetailsPromises);
   
-  for (const { movie, hasTrailer } of movieDetails) {
-    if (hasTrailer && heroMovies.length < 6) {
+  for (const { movie, hasTrailer, isTrungQuoc } of movieDetails) {
+    if (hasTrailer && !isTrungQuoc && heroMovies.length < 6) {
       heroMovies.push(movie);
     } else {
       sliderPhimMoi.push(movie);

@@ -119,9 +119,9 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
     if (historyData?.episodeName) {
       const epNum = extractNumber(historyData.episodeName);
       if (epNum) {
-        return `Tập ${epNum} / ${total}`;
+        return `${epNum} / ${total} Tập`;
       }
-      return `${historyData.episodeName} / ${total}`;
+      return `${historyData.episodeName} / ${total} Tập`;
     }
 
     // Chưa xem
@@ -133,7 +133,7 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
 
     const epNum = extractNumber(current);
     if (epNum) {
-      return `Tập ${epNum}`;
+      return `${epNum} Tập`;
     }
 
     if (current === "?" || current.toLowerCase().includes("cập nhật")) {
