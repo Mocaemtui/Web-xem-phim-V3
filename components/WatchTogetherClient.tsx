@@ -766,6 +766,9 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               : "flex-1 min-w-0"
           }`}
           onDoubleClick={() => setIsTheaterMode(prev => !prev)}
+          style={isTheaterMode ? {} : { 
+            marginRight: isChatHidden ? "0px" : `${chatWidth + 24}px` 
+          }}
         >
 
 
@@ -1121,12 +1124,10 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         className={`bg-transparent flex-col min-h-0 transition-all duration-300 ease-in-out ${
           isTheaterMode 
             ? "fixed right-0 top-0 bottom-0 z-50 flex w-[280px] max-w-[80vw] p-3 gap-3 overflow-hidden pointer-events-none" 
-            : "hidden md:flex relative z-10 shrink-0 overflow-hidden max-w-full h-0 min-h-full"
+            : "hidden md:flex absolute top-6 bottom-6 right-6 z-10 shrink-0 overflow-hidden max-w-full"
         } ${isChatHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}
         style={isTheaterMode ? {} : { 
           width: `${chatWidth}px`,
-          height: "0px",
-          minHeight: "100%",
           padding: "0px",
           gap: "0px",
           backgroundColor: "transparent" 
