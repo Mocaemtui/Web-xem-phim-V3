@@ -254,31 +254,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
   const pendingSyncTimeRef = useRef<number | null>(null);
   const pendingSyncPlayingRef = useRef<boolean | null>(null);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleLoadedMetadata = () => {
-      if (pendingSyncTimeRef.current !== null) {
-        isReceivingEvent.current = true;
-        video.currentTime = pendingSyncTimeRef.current;
-        if (pendingSyncPlayingRef.current) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-        pendingSyncTimeRef.current = null;
-        pendingSyncPlayingRef.current = null;
-        setTimeout(() => { isReceivingEvent.current = false; }, 500);
-      }
-    };
-
-    video.addEventListener("loadedmetadata", handleLoadedMetadata);
-    return () => {
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-    };
-  }, [currentEpisode, videoRef]);
+  const isLocalEpisodeChangeRef = useRef<boolean>(false);
   
   // Mọi người đều là Host
   const {
@@ -303,6 +279,42 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     onSyncResponseRef,
     onChangeEpisodeRef,
   } = useWatchTogether(isJoined ? roomId : "", username, true);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleLoadedMetadata = () => {
+      const isHost = typeof window !== "undefined" && sessionStorage.getItem('host_' + roomId) === 'true';
+
+      if (pendingSyncTimeRef.current !== null) {
+        isReceivingEvent.current = true;
+        video.currentTime = pendingSyncTimeRef.current;
+        if (pendingSyncPlayingRef.current) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+        pendingSyncTimeRef.current = null;
+        pendingSyncPlayingRef.current = null;
+        hasSynced.current = true;
+        setTimeout(() => { isReceivingEvent.current = false; }, 500);
+      } else {
+        if (isLocalEpisodeChangeRef.current || isHost || watchers.length <= 1) {
+          hasSynced.current = true;
+          isLocalEpisodeChangeRef.current = false;
+        } else {
+          // Guest loaded the new episode remotely, request sync from host
+          triggerRequestSync();
+        }
+      }
+    };
+
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+    return () => {
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+    };
+  }, [currentEpisode, videoRef, watchers.length, roomId]);
 
   useEffect(() => {
     if (!isJoined) return;
@@ -410,7 +422,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   // Bind remote events to local video player
   useEffect(() => {
     onPlayRef.current = (time) => {
-      if (videoRef.current) {
+      if (videoRef.current && videoRef.current.readyState >= 1) {
         isReceivingEvent.current = true;
         if (Math.abs(videoRef.current.currentTime - time) > 1) {
           videoRef.current.currentTime = time;
@@ -420,27 +432,34 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         lastSyncTimestampRef.current = Date.now();
         lastSyncPlayingRef.current = true;
         setTimeout(() => { isReceivingEvent.current = false; }, 500);
+      } else {
+        pendingSyncTimeRef.current = time;
+        pendingSyncPlayingRef.current = true;
       }
     };
 
     onPauseRef.current = () => {
-      if (videoRef.current) {
+      if (videoRef.current && videoRef.current.readyState >= 1) {
         isReceivingEvent.current = true;
         videoRef.current.pause();
         lastSyncTimeRef.current = videoRef.current.currentTime;
         lastSyncTimestampRef.current = Date.now();
         lastSyncPlayingRef.current = false;
         setTimeout(() => { isReceivingEvent.current = false; }, 500);
+      } else {
+        pendingSyncPlayingRef.current = false;
       }
     };
 
     onSeekRef.current = (time) => {
-      if (videoRef.current) {
+      if (videoRef.current && videoRef.current.readyState >= 1) {
         isReceivingEvent.current = true;
         videoRef.current.currentTime = time;
         lastSyncTimeRef.current = time;
         lastSyncTimestampRef.current = Date.now();
         setTimeout(() => { isReceivingEvent.current = false; }, 500);
+      } else {
+        pendingSyncTimeRef.current = time;
       }
     };
 
@@ -474,7 +493,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     // Khi nhận được phản hồi đồng bộ từ người khác
     onSyncResponseRef.current = (data) => {
       if (hasSynced.current) return;
-      hasSynced.current = true;
 
       // Update sync tracking refs
       lastSyncTimeRef.current = data.time;
@@ -495,7 +513,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         pendingSyncPlayingRef.current = data.isPlaying;
       } else {
         // Same episode, sync immediately
-        if (videoRef.current) {
+        if (videoRef.current && videoRef.current.readyState >= 1) {
           isReceivingEvent.current = true;
           videoRef.current.currentTime = data.time;
           if (data.isPlaying) {
@@ -503,17 +521,23 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
           } else {
             videoRef.current.pause();
           }
+          hasSynced.current = true; // Sync completed!
           setTimeout(() => { isReceivingEvent.current = false; }, 500);
+        } else {
+          pendingSyncTimeRef.current = data.time;
+          pendingSyncPlayingRef.current = data.isPlaying;
         }
       }
     };
 
     onChangeEpisodeRef.current = (serverIndex, episodeIndex) => {
+      isLocalEpisodeChangeRef.current = false;
+      hasSynced.current = false;
       setCurrentServerIndex(serverIndex);
       setSelectedServerIndex(serverIndex);
       setCurrentEpisodeIndex(episodeIndex);
     };
-  }, [onPlayRef, onPauseRef, onSeekRef, onRequestSyncRef, onSyncResponseRef, onChangeEpisodeRef]);
+  }, [onPlayRef, onPauseRef, onSeekRef, onRequestSyncRef, onSyncResponseRef, onChangeEpisodeRef, roomId]);
 
   // Sync state for single watchers (hosts)
   useEffect(() => {
@@ -526,6 +550,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   useEffect(() => {
     if (isJoined) {
       hasSynced.current = false;
+      isLocalEpisodeChangeRef.current = false;
       // Gửi nhiều lượt xin đồng bộ để đảm bảo thiết bị di động nhận đúng tập đang phát và thời gian phát từ Host
       const t1 = setTimeout(() => { triggerRequestSync(); }, 500);
       const t2 = setTimeout(() => { triggerRequestSync(); }, 1500);
@@ -1048,6 +1073,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                       currentServerIndex={selectedServerIndex}
                       currentEpisodeIndex={currentServerIndex === selectedServerIndex ? currentEpisodeIndex : -1}
                       onSelectEpisode={(idx) => {
+                        isLocalEpisodeChangeRef.current = true;
                         setCurrentServerIndex(selectedServerIndex);
                         setCurrentEpisodeIndex(idx);
                         triggerChangeEpisode(selectedServerIndex, idx);
@@ -1095,10 +1121,12 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         className={`bg-transparent flex-col min-h-0 transition-all duration-300 ease-in-out ${
           isTheaterMode 
             ? "fixed right-0 top-0 bottom-0 z-50 flex w-[280px] max-w-[80vw] p-3 gap-3 overflow-hidden pointer-events-none" 
-            : "hidden md:flex relative z-10 shrink-0 overflow-hidden max-w-full"
+            : "hidden md:flex relative z-10 shrink-0 overflow-hidden max-w-full h-0 min-h-full"
         } ${isChatHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}
         style={isTheaterMode ? {} : { 
           width: `${chatWidth}px`,
+          height: "0px",
+          minHeight: "100%",
           padding: "0px",
           gap: "0px",
           backgroundColor: "transparent" 
@@ -1294,6 +1322,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 currentServerIndex={selectedServerIndex}
                 currentEpisodeIndex={currentServerIndex === selectedServerIndex ? currentEpisodeIndex : -1}
                 onSelectEpisode={(idx) => {
+                  isLocalEpisodeChangeRef.current = true;
                   setCurrentServerIndex(selectedServerIndex);
                   setCurrentEpisodeIndex(idx);
                   triggerChangeEpisode(selectedServerIndex, idx);
