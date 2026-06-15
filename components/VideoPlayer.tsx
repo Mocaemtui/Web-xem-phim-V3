@@ -713,6 +713,7 @@ export default function VideoPlayer({
               poster={poster}
               crossOrigin="anonymous"
               controls={isMobile}
+              playsInline
               onError={() => {
                 if (onError) onError();
               }}

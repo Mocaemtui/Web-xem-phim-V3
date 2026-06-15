@@ -633,16 +633,16 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
 
       {/* Main workspace: Side-by-side Player and Chat Sidebar */}
-      <div className={`w-full flex flex-col md:flex-row shrink-0 md:shrink relative overflow-hidden ${
+      <div className={`w-full flex flex-col md:flex-row shrink-0 md:shrink relative ${
         isTheaterMode 
-          ? "h-full flex-1" 
-          : "max-w-[1600px] mx-auto px-4 md:px-6 md:py-6 gap-6 items-stretch min-h-0 flex-1"
+          ? "h-full flex-1 overflow-visible" 
+          : "max-w-[1600px] mx-auto px-4 md:px-6 md:py-6 gap-6 items-stretch min-h-0 flex-1 overflow-hidden"
       }`}>
         {/* Left Area: Video Player & Controls */}
         <div 
           className={`flex flex-col transition-all duration-300 group/theater relative z-10 ${
             isTheaterMode 
-              ? "h-full w-full p-0 bg-transparent overflow-hidden justify-center items-center flex-1" 
+              ? "h-full w-full p-0 bg-transparent overflow-visible justify-center items-center flex-1" 
               : "flex-1 min-w-0"
           }`}
           onDoubleClick={() => setIsTheaterMode(prev => !prev)}
