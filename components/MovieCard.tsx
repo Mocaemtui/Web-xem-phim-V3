@@ -110,26 +110,35 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
     // Phim bộ
     const total = movie.episode_total && movie.episode_total !== "?" && movie.episode_total.toLowerCase() !== "unknown" ? movie.episode_total : "?";
 
+    const extractNumber = (str: string) => {
+      const match = str.match(/\d+/);
+      return match ? match[0] : null;
+    };
+
     // Đã xem
     if (historyData?.episodeName) {
-      const epName = historyData.episodeName; // vd: "Tập 3"
-      return `${epName} / ${total}`;
+      const epNum = extractNumber(historyData.episodeName);
+      if (epNum) {
+        return `Tập ${epNum} / ${total}`;
+      }
+      return `${historyData.episodeName} / ${total}`;
     }
 
     // Chưa xem
     let current = movie.episode_current || "?";
-    if (current.toLowerCase().includes("hoàn tất")) {
-      const match = current.match(/\d+/);
-      if (match) {
-        return `${match[0]} Tập`;
-      }
-      return "Full";
-    }
     
     if (current.includes("/")) {
       current = current.split("/")[0].trim();
     }
-    
+
+    const epNum = extractNumber(current);
+    if (epNum) {
+      return `Tập ${epNum}`;
+    }
+
+    if (current === "?" || current.toLowerCase().includes("cập nhật")) {
+      return movie.quality || "Phim Bộ";
+    }
     return current;
   };
 
