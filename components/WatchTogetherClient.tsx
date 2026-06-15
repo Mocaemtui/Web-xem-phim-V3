@@ -201,6 +201,8 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
 
   useEffect(() => {
+    if (isMobileDevice) return; // Do not use custom container fullscreen on mobile to avoid layout freezing and portrait zoom issues
+    
     if (isTheaterMode) {
       if (containerRef.current && !document.fullscreenElement && containerRef.current.requestFullscreen) {
         containerRef.current.requestFullscreen().then(() => {
@@ -224,7 +226,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         document.exitFullscreen().catch(() => {});
       }
     }
-  }, [isTheaterMode]);
+  }, [isTheaterMode, isMobileDevice]);
 
   useEffect(() => {
     currentServerIndexRef.current = currentServerIndex;

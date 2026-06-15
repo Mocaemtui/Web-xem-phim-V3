@@ -488,7 +488,24 @@ export default function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
     
-    // Request fullscreen on parent element to keep Ambient Light Canvas visible
+    if (isMobile) {
+      // On mobile, request native fullscreen directly on the video element
+      if (video.requestFullscreen) {
+        video.requestFullscreen().then(() => {
+          if (typeof screen !== "undefined" && screen.orientation && (screen.orientation as any).lock) {
+            (screen.orientation as any).lock("landscape").catch(() => {});
+          }
+        }).catch(() => {});
+      } else if ((video as any).webkitEnterFullscreen) {
+        (video as any).webkitEnterFullscreen();
+      } else if ((video as any).webkitRequestFullscreen) {
+        (video as any).webkitRequestFullscreen();
+      }
+      setIsFullscreen(true);
+      return;
+    }
+
+    // Request fullscreen on parent element to keep Ambient Light Canvas visible on desktop
     const container = video.closest(".relative.w-full.h-full.max-h-full.flex.items-center.justify-center.z-10") || video.parentElement;
     if (!container) return;
 
@@ -504,8 +521,6 @@ export default function VideoPlayer({
         if (typeof screen !== "undefined" && screen.orientation && (screen.orientation as any).lock) {
           (screen.orientation as any).lock("landscape").catch(() => {});
         }
-      } else if ((video as any).webkitEnterFullscreen) {
-        (video as any).webkitEnterFullscreen();
       }
       setIsFullscreen(true);
     } else {
@@ -530,7 +545,7 @@ export default function VideoPlayer({
   // Listen to fullscreen changes to sync state and prevent pause on exit
   useEffect(() => {
     const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = !!document.fullscreenElement;
+      const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
       setIsFullscreen(isCurrentlyFullscreen);
       
       // Prevent pause on exiting native fullscreen if it was playing
@@ -544,11 +559,37 @@ export default function VideoPlayer({
       }
     };
 
+    const handleWebkitBeginFullscreen = () => {
+      setIsFullscreen(true);
+    };
+
+    const handleWebkitEndFullscreen = () => {
+      setIsFullscreen(false);
+      const video = videoRef.current;
+      if (video && isPlaying) {
+        setTimeout(() => {
+          if (isMountedRef.current && video.paused) {
+            video.play().catch(() => {});
+          }
+        }, 100);
+      }
+    };
+
+    const video = videoRef.current;
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    if (video) {
+      video.addEventListener("webkitbeginfullscreen", handleWebkitBeginFullscreen);
+      video.addEventListener("webkitendfullscreen", handleWebkitEndFullscreen);
+    }
+
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      if (video) {
+        video.removeEventListener("webkitbeginfullscreen", handleWebkitBeginFullscreen);
+        video.removeEventListener("webkitendfullscreen", handleWebkitEndFullscreen);
+      }
     };
   }, [isPlaying, videoRef]);
 
