@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Play, Share2, Plus, Clock, Calendar, Star, Languages, Users } from "lucide-react";
@@ -25,6 +26,18 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
   const [isPlayingTrailer, setIsPlayingTrailer] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [trailerVideoId, setTrailerVideoId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Parallax effect
+  const { scrollY } = useScroll();
+  const y = useTransform(scrollY, [0, 1000], [0, 300]);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (!movie.trailer_url) return;
@@ -167,7 +180,8 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
       {/* Backdrop */}
       <div className="relative z-0 w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] max-h-[85vh] overflow-hidden bg-zinc-950">
         
-        {/* Youtube Background - clip-path giấu hoàn toàn cho tới khi video phát */}
+        <motion.div style={{ y: isMobile ? 0 : y }} className="absolute -top-[15%] -bottom-[15%] left-0 right-0 z-0">
+          {/* Youtube Background - clip-path giấu hoàn toàn cho tới khi video phát */}
         {isPlayingTrailer && trailerVideoId && (
           <div 
             className="absolute inset-0 z-0 bg-black"
@@ -239,8 +253,9 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             </div>
           )}
         </div>
+        </motion.div>
         
-        {/* Cinematic Gradients */}
+        {/* Cinematic Gradients - keep outside parallax to maintain overlay structure */}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/50 via-zinc-950/10 to-transparent pointer-events-none z-20" />
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/30 via-transparent to-transparent pointer-events-none z-20" />
 

@@ -6,10 +6,13 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Movie } from "@/types/api";
 import { getPosterUrl } from "@/lib/api";
+import { getWatchHistory } from "@/lib/watchHistory";
 
 interface MovieCardProps {
   movie: Movie;
   posterUrl?: string;
+  href?: string;
+  isHistory?: boolean;
 }
 
 // Hàm hỗ trợ chuyển URL Youtube thành Embed URL cho background play
@@ -25,12 +28,33 @@ const getYoutubeEmbedUrl = (url: string) => {
   return `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${videoId}&playsinline=1&vq=hd1080`;
 };
 
-export default function MovieCard({ movie, posterUrl }: MovieCardProps) {
+export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [trailerUrl, setTrailerUrl] = useState<string | null>(null);
+  const [thumbImageUrl, setThumbImageUrl] = useState<string | null>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const cardRef = useRef<HTMLAnchorElement>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const [historyData, setHistoryData] = useState<{ episodeName?: string; progressPercent?: number } | null>(null);
+
+  useEffect(() => {
+    try {
+      const history = getWatchHistory();
+      const item = history.find(h => h.slug === movie.slug);
+      if (item) {
+        let progressPercent = 0;
+        const key = `playback_progress_${item.slug}_ep_${item.currentEpisodeIndex}_percent`;
+        const val = localStorage.getItem(key);
+        if (val) {
+          progressPercent = parseFloat(val);
+        }
+        setHistoryData({
+          episodeName: item.episodeName,
+          progressPercent
+        });
+      }
+    } catch (e) {}
+  }, [movie.slug]);
 
   useEffect(() => {
     if (isHovered && cardRef.current) {
@@ -46,13 +70,20 @@ export default function MovieCard({ movie, posterUrl }: MovieCardProps) {
           const data = await res.json();
           if (data.movie?.trailer_url) {
             const embed = getYoutubeEmbedUrl(data.movie.trailer_url);
-            if (embed) setTrailerUrl(embed);
+            if (embed) {
+              setTrailerUrl(embed);
+              setThumbImageUrl(null);
+            }
+          } else if (data.movie?.thumb_url) {
+            setThumbImageUrl(data.movie.thumb_url);
+            setTrailerUrl(null);
           }
         } catch (e) {}
-      }, 1200); // Đợi 1.2s hover liên tục mới tải trailer để tránh lag
+      }, 1200); // Đợi 1.2s hover liên tục mới tải dữ liệu để tránh lag
     } else {
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
       setTrailerUrl(null); // Xóa iframe ngay khi chuột rời đi
+      setThumbImageUrl(null);
     }
     return () => {
       if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
@@ -65,10 +96,37 @@ export default function MovieCard({ movie, posterUrl }: MovieCardProps) {
 
   const finalPosterUrl = getPosterUrl(movie);
 
+  const renderEpisodeBadge = () => {
+    // Xác định xem có phải phim lẻ không
+    const isSingle = movie.type === "single" || movie.episode_total === "1" || historyData?.episodeName?.toLowerCase() === "full";
+
+    if (isSingle) {
+      if (movie.time && movie.time !== "Đang cập nhật") {
+        return movie.time.replace(/phút/gi, "p").replace(/\s+/g, "");
+      }
+      return movie.quality || "Phim Lẻ";
+    }
+
+    // Phim bộ
+    const total = movie.episode_total && movie.episode_total !== "?" && movie.episode_total.toLowerCase() !== "unknown" ? movie.episode_total : "?";
+
+    // Đã xem
+    if (historyData?.episodeName) {
+      const epName = historyData.episodeName; // vd: "Tập 3"
+      return `${epName} / ${total}`;
+    }
+
+    // Chưa xem
+    if (total !== "?") {
+      return `${total} Tập`;
+    }
+    return movie.episode_current || "?";
+  };
+
   return (
     <Link 
       ref={cardRef}
-      href={`/phim/${encodeURIComponent(movie.slug)}`} 
+      href={href || `/phim/${encodeURIComponent(movie.slug)}`} 
       draggable={false}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -97,13 +155,13 @@ export default function MovieCard({ movie, posterUrl }: MovieCardProps) {
         
         {/* Quality / Lang Badge */}
         <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
-          {movie.quality && (
-            <span className="px-1.5 py-0.5 bg-[var(--color-cyan-neon)] text-black text-[10px] font-bold rounded shadow-[0_0_10px_var(--color-cyan-neon)]">
-              {movie.quality}
+          {renderEpisodeBadge() && (
+            <span className="px-1.5 py-0.5 bg-[var(--color-cyan-neon)] text-black text-[10px] font-bold rounded shadow-[0_0_10px_var(--color-cyan-neon)] whitespace-nowrap">
+              {renderEpisodeBadge()}
             </span>
           )}
           {movie.lang && (
-            <span className="px-1.5 py-0.5 bg-black/60 text-[10px] font-medium text-zinc-200 rounded shadow-sm backdrop-blur-md border border-white/10">
+            <span className="px-1.5 py-0.5 bg-black/60 text-[10px] font-medium text-zinc-200 rounded shadow-sm backdrop-blur-md border border-white/10 whitespace-nowrap">
               {movie.lang}
             </span>
           )}
@@ -122,14 +180,34 @@ export default function MovieCard({ movie, posterUrl }: MovieCardProps) {
           </div>
         </div>
 
+        {/* Lịch sử: Nhãn tập đang xem */}
+        {historyData?.episodeName && (
+          <div className="absolute bottom-1 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-20 pointer-events-none">
+            <p className="text-xs font-semibold text-[var(--color-cyan-neon)] mb-1 flex items-center gap-1 drop-shadow-md">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              {historyData.episodeName}
+            </p>
+          </div>
+        )}
+
+        {/* Lịch sử: Vạch tiến trình */}
+        {historyData?.progressPercent !== undefined && historyData.progressPercent > 0 && (
+          <div className="absolute bottom-0 left-0 w-full h-1 bg-zinc-800 z-30 pointer-events-none">
+            <div 
+              className="h-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]" 
+              style={{ width: `${Math.min(100, Math.max(0, historyData.progressPercent))}%` }} 
+            />
+          </div>
+        )}
+
         {/* Origin Name on Hover */}
         <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0 pointer-events-none">
           <p className="text-xs font-medium text-zinc-300 line-clamp-2">{movie.origin_name || movie.name}</p>
         </div>
       </div>
       
-      {/* Youtube Auto-play Trailer Pop-out (Netflix Style) rendered via Portal */}
-      {trailerUrl && rect && typeof window !== "undefined" && createPortal(
+      {/* Youtube Auto-play Trailer or Thumb Image Pop-out (Netflix Style) rendered via Portal */}
+      {(trailerUrl || thumbImageUrl) && rect && typeof window !== "undefined" && createPortal(
         <div 
           className="fixed z-[9999] bg-zinc-950 animate-in fade-in zoom-in-95 duration-300 rounded-lg overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.9)] border border-white/5 pointer-events-auto origin-center transition-all flex flex-col"
           style={{
@@ -141,20 +219,32 @@ export default function MovieCard({ movie, posterUrl }: MovieCardProps) {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <Link href={`/phim/${encodeURIComponent(movie.slug)}`} className="absolute inset-0 z-10" />
+          <Link href={href || `/phim/${encodeURIComponent(movie.slug)}`} className="absolute inset-0 z-10" />
           <div className="relative w-full aspect-video bg-black z-0">
-            <iframe
-              src={trailerUrl}
-              className="w-full h-full pointer-events-none opacity-100"
-              allow="autoplay; encrypted-media"
-            />
-            {/* Lớp mờ nhẹ phía dưới video để làm mượt phần chuyển giao */}
+            {trailerUrl ? (
+              <iframe
+                src={trailerUrl}
+                className="w-full h-full pointer-events-none opacity-100"
+                allow="autoplay; encrypted-media"
+              />
+            ) : (
+              thumbImageUrl && (
+                <Image
+                  src={thumbImageUrl.startsWith('http') ? thumbImageUrl : `https://img.ophim.live/uploads/movies/${thumbImageUrl}`}
+                  alt={movie.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              )
+            )}
+            {/* Lớp mờ nhẹ phía dưới video/ảnh để làm mượt phần chuyển giao */}
             <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-zinc-950 to-transparent pointer-events-none" />
           </div>
           <div className="p-4 flex flex-col gap-2 bg-zinc-950 relative z-20">
             {/* Action Buttons */}
             <div className="flex items-center gap-2 mb-1">
-               <Link href={`/phim/${encodeURIComponent(movie.slug)}`} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black shadow-lg hover:bg-zinc-200 transition-colors">
+               <Link href={href || `/phim/${encodeURIComponent(movie.slug)}`} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black shadow-lg hover:bg-zinc-200 transition-colors">
                   <svg className="w-4 h-4 translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                </Link>
                <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-600 flex items-center justify-center text-white hover:bg-zinc-700 transition-colors cursor-pointer">

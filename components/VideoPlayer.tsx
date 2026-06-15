@@ -446,6 +446,10 @@ export default function VideoPlayer({
         const activeKey = playbackProgressKey || (videoUrl ? `playback_progress_${videoUrl}` : "");
         if (activeKey) {
           localStorage.setItem(activeKey, time.toString());
+          if (video.duration) {
+            const percent = (time / video.duration) * 100;
+            localStorage.setItem(activeKey + "_percent", percent.toString());
+          }
           lastSavedTimeRef.current = time;
         }
       } catch (e) {

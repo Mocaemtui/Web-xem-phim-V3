@@ -76,12 +76,6 @@ export default async function Home() {
         {/* 1. Lịch Sử Section (Client-side) */}
         <HomeHistorySection />
 
-        {/* 4. Phim Mới Section */}
-        <section className="mb-14">
-          <SectionTitle title="Phim Mới" viewAllLink="/phim-moi" />
-          <MovieSlider movies={sliderPhimMoi} />
-        </section>
-
         {/* 2. Anime Section */}
         <section className="mb-14">
           <SectionTitle title="Anime" viewAllLink="/anime" />
