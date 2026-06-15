@@ -430,7 +430,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                   {movie.slug && (
                     <Link
                       href={`/xem-phim/${movie.slug}`}
-                      className="inline-flex items-center justify-center gap-1.5 bg-red-650 hover:bg-red-700 text-white font-semibold text-xs py-2.5 rounded-lg transition-colors active:scale-95 shadow-md shadow-red-900/20 w-full"
+                      className="inline-flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs py-2.5 rounded-lg transition-colors active:scale-95 shadow-md shadow-red-900/20 w-full"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
