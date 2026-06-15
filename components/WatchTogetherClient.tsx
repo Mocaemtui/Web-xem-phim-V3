@@ -515,18 +515,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     triggerRequestSync();
   };
 
-  if (isMobileDevice) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-xl max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold text-red-500 mb-4">Không hỗ trợ di động</h1>
-          <p className="text-zinc-300 text-sm mb-6 leading-relaxed font-medium">
-            Tính năng Xem Chung không hỗ trợ trên các thiết bị di động. Vui lòng sử dụng máy tính (PC / Laptop) để tham gia xem phim cùng bạn bè.
-          </p>
-        </div>
-      </div>
-    );
-  }
+
 
   if (!isJoined) {
     return (
