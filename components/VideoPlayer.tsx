@@ -360,14 +360,23 @@ export default function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
 
-    const onPlayStateChange = () => {
-      setIsPlaying(!video.paused);
-      if (video.paused) {
-        setShowControls(true);
-        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-      } else {
-        resetControlsTimer();
-      }
+    const onPlay = () => {
+      setIsPlaying(true);
+      resetControlsTimer();
+      if (onPlaySync) onPlaySync();
+    };
+
+    const onPause = () => {
+      setIsPlaying(false);
+      setShowControls(true);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      if (onPauseSync) onPauseSync();
+    };
+
+    const onSeeked = () => {
+      const time = video.currentTime;
+      setCurrentTime(time);
+      if (onSeekSync) onSeekSync(time);
     };
 
     const onWaiting = () => {
@@ -378,21 +387,23 @@ export default function VideoPlayer({
       if (onBuffering) onBuffering(false);
     };
 
-    video.addEventListener("play", onPlayStateChange);
-    video.addEventListener("pause", onPlayStateChange);
+    video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("seeked", onSeeked);
     video.addEventListener("waiting", onWaiting);
     video.addEventListener("playing", onPlaying);
 
     return () => {
-      video.removeEventListener("play", onPlayStateChange);
-      video.removeEventListener("pause", onPlayStateChange);
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("seeked", onSeeked);
       video.removeEventListener("waiting", onWaiting);
       video.removeEventListener("playing", onPlaying);
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
       }
     };
-  }, [videoRef, onBuffering]);
+  }, [videoRef, onBuffering, onPlaySync, onPauseSync, onSeekSync]);
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -434,12 +445,8 @@ export default function VideoPlayer({
 
     if (video.paused) {
       video.play().catch(() => {});
-      setIsPlaying(true);
-      if (onPlaySync) onPlaySync();
     } else {
       video.pause();
-      setIsPlaying(false);
-      if (onPauseSync) onPauseSync();
     }
   };
 
@@ -474,7 +481,6 @@ export default function VideoPlayer({
     const time = parseFloat(e.target.value);
     video.currentTime = time;
     setCurrentTime(time);
-    if (onSeekSync) onSeekSync(time);
     resetControlsTimer();
   };
 
