@@ -202,11 +202,11 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
   useEffect(() => {
     if (isTheaterMode) {
-      if (containerRef.current && !document.fullscreenElement) {
+      if (containerRef.current && !document.fullscreenElement && containerRef.current.requestFullscreen) {
         containerRef.current.requestFullscreen().catch(() => {});
       }
     } else {
-      if (document.fullscreenElement) {
+      if (document.fullscreenElement && document.exitFullscreen) {
         document.exitFullscreen().catch(() => {});
       }
     }
