@@ -133,7 +133,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
 
   return (
     <div 
-      className="relative w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] max-h-[85vh] flex items-end pb-8 sm:pb-12 md:pb-24 pt-16 sm:pt-20 overflow-hidden group bg-zinc-950"
+      className="relative w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] min-h-[50vh] lg:min-h-[75vh] max-h-[90vh] flex items-end pb-12 sm:pb-16 md:pb-28 lg:pb-36 pt-16 sm:pt-20 overflow-hidden group bg-zinc-950"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -174,7 +174,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
                   }
                   setIsVideoPlaying(true);
                 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[67.5vw] min-h-[120%] min-w-[213.33%] pointer-events-none"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[67.5vw] min-h-[120%] min-w-[213.33%] pointer-events-none scale-[1.35]"
               />
             </div>
           )}
