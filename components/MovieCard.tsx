@@ -117,10 +117,6 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
     }
 
     // Chưa xem
-    if (total !== "?") {
-      return `${total} Tập`;
-    }
-    
     let current = movie.episode_current || "?";
     if (current.toLowerCase().includes("hoàn tất")) {
       const match = current.match(/\d+/);
@@ -129,6 +125,11 @@ export default function MovieCard({ movie, posterUrl, href, isHistory }: MovieCa
       }
       return "Full";
     }
+    
+    if (current.includes("/")) {
+      current = current.split("/")[0].trim();
+    }
+    
     return current;
   };
 
