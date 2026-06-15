@@ -85,7 +85,7 @@ export default function VideoPlayer({
   const [showIframe, setShowIframe] = useState(false);
   
   // Aspect Ratio Mode (Contain/Cover/Fill)
-  const [aspectMode, setAspectMode] = useState<"contain" | "cover" | "fill">("cover");
+  const [aspectMode, setAspectMode] = useState<"contain" | "cover" | "fill">("contain");
 
   const handleAspectModeToggle = () => {
     let nextMode: "contain" | "cover" | "fill" = "contain";
@@ -816,7 +816,7 @@ export default function VideoPlayer({
               className="w-full h-full relative cursor-pointer"
               style={{
                 zIndex: 2,
-                objectFit: aspectMode,
+                objectFit: isFullscreen ? "contain" : aspectMode,
                 transform: "scale(1)",
                 transition: "object-fit 0.3s ease"
               }}
