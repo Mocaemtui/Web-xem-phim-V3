@@ -1060,7 +1060,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
       {/* Right Area: Desktop & Mobile Floating Sidebar */}
       <div 
-        className={`bg-transparent flex-col min-h-0 transition-all duration-300 ease-in-out ${
+        className={`bg-transparent flex-col min-h-0 h-full max-h-full transition-all duration-300 ease-in-out ${
           isTheaterMode 
             ? "fixed right-0 top-0 bottom-0 z-50 flex w-[280px] max-w-[80vw] p-3 gap-3 overflow-hidden pointer-events-none" 
             : "hidden md:flex relative z-10 shrink-0 overflow-hidden"
