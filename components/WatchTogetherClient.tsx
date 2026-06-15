@@ -533,7 +533,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Nhập tên để mọi người nhận ra bạn..."
-                className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-zinc-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-base md:text-sm"
               />
             </div>
             

@@ -114,7 +114,7 @@ export default function RoomChat({ messages, typingUsers, onSendMessage, onTypin
         )}
       </div>
 
-      <div className={`p-3 bg-transparent pointer-events-auto ${isTheaterMode ? "mb-24" : ""}`}>
+      <div className={`p-3 bg-transparent pointer-events-auto ${isTheaterMode ? "mb-4 md:mb-0" : ""}`}>
         <form onSubmit={handleSubmit} className="flex gap-2 items-center">
           <input
             id="chat-input-field"
@@ -127,7 +127,7 @@ export default function RoomChat({ messages, typingUsers, onSendMessage, onTypin
             autoCorrect="off"
             autoCapitalize="off"
             spellCheck={false}
-            className="flex-1 bg-zinc-900/30 hover:bg-zinc-900/50 text-zinc-200 text-sm rounded-xl px-4 py-2.5 outline-none transition-all duration-200 placeholder-zinc-500"
+            className="flex-1 bg-zinc-900/30 hover:bg-zinc-900/50 text-zinc-200 text-base md:text-sm rounded-xl px-4 py-2.5 outline-none transition-all duration-200 placeholder-zinc-500"
           />
           <button
             type="submit"
