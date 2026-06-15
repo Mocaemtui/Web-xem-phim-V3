@@ -772,7 +772,7 @@ export default function VideoPlayer({
                   togglePlay();
                 }
               }}
-              className="max-w-full max-h-full aspect-video relative cursor-pointer"
+              className="w-full h-full relative cursor-pointer"
               style={{
                 zIndex: 2,
                 objectFit: aspectMode,
@@ -844,14 +844,14 @@ export default function VideoPlayer({
           ) : (
             <iframe
               src={embedUrl}
-              className="max-w-full max-h-full aspect-video w-full h-full rounded-lg"
+              className="w-full h-full rounded-lg"
               allowFullScreen
               allow="autoplay; encrypted-media"
               referrerPolicy="no-referrer"
             />
           )
         ) : (
-          <div className="max-w-full max-h-full aspect-video bg-zinc-900 rounded-lg flex items-center justify-center">
+          <div className="w-full h-full bg-zinc-900 rounded-lg flex items-center justify-center">
             <p className="text-zinc-400">Không tìm thấy link phim</p>
           </div>
         )}
