@@ -244,6 +244,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   useEffect(() => {
     currentServerIndexRef.current = currentServerIndex;
     currentEpisodeIndexRef.current = currentEpisodeIndex;
+    // Đồng bộ lại index khi thay đổi để tránh lệch tập nếu user nhấn nút load tập mới
   }, [currentServerIndex, currentEpisodeIndex]);
 
   const pendingSyncTimeRef = useRef<number | null>(null);
@@ -512,9 +513,16 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   // Khi vừa vào phòng, tự động xin đồng bộ với những người đang xem (nếu có)
   useEffect(() => {
     if (isJoined) {
-      setTimeout(() => {
-        triggerRequestSync();
-      }, 1000);
+      hasSynced.current = false;
+      // Gửi nhiều lượt xin đồng bộ để đảm bảo thiết bị di động nhận đúng tập đang phát và thời gian phát từ Host
+      const t1 = setTimeout(() => { triggerRequestSync(); }, 500);
+      const t2 = setTimeout(() => { triggerRequestSync(); }, 1500);
+      const t3 = setTimeout(() => { triggerRequestSync(); }, 3500);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
     }
   }, [isJoined]);
 
@@ -1145,21 +1153,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               )}
             </div>
 
-             {/* Theater/Zoom Toggle Button */}
-            <button
-              onClick={() => setIsTheaterMode(prev => !prev)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isTheaterMode ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
-              title="Bật/Tắt chế độ phóng to rạp chiếu"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                {isTheaterMode ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3 3m12 6V4.5M15 9h4.5M15 9l6-6m-6 12v4.5M15 15h4.5M15 15l6 6m-6-6v4.5M9 15H4.5M9 15l-6 6" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m-11.25 11.25v-4.5m0 4.5h4.5m-4.5 0L9 15m11.25 5.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
-                )}
-              </svg>
-            </button>
-
              {/* Hide/Show Chat Toggle Button */}
             {isTheaterMode && (
               <button
@@ -1174,6 +1167,21 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 {isChatHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             )}
+
+             {/* Theater/Zoom Toggle Button */}
+            <button
+              onClick={() => setIsTheaterMode(prev => !prev)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isTheaterMode ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+              title="Bật/Tắt chế độ phóng to rạp chiếu"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                {isTheaterMode ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3 3m12 6V4.5M15 9h4.5M15 9l6-6m-6 12v4.5M15 15h4.5M15 15l6 6m-6-6v4.5M9 15H4.5M9 15l-6 6" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m-11.25 11.25v-4.5m0 4.5h4.5m-4.5 0L9 15m11.25 5.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
+                )}
+              </svg>
+            </button>
           </div>
         )}
 
