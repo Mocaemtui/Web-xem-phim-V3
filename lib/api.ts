@@ -171,11 +171,6 @@ export const resolveImgUrl = (url: string | undefined): string => {
     const cleanOphimUrl = url.startsWith('movies/') ? url : `movies/${url}`;
     finalUrl = `https://img.ophim.live/uploads/${cleanOphimUrl}`;
   }
-
-  // Tối ưu ảnh: Nếu là ảnh từ phimimg.com (KKPhim/PhimAPI), sử dụng image.php để lấy file WEBP
-  if (finalUrl.includes('phimimg.com')) {
-    return `https://phimapi.com/image.php?url=${finalUrl}`;
-  }
   
   return finalUrl;
 };

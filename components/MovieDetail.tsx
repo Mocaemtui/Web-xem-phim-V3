@@ -126,6 +126,18 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
     }, 250);
   };
 
+  const handleBackdropError = () => {
+    if (backdropSource < availableBackdrops.length - 1) {
+      setBackdropSource(prev => (prev + 1) as 0 | 1 | 2);
+    }
+  };
+
+  const handlePosterError = () => {
+    if (posterSource < availablePosters.length - 1) {
+      setPosterSource(prev => (prev + 1) as 0 | 1 | 2);
+    }
+  };
+
   const router = useRouter();
   
   const handleBack = () => {
@@ -242,6 +254,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             alt={movie.name}
             className={`absolute inset-0 z-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out cursor-pointer md:cursor-default ${backdropFade ? "opacity-100" : "opacity-0"}`}
             onClick={() => { if (window.innerWidth < 768 && availableBackdrops.length > 1) toggleBackdrop(); }}
+            onError={handleBackdropError}
           />
           
           {/* Nút Play ẩn - chỉ hiện khi đưa chuột vào đúng vùng giữa ảnh */}
@@ -288,6 +301,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                 src={currentPosterUrl}
                 alt={movie.name}
                 className={`w-full h-full object-cover transition-opacity duration-300 ease-in-out ${posterFade ? "opacity-100" : "opacity-0"}`}
+                onError={handlePosterError}
               />
 
               {availablePosters.length > 1 && (
@@ -307,6 +321,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                   src={currentPosterUrl}
                   alt={movie.name}
                   className={`w-full h-full object-cover transition-opacity duration-300 ease-in-out ${posterFade ? "opacity-100" : "opacity-0"}`}
+                  onError={handlePosterError}
                 />
               </Link>
             </div>
