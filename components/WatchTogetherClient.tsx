@@ -911,18 +911,31 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 isWatchTogether={true}
                 isTheaterMode={isTheaterMode}
                 onPlaySync={() => {
+                  if (isOutOfSync) {
+                    videoRef.current?.play().catch(() => {});
+                    handleSyncClick();
+                    return;
+                  }
                   if (hasSynced.current && !isReceivingEvent.current && videoRef.current) {
                     triggerPlay(videoRef.current.currentTime);
                     handleLocalStateSync(videoRef.current.currentTime, true);
                   }
                 }}
                 onPauseSync={() => {
+                  if (isOutOfSync) {
+                    handleSyncClick();
+                    return;
+                  }
                   if (hasSynced.current && !isReceivingEvent.current && videoRef.current) {
                     triggerPause();
                     handleLocalStateSync(videoRef.current.currentTime, false);
                   }
                 }}
                 onSeekSync={(time) => {
+                  if (isOutOfSync) {
+                    handleSyncClick();
+                    return;
+                  }
                   if (hasSynced.current && !isReceivingEvent.current) {
                     triggerSeek(time);
                     handleLocalStateSync(time, lastSyncPlayingRef.current);
@@ -993,7 +1006,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   {/* Emojis Reaction bar inside mobile chat tab */}
                   {isJoined && (
                     <div className="flex items-center gap-2 justify-center py-2 px-1 bg-zinc-950/20 rounded-lg border-0 mb-2 shrink-0 overflow-x-auto no-scrollbar">
-
                       {EMOJIS.map(emoji => (
                         <button
                           key={emoji}
@@ -1005,7 +1017,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                       ))}
                     </div>
                   )}
-                  <div className="flex-1 min-h-0">
+                  <div className="flex-1 min-h-0 flex flex-col">
                     <RoomChat 
                       messages={messages} 
                       typingUsers={typingUsers}
@@ -1085,7 +1097,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
         {/* Sleek controls row: Watchers & Emojis Popovers (Only show in Theater Mode) */}
         {isTheaterMode && (
-          <div className={`flex items-center gap-2 justify-end relative z-20 shrink-0 ${isChatHidden ? "flex-col" : "flex-row"} pointer-events-auto`}>
+          <div className="flex items-center gap-1.5 p-2 shrink-0 border-b border-zinc-800/40 bg-zinc-950/20 backdrop-blur-md justify-center w-full">
             
             {/* Watchers Popover */}
             <div className="relative">
@@ -1154,19 +1166,17 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             </div>
 
              {/* Hide/Show Chat Toggle Button */}
-            {isTheaterMode && (
-              <button
-                onClick={() => {
-                  setIsChatHidden(prev => !prev);
-                  setShowWatchers(false);
-                  setShowEmojis(false);
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isChatHidden ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
-                title={isChatHidden ? "Hiện cuộc trò chuyện" : "Tạm ẩn cuộc trò chuyện"}
-              >
-                {isChatHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setIsChatHidden(prev => !prev);
+                setShowWatchers(false);
+                setShowEmojis(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isChatHidden ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
+              title={isChatHidden ? "Hiện cuộc trò chuyện" : "Tạm ẩn cuộc trò chuyện"}
+            >
+              {isChatHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
 
              {/* Theater/Zoom Toggle Button */}
             <button
@@ -1251,7 +1261,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             </>
           )}
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden flex flex-col">
             <RoomChat 
               messages={messages} 
               typingUsers={typingUsers}

@@ -65,7 +65,7 @@ export default function RoomChat({ messages, typingUsers, onSendMessage, onTypin
 
 
   return (
-    <div className="flex flex-col h-full bg-transparent overflow-hidden border-0 shadow-none pointer-events-none" style={{ backgroundColor: "transparent" }}>
+    <div className="flex flex-col flex-1 min-h-0 h-full bg-transparent overflow-hidden border-0 shadow-none pointer-events-none" style={{ backgroundColor: "transparent" }}>
       
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth pointer-events-auto">
         {messages.length === 0 ? (
