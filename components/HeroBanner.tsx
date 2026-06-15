@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Movie } from "@/types/api";
 import { getBackdropUrl } from "@/lib/api";
-import { Play, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Info, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import YouTube from "react-youtube";
@@ -19,6 +19,34 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
   const [trailerVideoId, setTrailerVideoId] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const playerRef = useRef<any>(null);
+
+  // Read mute preference from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedMuted = localStorage.getItem('trailer_muted');
+      if (savedMuted !== null) {
+        setIsMuted(savedMuted === 'true');
+      }
+    } catch (e) {}
+  }, []);
+
+  const toggleMute = () => {
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
+    try {
+      localStorage.setItem('trailer_muted', String(newMuted));
+    } catch (e) {}
+    
+    if (playerRef.current) {
+      if (newMuted) {
+        playerRef.current.mute();
+      } else {
+        playerRef.current.unMute();
+      }
+    }
+  };
 
   // Auto slide
   useEffect(() => {
@@ -82,7 +110,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
     width: '100%',
     playerVars: {
       autoplay: 1 as const,
-      mute: 1 as const,
+      mute: 1 as const, // Always start muted to ensure autoplay works on modern browsers
       controls: 0 as const,
       modestbranding: 1 as const,
       loop: 1 as const,
@@ -125,10 +153,17 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
                 videoId={trailerVideoId}
                 opts={youtubeOpts}
                 onReady={(e) => {
+                  playerRef.current = e.target;
                   e.target.setPlaybackQuality('hd1080');
+                  if (!isMuted) {
+                    e.target.unMute();
+                  }
                 }}
                 onPlay={(e) => {
                   e.target.setPlaybackQuality('hd1080');
+                  if (!isMuted) {
+                    e.target.unMute();
+                  }
                   setIsVideoPlaying(true);
                 }}
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[67.5vw] min-h-[120%] min-w-[213.33%] pointer-events-none"
@@ -243,6 +278,20 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
                 <Info className="w-4 h-4 sm:w-5 sm:h-5" />
                 Chi Tiết
               </Link>
+              
+              {trailerVideoId && (
+                <button
+                  onClick={toggleMute}
+                  className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-black/40 text-white rounded-xl backdrop-blur-md hover:bg-black/60 border border-white/20 transition-all hover:scale-105 active:scale-95 text-sm sm:text-base hover:border-white/50"
+                  aria-label={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
+                >
+                  {isMuted ? (
+                    <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" />
+                  ) : (
+                    <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                  )}
+                </button>
+              )}
             </motion.div>
           </motion.div>
         </AnimatePresence>
