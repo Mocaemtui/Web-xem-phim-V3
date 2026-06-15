@@ -494,14 +494,26 @@ export default function VideoPlayer({
 
     if (!isFullscreen) {
       if (container.requestFullscreen) {
-        container.requestFullscreen().catch(() => {});
+        container.requestFullscreen().then(() => {
+          if (typeof screen !== "undefined" && screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock("landscape").catch(() => {});
+          }
+        }).catch(() => {});
       } else if ((container as any).webkitRequestFullscreen) {
         (container as any).webkitRequestFullscreen();
+        if (typeof screen !== "undefined" && screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock("landscape").catch(() => {});
+        }
       } else if ((video as any).webkitEnterFullscreen) {
         (video as any).webkitEnterFullscreen();
       }
       setIsFullscreen(true);
     } else {
+      if (typeof screen !== "undefined" && screen.orientation && screen.orientation.unlock) {
+        try {
+          screen.orientation.unlock();
+        } catch (e) {}
+      }
       if (document.exitFullscreen) {
         document.exitFullscreen().catch(() => {});
       }
