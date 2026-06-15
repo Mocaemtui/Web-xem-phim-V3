@@ -49,9 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col bg-black text-white font-sans">
         <HistoryTracker />
         <Header />
-        <main className="flex-1 flex flex-col pb-12 sm:pb-20">
-          {children}
-        </main>
+        {children}
         <Footer />
       </body>
     </html>

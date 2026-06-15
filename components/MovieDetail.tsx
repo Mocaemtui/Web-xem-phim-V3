@@ -274,7 +274,7 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 -mt-16 sm:-mt-32 relative z-10">
+      <div className="container mx-auto px-4 mt-6 sm:-mt-32 relative z-10">
         <div className="grid md:grid-cols-[300px_1fr] gap-8">
           {/* Poster Desktop */}
           <div className="hidden md:block">

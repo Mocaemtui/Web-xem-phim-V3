@@ -74,7 +74,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
 
   // Fetch trailer for current hero movie
   useEffect(() => {
-    if (!movie?.slug || isMobile) return; // Không tải trailer trên điện thoại
+    if (!movie?.slug) return;
     setTrailerVideoId(null);
     setIsVideoPlaying(false);
     let isMounted = true;
@@ -101,7 +101,7 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
       .catch(() => {});
       
     return () => { isMounted = false; };
-  }, [movie?.slug, isMobile]);
+  }, [movie?.slug]);
 
   if (!movies || movies.length === 0) return null;
 
@@ -193,9 +193,9 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
         >
           
           {/* Youtube Auto-play Background (Always opacity 1, hidden behind image initially) */}
-          {trailerVideoId && !isMobile && (
+          {trailerVideoId && (
             <div 
-              className="absolute inset-0 z-0 overflow-hidden pointer-events-none hidden md:block"
+              className="absolute inset-0 z-0 overflow-hidden pointer-events-none block"
               style={{ 
                 clipPath: isVideoPlaying ? 'inset(0)' : 'inset(100%)',
                 opacity: isVideoPlaying ? 1 : 0
@@ -252,14 +252,14 @@ export default function HeroBanner({ movies }: HeroBannerProps) {
         <>
           <button 
             onClick={prevSlide}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 bg-black/40 hover:bg-black/70 text-white rounded-full flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 transition-all backdrop-blur-sm border border-white/10"
+            className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 bg-black/40 hover:bg-black/70 text-white rounded-full items-center justify-center transition-all backdrop-blur-sm border border-white/10 opacity-0 group-hover:opacity-100"
             aria-label="Previous movie"
           >
             <ChevronLeft size={24} />
           </button>
           <button 
             onClick={nextSlide}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 bg-black/40 hover:bg-black/70 text-white rounded-full flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 transition-all backdrop-blur-sm border border-white/10"
+            className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 bg-black/40 hover:bg-black/70 text-white rounded-full items-center justify-center transition-all backdrop-blur-sm border border-white/10 opacity-0 group-hover:opacity-100"
             aria-label="Next movie"
           >
             <ChevronRight size={24} />

@@ -3,7 +3,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto bg-zinc-950 border-t border-zinc-800 py-8">
+    <footer className="bg-zinc-950 border-t border-zinc-800 py-8">
       <div className="container mx-auto px-4">
         <div className="text-center">
           <p className="text-zinc-400 text-sm">
