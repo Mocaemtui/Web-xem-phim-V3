@@ -1083,12 +1083,10 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         className={`bg-transparent flex-col min-h-0 transition-all duration-300 ease-in-out ${
           isTheaterMode 
             ? "fixed right-0 top-0 bottom-0 z-50 flex w-[280px] max-w-[80vw] p-3 gap-3 overflow-hidden pointer-events-none" 
-            : "hidden md:flex relative z-10 shrink-0 overflow-hidden max-h-[calc(100vh-280px)] h-[56.25vw] max-w-full"
+            : "hidden md:flex relative z-10 shrink-0 overflow-hidden max-w-full"
         } ${isChatHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}
         style={isTheaterMode ? {} : { 
-          width: `${chatWidth}px`, 
-          height: `calc((${chatWidth}px * 9 / 16) + 120px)`, /* locks sidebar height matching video container ratio + player offset */
-          maxHeight: "calc(100vh - 240px)",
+          width: `${chatWidth}px`,
           padding: "0px",
           gap: "0px",
           backgroundColor: "transparent" 
