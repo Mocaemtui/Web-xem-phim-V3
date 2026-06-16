@@ -41,6 +41,7 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const videoRef = externalVideoRef || internalVideoRef;
+  const hasAutoPlayedOnceRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -308,7 +309,7 @@ export default function VideoPlayer({
       
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (isMountedRef.current) {
-          if (!isWatchTogether) {
+          if (!isWatchTogether || (isHost && hasAutoPlayedOnceRef.current)) {
             video.play().catch(() => {});
           }
         }
@@ -366,6 +367,9 @@ export default function VideoPlayer({
 
     const onPlay = () => {
       setIsPlaying(true);
+      if (isWatchTogether && isHost) {
+        hasAutoPlayedOnceRef.current = true;
+      }
       resetControlsTimer();
       if (onPlaySync) onPlaySync();
     };
