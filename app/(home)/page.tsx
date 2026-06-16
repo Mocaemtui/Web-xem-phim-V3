@@ -43,11 +43,21 @@ export default async function Home() {
 
   const allPhimMoi = phimMoiData.data.items;
   
+  // Combine sources to create a larger, more diverse pool for the banner
+  const bannerPool = [
+    ...allPhimMoi, 
+    ...(phimAuMyData?.data?.items || []), 
+    ...(phimNhatData?.data?.items || [])
+  ];
+  
+  // Remove duplicates
+  const uniquePool = Array.from(new Map(bannerPool.map(m => [m.slug, m])).values());
+  
   const heroMovies: any[] = [];
   const sliderPhimMoi: any[] = [];
   
-  // Fetch song song để kiểm tra phim nào có trailer và quốc gia hợp lệ (Âu Mỹ hoặc Nhật)
-  const movieDetailsPromises = allPhimMoi.map(async (movie: any) => {
+  // Fetch details to check for trailers and allowed countries
+  const movieDetailsPromises = uniquePool.map(async (movie: any) => {
     try {
       const res = await fetch(`https://phimapi.com/phim/${movie.slug}`, { next: { revalidate: 3600 } });
       const data = await res.json();
@@ -68,11 +78,27 @@ export default async function Home() {
   });
   
   const movieDetails = await Promise.all(movieDetailsPromises);
+  const eligibleForBanner: any[] = [];
   
   for (const { movie, hasTrailer, isAuMyOrNhat } of movieDetails) {
-    if (hasTrailer && isAuMyOrNhat && heroMovies.length < 6) {
+    if (hasTrailer && isAuMyOrNhat) {
+      eligibleForBanner.push(movie);
+    }
+  }
+  
+  // Shuffle the eligible movies so the banner feels fresh every 1 hour cache cycle
+  const shuffledBanner = eligibleForBanner.sort(() => 0.5 - Math.random());
+  
+  // Pick the top 6 for the hero banner
+  for (const movie of shuffledBanner) {
+    if (heroMovies.length < 6) {
       heroMovies.push(movie);
-    } else {
+    }
+  }
+  
+  // Populate the slider with new movies that are NOT in the hero banner
+  for (const movie of allPhimMoi) {
+    if (!heroMovies.some(h => h.slug === movie.slug)) {
       sliderPhimMoi.push(movie);
     }
   }
