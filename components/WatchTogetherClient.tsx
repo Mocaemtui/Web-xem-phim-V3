@@ -811,7 +811,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
           {/* Floating Horizontal Controller at Top-Right (Only shows when chat is hidden in theater mode) */}
           {isChatHidden && isTheaterMode && (
-            <div className={`absolute top-4 right-4 z-50 flex items-center gap-2 bg-zinc-950/90 border border-zinc-800/60 p-2 rounded-xl backdrop-blur-md transition-opacity duration-300 shadow-xl ${showTopControls ? "opacity-100" : "opacity-0 pointer-events-none"} animate-in fade-in`}
+            <div className={`absolute top-4 right-4 z-50 flex flex-col md:flex-row items-center gap-2 bg-zinc-950/90 border border-zinc-800/60 p-2 rounded-xl backdrop-blur-md transition-opacity duration-300 shadow-xl ${showTopControls ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} animate-in fade-in`}
                  style={{ contentVisibility: "auto" }}>
               
               {/* Watchers Popover */}
@@ -836,7 +836,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 </button>
 
                 {showWatchers && (
-                  <div className="absolute right-0 top-9 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-3 rounded-lg shadow-2xl z-50 min-w-[180px] max-w-[240px]">
+                  <div className="absolute right-full md:right-0 top-0 md:top-9 mr-3 md:mr-0 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-3 rounded-lg shadow-2xl z-50 min-w-[180px] max-w-[240px]">
                     <h4 className="text-[11px] font-semibold text-zinc-400 mb-2 border-b border-zinc-900 pb-1">Người xem ({watchers.length})</h4>
                     <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
                       {watchers.map((w) => (
@@ -876,7 +876,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 </button>
 
                 {showEmojis && (
-                  <div className="absolute right-0 top-9 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-2 rounded-lg shadow-2xl z-50 min-w-[200px]">
+                  <div className="absolute right-full md:right-0 top-0 md:top-9 mr-3 md:mr-0 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-2 rounded-lg shadow-2xl z-50 min-w-[200px]">
                     <div className="grid grid-cols-5 gap-1.5 justify-items-center">
                       {EMOJIS.map(emoji => (
                         <button
@@ -1251,7 +1251,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               </button>
 
               {showWatchers && (
-                <div className="absolute right-full top-0 mr-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-3 rounded-lg shadow-2xl z-50 min-w-[180px] max-w-[240px]">
+                <div className="absolute right-0 sm:right-full top-9 sm:top-0 mt-2 sm:mt-0 mr-0 sm:mr-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-3 rounded-lg shadow-2xl z-50 min-w-[180px] max-w-[240px]">
                   <h4 className="text-[11px] font-semibold text-zinc-400 mb-2 border-b border-zinc-900 pb-1">Người xem ({watchers.length})</h4>
                   <div className="flex flex-col gap-1 max-h-36 overflow-y-auto">
                     {watchers.map((w) => (
@@ -1291,7 +1291,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               </button>
 
               {showEmojis && (
-                <div className="absolute right-full top-0 mr-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-2 rounded-lg shadow-2xl z-50 min-w-[200px]">
+                <div className="absolute right-0 sm:right-full top-9 sm:top-0 mt-2 sm:mt-0 mr-0 sm:mr-2 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/40 p-2 rounded-lg shadow-2xl z-50 min-w-[200px]">
                   <div className="grid grid-cols-5 gap-1.5 justify-items-center">
                     {EMOJIS.map(emoji => (
                       <button
