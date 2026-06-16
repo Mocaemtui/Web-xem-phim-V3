@@ -42,6 +42,40 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     setIsMobileDevice(/Mobi|Android|iPhone/i.test(navigator.userAgent));
   }, []);
 
+  const handleToggleTheaterMode = async () => {
+    const nextState = !isTheaterMode;
+    setIsTheaterMode(nextState);
+
+    if (isMobileDevice || window.innerWidth < 768) {
+      try {
+        if (nextState) {
+          const el = document.documentElement;
+          if (el.requestFullscreen) {
+            await el.requestFullscreen();
+          } else if ((el as any).webkitRequestFullscreen) {
+            await (el as any).webkitRequestFullscreen();
+          }
+          
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape');
+          }
+        } else {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen();
+          } else if ((document as any).webkitFullscreenElement) {
+            await (document as any).webkitExitFullscreen();
+          }
+          
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+          }
+        }
+      } catch (error) {
+        console.warn("Fullscreen/Orientation API not supported or failed:", error);
+      }
+    }
+  };
+
   const lastSyncTimeRef = useRef<number>(0);
   const lastSyncTimestampRef = useRef<number>(0);
   const lastSyncPlayingRef = useRef<boolean>(false);
@@ -759,7 +793,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
             {/* Zoom / Theater Mode Button */}
             <button
-              onClick={() => setIsTheaterMode(prev => !prev)}
+              onClick={handleToggleTheaterMode}
               className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800/80 text-zinc-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shadow-md active:scale-95 cursor-pointer"
               title="Bật/Tắt chế độ phóng to rạp chiếu (Enter)"
             >
@@ -795,7 +829,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               ? "h-full w-full p-0 bg-transparent overflow-visible justify-center items-center flex-1" 
               : "flex-1 min-w-0 mr-0 md:mr-[var(--chat-margin)]"
           }`}
-          onDoubleClick={() => setIsTheaterMode(prev => !prev)}
+          onDoubleClick={handleToggleTheaterMode}
           style={isTheaterMode ? {} : { 
             "--chat-margin": isChatHidden ? "0px" : `${chatWidth + 24}px` 
           } as React.CSSProperties}
@@ -914,7 +948,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
               {/* Theater/Zoom Toggle Button in Overlay */}
               <button
-                onClick={() => setIsTheaterMode(prev => !prev)}
+                onClick={handleToggleTheaterMode}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isTheaterMode ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
                 title="Bật/Tắt chế độ phóng to rạp chiếu"
               >
@@ -1045,7 +1079,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
                 {/* Theater/Zoom Toggle Button */}
                 <button
-                  onClick={() => setIsTheaterMode(prev => !prev)}
+                  onClick={handleToggleTheaterMode}
                   className={`flex items-center justify-center bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 w-[26px] h-[26px] rounded-lg transition-all active:scale-95 cursor-pointer`}
                   title="Phóng to rạp chiếu"
                 >
@@ -1324,7 +1358,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
              {/* Theater/Zoom Toggle Button */}
             <button
-              onClick={() => setIsTheaterMode(prev => !prev)}
+              onClick={handleToggleTheaterMode}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer border ${isTheaterMode ? "bg-zinc-800/80 border-zinc-700 text-red-500" : "bg-zinc-900/30 border-zinc-900/20 text-zinc-400 hover:text-zinc-200"}`}
               title="Bật/Tắt chế độ phóng to rạp chiếu"
             >
@@ -1533,7 +1567,11 @@ function KeyboardAndTheaterHandler({
 
     // Listen to native fullscreen changes (e.g. exiting fullscreen via Esc/browser controls)
     const handleFullscreenChange = () => {
-      setIsTheaterMode(!!document.fullscreenElement);
+      const isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      setIsTheaterMode(isFullscreen);
+      if (!isFullscreen && screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
 
