@@ -1040,8 +1040,9 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   const maxEp = currentServer?.server_data.length || 0;
                   if (currentEpisodeIndex < maxEp - 1) {
                     const nextIdx = currentEpisodeIndex + 1;
+                    const epName = currentServer?.server_data[nextIdx]?.name || `Tập ${nextIdx + 1}`;
                     setCurrentEpisodeIndex(nextIdx);
-                    triggerChangeEpisode(currentServerIndex, nextIdx);
+                    triggerChangeEpisode(currentServerIndex, nextIdx, epName);
                   }
                 }}
               />
@@ -1143,7 +1144,8 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                             isLocalEpisodeChangeRef.current = true;
                             setCurrentServerIndex(selectedServerIndex);
                             setCurrentEpisodeIndex(idx);
-                            triggerChangeEpisode(selectedServerIndex, idx);
+                            const epName = episodes[idx]?.name || `Tập ${idx + 1}`;
+                            triggerChangeEpisode(selectedServerIndex, idx, epName);
                           }}
                           onSelectServer={(idx) => {
                             if (!isHost) return;
@@ -1445,7 +1447,8 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                       isLocalEpisodeChangeRef.current = true;
                       setCurrentServerIndex(selectedServerIndex);
                       setCurrentEpisodeIndex(idx);
-                      triggerChangeEpisode(selectedServerIndex, idx);
+                      const epName = episodes[idx]?.name || `Tập ${idx + 1}`;
+                      triggerChangeEpisode(selectedServerIndex, idx, epName);
                     }}
                     onSelectServer={(idx) => {
                       if (!isHost) return;

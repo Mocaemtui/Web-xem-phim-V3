@@ -147,8 +147,9 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
       if (onSyncResponseRef.current) onSyncResponseRef.current(data);
     });
 
-    channel.bind('client-change-episode', (data: { serverIndex: number, episodeIndex: number }) => {
-      addSystemMessage("Host đã chuyển sang tập mới");
+    channel.bind('client-change-episode', (data: { serverIndex: number, episodeIndex: number, episodeName?: string }) => {
+      const nameStr = data.episodeName ? `${data.episodeName}` : "tập mới";
+      addSystemMessage(`Host đã chuyển sang ${nameStr}`);
       if (onChangeEpisodeRef.current) onChangeEpisodeRef.current(data.serverIndex, data.episodeIndex);
     });
 
@@ -226,9 +227,10 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
     channelRef.current?.trigger('client-sync-response', { time, isPlaying, serverIndex, episodeIndex, hostId });
   };
 
-  const triggerChangeEpisode = (serverIndex: number, episodeIndex: number) => {
-    channelRef.current?.trigger('client-change-episode', { serverIndex, episodeIndex });
-    addSystemMessage("Host đã chuyển sang tập mới");
+  const triggerChangeEpisode = (serverIndex: number, episodeIndex: number, episodeName?: string) => {
+    const nameStr = episodeName ? `${episodeName}` : "tập mới";
+    channelRef.current?.trigger('client-change-episode', { serverIndex, episodeIndex, episodeName });
+    addSystemMessage(`Host đã chuyển sang ${nameStr}`);
   };
 
   const triggerReaction = (emoji: string) => {

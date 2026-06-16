@@ -309,7 +309,7 @@ export default function VideoPlayer({
       
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (isMountedRef.current) {
-          if (!isWatchTogether || (isHost && hasAutoPlayedOnceRef.current)) {
+          if (!isWatchTogether || hasAutoPlayedOnceRef.current) {
             video.play().catch(() => {});
           }
         }
@@ -367,7 +367,7 @@ export default function VideoPlayer({
 
     const onPlay = () => {
       setIsPlaying(true);
-      if (isWatchTogether && isHost) {
+      if (isWatchTogether) {
         hasAutoPlayedOnceRef.current = true;
       }
       resetControlsTimer();
