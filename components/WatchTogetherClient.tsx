@@ -56,8 +56,9 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             await (el as any).webkitRequestFullscreen();
           }
           
-          if (screen.orientation && screen.orientation.lock) {
-            await screen.orientation.lock('landscape');
+          const orientation = screen.orientation as any;
+          if (orientation && orientation.lock) {
+            await orientation.lock('landscape');
           }
         } else {
           if (document.fullscreenElement) {
@@ -66,8 +67,9 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             await (document as any).webkitExitFullscreen();
           }
           
-          if (screen.orientation && screen.orientation.unlock) {
-            screen.orientation.unlock();
+          const orientation = screen.orientation as any;
+          if (orientation && orientation.unlock) {
+            orientation.unlock();
           }
         }
       } catch (error) {
@@ -1568,8 +1570,9 @@ function KeyboardAndTheaterHandler({
     const handleFullscreenChange = () => {
       const isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
       setIsTheaterMode(isFullscreen);
-      if (!isFullscreen && screen.orientation && screen.orientation.unlock) {
-        screen.orientation.unlock();
+      const orientation = screen.orientation as any;
+      if (!isFullscreen && orientation && orientation.unlock) {
+        orientation.unlock();
       }
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
