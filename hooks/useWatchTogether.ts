@@ -39,6 +39,13 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
   const onChangeEpisodeRef = useRef<((serverIndex: number, episodeIndex: number) => void) | null>(null);
   const onChangeHostRef = useRef<((newHostId: string) => void) | null>(null);
 
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds)) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   const addSystemMessage = (text: string) => {
     setMessages((prev) => [
       ...prev,
@@ -110,14 +117,17 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
 
     // Video Events
     channel.bind('client-play', (data: { time: number }) => {
+      addSystemMessage("Host đã tiếp tục phát");
       if (onPlayRef.current) onPlayRef.current(data.time);
     });
 
     channel.bind('client-pause', () => {
+      addSystemMessage("Host đã tạm dừng");
       if (onPauseRef.current) onPauseRef.current();
     });
 
     channel.bind('client-seek', (data: { time: number }) => {
+      addSystemMessage(`Host đã tua đến ${formatTime(data.time)}`);
       if (onSeekRef.current) onSeekRef.current(data.time);
     });
 
@@ -138,6 +148,7 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
     });
 
     channel.bind('client-change-episode', (data: { serverIndex: number, episodeIndex: number }) => {
+      addSystemMessage("Host đã chuyển sang tập mới");
       if (onChangeEpisodeRef.current) onChangeEpisodeRef.current(data.serverIndex, data.episodeIndex);
     });
 
@@ -194,14 +205,17 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
 
   const triggerPlay = (time: number) => {
     channelRef.current?.trigger('client-play', { time });
+    addSystemMessage("Host đã tiếp tục phát");
   };
 
   const triggerPause = () => {
     channelRef.current?.trigger('client-pause', {});
+    addSystemMessage("Host đã tạm dừng");
   };
 
   const triggerSeek = (time: number) => {
     channelRef.current?.trigger('client-seek', { time });
+    addSystemMessage(`Host đã tua đến ${formatTime(time)}`);
   };
 
   const triggerRequestSync = () => {
@@ -214,6 +228,7 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
 
   const triggerChangeEpisode = (serverIndex: number, episodeIndex: number) => {
     channelRef.current?.trigger('client-change-episode', { serverIndex, episodeIndex });
+    addSystemMessage("Host đã chuyển sang tập mới");
   };
 
   const triggerReaction = (emoji: string) => {
