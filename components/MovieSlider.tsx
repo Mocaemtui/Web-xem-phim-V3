@@ -45,12 +45,33 @@ export default function MovieSlider({ movies }: MovieSliderProps) {
       </button>
 
       {/* Embla Viewport */}
+      <style>{`
+        .embla-grid {
+          display: grid;
+          grid-template-rows: repeat(2, minmax(0, 1fr));
+          grid-auto-flow: column;
+          grid-auto-columns: 50%;
+          row-gap: 1rem;
+        }
+        @media (min-width: 768px) {
+          .embla-grid {
+            grid-template-rows: repeat(1, minmax(0, 1fr));
+            grid-auto-columns: 25%;
+            row-gap: 0;
+          }
+        }
+        @media (min-width: 1024px) {
+          .embla-grid {
+            grid-auto-columns: 16.666666%;
+          }
+        }
+      `}</style>
       <div className="overflow-hidden pb-6 pt-6 -mx-2 px-2" ref={emblaRef}>
-        <div className="flex touch-pan-y" style={{ marginLeft: '-1rem' }}>
+        <div className="embla-grid touch-pan-y" style={{ marginLeft: '-1rem' }}>
           {items.map((movie) => (
             <div
               key={movie._id}
-              className="flex-[0_0_50%] md:flex-[0_0_25%] lg:flex-[0_0_16.6666%] min-w-0 pl-4"
+              className="min-w-0 pl-4"
             >
               <MovieCardWrapper movie={movie} />
             </div>

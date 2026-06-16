@@ -259,40 +259,27 @@ export default function Header() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <nav className="md:hidden py-4 border-t border-white/10 animate-in fade-in slide-in-from-top-4 duration-300">
-            <div className="grid grid-cols-2 gap-3 px-4">
-              <Link href="/" className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl text-sm font-medium text-zinc-200 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 transition-all active:scale-95 text-center shadow-lg">
-                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center mb-1">
-                  <img src="/icon-192x192.png" alt="Home" className="w-6 h-6 opacity-80" />
-                </div>
-                <span>Trang chủ</span>
+            <div className="flex flex-col gap-2">
+              <Link href="/" className="px-4 py-3 rounded-lg text-sm font-medium text-zinc-200 hover:bg-white/10 transition-colors">
+                Trang chủ
               </Link>
-              
-              <Link href="/filter" className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl text-sm font-medium text-zinc-200 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 transition-all active:scale-95 text-center shadow-lg">
-                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center mb-1">
-                  <Filter size={20} className="text-[var(--color-cyan-neon)]" />
-                </div>
-                <span>Bộ lọc</span>
+              <Link href="/filter" className="px-4 py-3 rounded-lg text-sm font-medium text-zinc-200 hover:bg-white/10 transition-colors flex items-center gap-2">
+                <Filter size={18} />
+                Bộ lọc
               </Link>
-              
-              <Link href="/lich-su" className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl text-sm font-medium text-zinc-200 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 transition-all active:scale-95 text-center shadow-lg">
-                <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center mb-1">
-                  <Clock size={20} className="text-amber-400" />
-                </div>
-                <span>Lịch sử</span>
+              <Link href="/lich-su" className="px-4 py-3 rounded-lg text-sm font-medium text-zinc-200 hover:bg-white/10 transition-colors flex items-center gap-2">
+                <Clock size={18} />
+                Lịch sử
               </Link>
-              
-              <button
-                onClick={() => {
-                  if (isInstallable) handleInstallClick();
-                  else alert("Tính năng Tải App đã được cài đặt hoặc thiết bị không hỗ trợ.");
-                }}
-                className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl text-sm font-semibold transition-all active:scale-95 text-center shadow-lg ${isInstallable ? 'text-black bg-[var(--color-cyan-neon)] border border-[var(--color-cyan-neon)] hover:bg-[var(--color-cyan-neon)]/90 shadow-[0_0_12px_rgba(0,255,255,0.2)]' : 'text-zinc-500 bg-zinc-900/50 border border-zinc-800/50 cursor-not-allowed'}`}
-              >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 ${isInstallable ? 'bg-black/20' : 'bg-zinc-800/50'}`}>
-                  <Download size={20} className={isInstallable ? "text-black" : "text-zinc-500"} />
-                </div>
-                <span>{isInstallable ? "Tải App" : "Đã Tải"}</span>
-              </button>
+              {isInstallable && (
+                <button
+                  onClick={handleInstallClick}
+                  className="mx-4 my-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-black bg-[var(--color-cyan-neon)] hover:bg-[var(--color-cyan-neon)]/90 transition-colors flex items-center justify-center gap-2 shadow-[0_0_12px_var(--color-cyan-neon)] cursor-pointer"
+                >
+                  <Download size={16} />
+                  Tải App Mocaemtui
+                </button>
+              )}
             </div>
           </nav>
         )}
