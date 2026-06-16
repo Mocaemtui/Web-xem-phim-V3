@@ -303,7 +303,7 @@ export async function searchPhim(
 export async function getTheLoai(): Promise<ApiResponse<{ items: Genre[] }> | null> {
   if (PRIMARY_SOURCE.id === 'phimapi') {
     try {
-      const res = await fetch(`https://phimapi.com/the-loai`, { next: { revalidate: 86400 } });
+      const res = await fetch(`https://phimapi.com/the-loai`, { next: { revalidate: 3600 } });
       if (res.ok) {
         const items = await res.json();
         // Lọc bỏ danh mục Phim 18+
@@ -314,13 +314,13 @@ export async function getTheLoai(): Promise<ApiResponse<{ items: Genre[] }> | nu
       console.error(e);
     }
   }
-  return fetchAPI<{ items: Genre[] }>("/v1/api/the-loai", 86400);
+  return fetchAPI<{ items: Genre[] }>("/v1/api/the-loai", 3600);
 }
 
 export async function getQuocGia(): Promise<ApiResponse<{ items: Country[] }> | null> {
   if (PRIMARY_SOURCE.id === 'phimapi') {
     try {
-      const res = await fetch(`https://phimapi.com/quoc-gia`, { next: { revalidate: 86400 } });
+      const res = await fetch(`https://phimapi.com/quoc-gia`, { next: { revalidate: 3600 } });
       if (res.ok) {
         const items = await res.json();
         return { status: "success", data: { items } } as any;
@@ -329,7 +329,7 @@ export async function getQuocGia(): Promise<ApiResponse<{ items: Country[] }> | 
       console.error(e);
     }
   }
-  return fetchAPI<{ items: Country[] }>("/v1/api/quoc-gia", 86400);
+  return fetchAPI<{ items: Country[] }>("/v1/api/quoc-gia", 3600);
 }
 
 // Search with optional pagination
@@ -398,7 +398,7 @@ export async function getQuocGiaDetails(
 
 export async function getNamPhatHanh(): Promise<ApiResponse<{ items: Year[] }> | null> {
   // Danh sách năm phát hành cố định, cache 24 giờ
-  return fetchAPI<{ items: Year[] }>("/v1/api/nam-phat-hanh", 86400);
+  return fetchAPI<{ items: Year[] }>("/v1/api/nam-phat-hanh", 3600);
 }
 export async function getDanhSach(
   slug: string,
@@ -440,8 +440,8 @@ export async function getChiTietPhim(
   };
 
   let [ophimRes, phimapiRes] = await Promise.all([
-    fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 86400, MOVIE_SOURCES.OPHIM.url),
-    fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 86400, MOVIE_SOURCES.PHIMAPI.url)
+    fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 3600, MOVIE_SOURCES.OPHIM.url),
+    fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 3600, MOVIE_SOURCES.PHIMAPI.url)
   ]);
 
   let baseMovie: MovieDetail | null = phimapiRes?.data?.item || ophimRes?.data?.item || null;
@@ -473,7 +473,7 @@ export async function getChiTietPhim(
           normalizeCompare(m.name, movieName)
         );
         if (match && match.slug !== slug) {
-          fetchOphimPromise = fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${match.slug}`, 86400, MOVIE_SOURCES.OPHIM.url);
+          fetchOphimPromise = fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${match.slug}`, 3600, MOVIE_SOURCES.OPHIM.url);
         }
       }
 
@@ -485,7 +485,7 @@ export async function getChiTietPhim(
           normalizeCompare(m.name, movieName)
         );
         if (match && match.slug !== slug) {
-          fetchPhimapiPromise = fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${match.slug}`, 86400, MOVIE_SOURCES.PHIMAPI.url);
+          fetchPhimapiPromise = fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${match.slug}`, 3600, MOVIE_SOURCES.PHIMAPI.url);
         }
       }
 
@@ -557,14 +557,14 @@ export async function getHinhAnhPhim(
   slug: string
 ): Promise<ApiResponse<MovieImages> | null> {
   // Hình ảnh phim phụ trợ, cache 24 giờ
-  return fetchAPI<MovieImages>(`/v1/api/phim/${slug}/images`, 86400);
+  return fetchAPI<MovieImages>(`/v1/api/phim/${slug}/images`, 3600);
 }
 
 export async function getPeoplesPhim(
   slug: string
 ): Promise<ApiResponse<MoviePeoples> | null> {
   // Diễn viên/Đạo diễn, cache 24 giờ
-  return fetchAPI<MoviePeoples>(`/v1/api/phim/${slug}/peoples`, 86400);
+  return fetchAPI<MoviePeoples>(`/v1/api/phim/${slug}/peoples`, 3600);
 }
 
 export async function getPhimByTheLoai(
