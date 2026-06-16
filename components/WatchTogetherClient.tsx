@@ -845,8 +845,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
           {/* Floating Horizontal Controller at Top-Right (Only shows when chat is hidden in theater mode) */}
           {isChatHidden && isTheaterMode && (
-            <div className={`absolute top-4 right-4 z-50 flex flex-col md:flex-row items-center gap-2 bg-zinc-950/90 border border-zinc-800/60 p-2 rounded-xl backdrop-blur-md transition-opacity duration-300 shadow-xl ${showTopControls ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} animate-in fade-in`}
-                 style={{ contentVisibility: "auto" }}>
+            <div className={`absolute top-4 right-4 z-50 flex flex-col md:flex-row items-center gap-2 bg-zinc-950/90 border border-zinc-800/60 p-2 rounded-xl backdrop-blur-md transition-opacity duration-300 shadow-xl ${showTopControls ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} animate-in fade-in`}>
               
               {/* Watchers Popover */}
               <div className="relative">
@@ -1248,8 +1247,8 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
       <div 
         className={`bg-transparent flex-col min-h-0 transition-all duration-300 ease-in-out ${
           isTheaterMode 
-            ? "fixed right-0 top-0 bottom-0 z-50 flex w-[280px] max-w-[80vw] p-3 gap-3 overflow-hidden pointer-events-none" 
-            : "hidden md:flex absolute top-6 bottom-6 right-6 z-10 shrink-0 overflow-hidden max-w-full"
+            ? "fixed right-0 top-0 bottom-0 z-50 flex w-[280px] max-w-[80vw] p-3 gap-3 pointer-events-none" 
+            : "hidden md:flex absolute top-6 bottom-6 right-6 z-10 shrink-0 max-w-full"
         } ${isChatHidden ? "opacity-0 pointer-events-none" : "opacity-100"}`}
         style={isTheaterMode ? {} : { 
           width: `${chatWidth}px`,
