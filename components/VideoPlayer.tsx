@@ -565,15 +565,15 @@ export default function VideoPlayer({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Listen to fullscreen changes to sync state and prevent pause on exit
+  // Listen to fullscreen changes to sync state and prevent pause on exit/enter
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
       setIsFullscreen(isCurrentlyFullscreen);
       
-      // Prevent pause on exiting native fullscreen if it was playing
+      // Prevent pause on exiting or entering native fullscreen if it was playing
       const video = videoRef.current;
-      if (!isCurrentlyFullscreen && video && isPlaying) {
+      if (video && isPlaying) {
         setTimeout(() => {
           if (isMountedRef.current && video.paused) {
             video.play().catch(() => {});
@@ -584,6 +584,14 @@ export default function VideoPlayer({
 
     const handleWebkitBeginFullscreen = () => {
       setIsFullscreen(true);
+      const video = videoRef.current;
+      if (video && isPlaying) {
+        setTimeout(() => {
+          if (isMountedRef.current && video.paused) {
+            video.play().catch(() => {});
+          }
+        }, 100);
+      }
     };
 
     const handleWebkitEndFullscreen = () => {

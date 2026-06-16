@@ -38,16 +38,8 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
   const [newMessageNotification, setNewMessageNotification] = useState<string | null>(null);
 
   const [isMobileDevice, setIsMobileDevice] = useState(false);
-  const [isPortrait, setIsPortrait] = useState(false);
-
   useEffect(() => {
     setIsMobileDevice(/Mobi|Android|iPhone/i.test(navigator.userAgent));
-    const checkOrientation = () => {
-      setIsPortrait(window.innerHeight > window.innerWidth);
-    };
-    checkOrientation();
-    window.addEventListener("resize", checkOrientation);
-    return () => window.removeEventListener("resize", checkOrientation);
   }, []);
 
   const handleToggleTheaterMode = async () => {
@@ -70,14 +62,21 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
           }
         } else {
           if (document.fullscreenElement) {
-            await document.exitFullscreen();
+            await document.exitFullscreen().catch(() => {});
           } else if ((document as any).webkitFullscreenElement) {
             await (document as any).webkitExitFullscreen();
           }
           
           const orientation = screen.orientation as any;
-          if (orientation && orientation.unlock) {
-            orientation.unlock();
+          if (orientation) {
+            if (orientation.lock) {
+              await orientation.lock('portrait').catch(() => {});
+              setTimeout(() => {
+                if (orientation.unlock) orientation.unlock();
+              }, 500);
+            } else if (orientation.unlock) {
+              orientation.unlock();
+            }
           }
         }
       } catch (error) {
@@ -750,22 +749,8 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
     );
   }
 
-  const forceCssLandscape = isTheaterMode && isMobileDevice && isPortrait;
-
   return (
-    <div 
-      ref={containerRef} 
-      className={`relative bg-zinc-950 flex flex-col md:overflow-y-auto overflow-hidden scroll-smooth ${
-        forceCssLandscape ? "fixed z-[100] origin-top-left" : "min-h-screen"
-      }`}
-      style={forceCssLandscape ? {
-        width: "100vh",
-        height: "100vw",
-        top: 0,
-        left: "100vw",
-        transform: "rotate(90deg)"
-      } : {}}
-    >
+    <div ref={containerRef} className="relative min-h-screen bg-zinc-950 flex flex-col md:overflow-y-auto overflow-hidden scroll-smooth">
       {/* Global Background Ambient Glow Canvas */}
       {ambientActive && (
         <canvas
@@ -869,7 +854,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
           {/* Floating Horizontal Controller at Top-Right (Only shows when chat is hidden in theater mode) */}
           {isChatHidden && isTheaterMode && (
-            <div className={`absolute top-2 right-2 md:top-4 md:right-4 z-50 flex flex-col md:flex-row items-center gap-2 bg-zinc-950/90 border border-zinc-800/60 p-1.5 md:p-2 rounded-xl backdrop-blur-md transition-opacity duration-300 shadow-xl ${showTopControls ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} animate-in fade-in`}>
+            <div className={`absolute top-4 right-4 z-50 flex flex-col md:flex-row items-center gap-2 bg-zinc-950/90 border border-zinc-800/60 p-2 rounded-xl backdrop-blur-md transition-opacity duration-300 shadow-xl ${showTopControls ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} animate-in fade-in`}>
               
               {/* Watchers Popover */}
               <div className="relative">
@@ -1593,8 +1578,15 @@ function KeyboardAndTheaterHandler({
       const isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
       setIsTheaterMode(isFullscreen);
       const orientation = screen.orientation as any;
-      if (!isFullscreen && orientation && orientation.unlock) {
-        orientation.unlock();
+      if (!isFullscreen && orientation) {
+        if (orientation.lock) {
+          orientation.lock('portrait').catch(() => {});
+          setTimeout(() => {
+            if (orientation.unlock) orientation.unlock();
+          }, 500);
+        } else if (orientation.unlock) {
+          orientation.unlock();
+        }
       }
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
