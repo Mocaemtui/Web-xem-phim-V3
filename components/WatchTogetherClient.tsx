@@ -1053,10 +1053,11 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   }
                 }}
                 onBuffering={handleBuffering}
-                hasNextEpisode={isHost && currentEpisodeIndex < serverData.length - 1}
+                hasNextEpisode={isHost && currentEpisodeIndex < (currentServer?.server_data.length || 0) - 1}
                 onAutoNext={() => {
                   if (!isHost) return;
-                  if (currentEpisodeIndex < serverData.length - 1) {
+                  const maxEp = currentServer?.server_data.length || 0;
+                  if (currentEpisodeIndex < maxEp - 1) {
                     const nextIdx = currentEpisodeIndex + 1;
                     setCurrentEpisodeIndex(nextIdx);
                     triggerChangeEpisode(currentServerIndex, nextIdx);
