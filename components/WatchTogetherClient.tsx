@@ -786,7 +786,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
       <div className={`w-full flex flex-col md:flex-row shrink-0 md:shrink relative ${
         isTheaterMode 
           ? "h-full flex-1 overflow-visible" 
-          : "max-w-[1600px] mx-auto px-4 md:px-6 md:py-6 gap-6 items-stretch min-h-0 flex-1 overflow-hidden"
+          : "max-w-[1600px] mx-auto md:px-6 md:py-6 gap-0 md:gap-6 items-stretch min-h-0 flex-1 overflow-hidden"
       }`}>
         {/* Left Area: Video Player & Controls */}
         <div 
@@ -802,12 +802,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         >
 
 
-        {/* Mobile Spacer (holds height for absolute top video player on mobile) */}
-        {!isTheaterMode && (
-          <div className="h-[56.25vw] md:hidden shrink-0" />
-        )}
-
-        {/* Mobile Room Header: Show on mobile below the player spacer */}
+        {/* Mobile Room Header: Show on mobile above video or below video */}
         {!isTheaterMode && (
           <div className="flex flex-col md:hidden p-3 border-b border-zinc-850 bg-zinc-900/10 shrink-0">
             <div className="flex items-center justify-between gap-4">
@@ -838,10 +833,10 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         )}
 
         {/* Video Player */}
-        <div className={`w-full transition-all ${
+        <div className={`w-full transition-all shrink-0 ${
           isTheaterMode 
             ? "h-full max-h-screen flex items-center justify-end p-0 z-40 fixed inset-0 bg-black" 
-            : "absolute md:relative top-0 left-0 w-full md:w-auto aspect-video rounded-none md:rounded-2xl overflow-hidden border-b md:border border-zinc-850 shadow-2xl bg-zinc-950 z-30"
+            : "relative w-full aspect-video rounded-none md:rounded-2xl overflow-hidden border-b md:border border-zinc-850 shadow-2xl bg-zinc-950 z-30"
         }`}>
 
           {/* Floating Horizontal Controller at Top-Right (Only shows when chat is hidden in theater mode) */}
@@ -1144,7 +1139,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                             isLocalEpisodeChangeRef.current = true;
                             setCurrentServerIndex(selectedServerIndex);
                             setCurrentEpisodeIndex(idx);
-                            const epName = episodes[idx]?.name || `Tập ${idx + 1}`;
+                            const epName = episodes[selectedServerIndex]?.server_data[idx]?.name || `Tập ${idx + 1}`;
                             triggerChangeEpisode(selectedServerIndex, idx, epName);
                           }}
                           onSelectServer={(idx) => {
@@ -1447,7 +1442,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                       isLocalEpisodeChangeRef.current = true;
                       setCurrentServerIndex(selectedServerIndex);
                       setCurrentEpisodeIndex(idx);
-                      const epName = episodes[idx]?.name || `Tập ${idx + 1}`;
+                      const epName = episodes[selectedServerIndex]?.server_data[idx]?.name || `Tập ${idx + 1}`;
                       triggerChangeEpisode(selectedServerIndex, idx, epName);
                     }}
                     onSelectServer={(idx) => {
