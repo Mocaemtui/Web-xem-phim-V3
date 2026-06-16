@@ -994,7 +994,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 nextVideoUrl={serverData[currentEpisodeIndex + 1]?.link_m3u8}
                 isWatchTogether={true}
                 isHost={isHost}
-                onToggleFullscreen={handleToggleTheaterMode}
                 onPlaySync={() => {
                   if (isReceivingEvent.current) return;
                   if (!isHost) {
