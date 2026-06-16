@@ -35,7 +35,7 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
   const onPauseRef = useRef<(() => void) | null>(null);
   const onSeekRef = useRef<((time: number) => void) | null>(null);
   const onRequestSyncRef = useRef<(() => void) | null>(null);
-  const onSyncResponseRef = useRef<((data: { time: number, isPlaying: boolean, serverIndex?: number, episodeIndex?: number }) => void) | null>(null);
+  const onSyncResponseRef = useRef<((data: { time: number, isPlaying: boolean, serverIndex?: number, episodeIndex?: number, hostId?: string }) => void) | null>(null);
   const onChangeEpisodeRef = useRef<((serverIndex: number, episodeIndex: number) => void) | null>(null);
   const onChangeHostRef = useRef<((newHostId: string) => void) | null>(null);
 
@@ -125,7 +125,15 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
       if (onRequestSyncRef.current) onRequestSyncRef.current();
     });
 
-    channel.bind('client-sync-response', (data: { time: number, isPlaying: boolean, serverIndex?: number, episodeIndex?: number }) => {
+    channel.bind('client-sync-response', (data: { time: number, isPlaying: boolean, serverIndex?: number, episodeIndex?: number, hostId?: string }) => {
+      if (data.hostId) {
+        setWatchers((prev) =>
+          prev.map((w) => ({
+            ...w,
+            isHost: w.id === data.hostId,
+          }))
+        );
+      }
       if (onSyncResponseRef.current) onSyncResponseRef.current(data);
     });
 
@@ -200,8 +208,8 @@ export const useWatchTogether = (roomId: string, username: string, initialIsHost
     channelRef.current?.trigger('client-request-sync', {});
   };
 
-  const triggerSyncResponse = (time: number, isPlaying: boolean, serverIndex: number, episodeIndex: number) => {
-    channelRef.current?.trigger('client-sync-response', { time, isPlaying, serverIndex, episodeIndex });
+  const triggerSyncResponse = (time: number, isPlaying: boolean, serverIndex: number, episodeIndex: number, hostId?: string) => {
+    channelRef.current?.trigger('client-sync-response', { time, isPlaying, serverIndex, episodeIndex, hostId });
   };
 
   const triggerChangeEpisode = (serverIndex: number, episodeIndex: number) => {

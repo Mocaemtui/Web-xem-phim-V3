@@ -19,6 +19,7 @@ interface VideoPlayerProps {
   onError?: () => void;
   playbackProgressKey?: string;
   isTheaterMode?: boolean;
+  isHost?: boolean;
 }
 
 export default function VideoPlayer({
@@ -35,7 +36,8 @@ export default function VideoPlayer({
   onAutoNext,
   isWatchTogether,
   onError,
-  playbackProgressKey
+  playbackProgressKey,
+  isHost = true
 }: VideoPlayerProps) {
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const videoRef = externalVideoRef || internalVideoRef;
@@ -306,7 +308,9 @@ export default function VideoPlayer({
       
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (isMountedRef.current) {
-          video.play().catch(() => {});
+          if (!isWatchTogether) {
+            video.play().catch(() => {});
+          }
         }
       });
       
@@ -406,6 +410,11 @@ export default function VideoPlayer({
   }, [videoRef, onBuffering, onPlaySync, onPauseSync, onSeekSync]);
 
   const togglePlay = () => {
+    if (!isHost) {
+      if (onPlaySync) onPlaySync();
+      return;
+    }
+
     const video = videoRef.current;
     if (!video) return;
 
@@ -476,6 +485,10 @@ export default function VideoPlayer({
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isHost) {
+      if (onSeekSync) onSeekSync(parseFloat(e.target.value));
+      return;
+    }
     const video = videoRef.current;
     if (!video) return;
     const time = parseFloat(e.target.value);
@@ -770,6 +783,10 @@ export default function VideoPlayer({
                 if (onError) onError();
               }}
               onTouchStart={(e) => {
+                if (!isHost) {
+                  if (onPlaySync) onPlaySync();
+                  return;
+                }
                 // Double Tap to Seek on Mobile
                 const touch = e.touches[0];
                 const video = videoRef.current;
@@ -934,14 +951,14 @@ export default function VideoPlayer({
         {videoUrl && !isMobile && (
           <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 z-20 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
             {/* Progress Bar */}
-            <div className="mb-3">
+            <div className={`mb-3 ${!isHost ? "pointer-events-none" : ""}`}>
               <input
                 type="range"
                 min="0"
                 max={duration || 0}
                 value={currentTime}
                 onChange={handleSeek}
-                className="w-full h-1 bg-zinc-600 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full"
+                className={`w-full h-1 bg-zinc-600 rounded-lg appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full ${!isHost ? "cursor-not-allowed" : "cursor-pointer"}`}
               />
               <div className="flex justify-between text-xs text-zinc-300 mt-1">
                 <span>{formatTime(currentTime)}</span>

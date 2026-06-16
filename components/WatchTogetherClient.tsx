@@ -493,7 +493,8 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
           videoRef.current.currentTime,
           !videoRef.current.paused,
           currentServerIndexRef.current,
-          currentEpisodeIndexRef.current
+          currentEpisodeIndexRef.current,
+          myId
         );
       } else {
         // Nếu video chưa load xong, gửi thông tin tập phim hiện tại để người mới load tập đó trước
@@ -501,7 +502,8 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
           0,
           false,
           currentServerIndexRef.current,
-          currentEpisodeIndexRef.current
+          currentEpisodeIndexRef.current,
+          myId
         );
       }
     };
@@ -870,7 +872,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               <div className="relative">
                 <button
                   onClick={() => {
-                    if (isOutOfSync) {
+                    if (!isHost) {
                       handleSyncClick();
                     }
                     setShowWatchers(prev => !prev);
@@ -984,6 +986,17 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
           {currentEpisode ? (
             <>
               <FloatingReactions reactions={reactions} />
+              
+              {!isHost && isOutOfSync && (
+                <div 
+                  onClick={handleSyncClick}
+                  className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-red-600/90 hover:bg-red-700 backdrop-blur-sm text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg transition-all duration-300 animate-bounce z-50 cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Xem lệch với Host. Click để đồng bộ!</span>
+                </div>
+              )}
+
               <VideoPlayer
                 externalVideoRef={videoRef}
                 poster={getBackdropUrl(movie)}
@@ -992,7 +1005,12 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 nextVideoUrl={serverData[currentEpisodeIndex + 1]?.link_m3u8}
                 isWatchTogether={true}
                 isTheaterMode={isTheaterMode}
+                isHost={isHost}
                 onPlaySync={() => {
+                  if (!isHost) {
+                    handleSyncClick();
+                    return;
+                  }
                   if (isOutOfSync) {
                     videoRef.current?.play().catch(() => {});
                     handleSyncClick();
@@ -1004,6 +1022,10 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   }
                 }}
                 onPauseSync={() => {
+                  if (!isHost) {
+                    handleSyncClick();
+                    return;
+                  }
                   if (isOutOfSync) {
                     handleSyncClick();
                     return;
@@ -1014,6 +1036,10 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   }
                 }}
                 onSeekSync={(time) => {
+                  if (!isHost) {
+                    handleSyncClick();
+                    return;
+                  }
                   if (isOutOfSync) {
                     handleSyncClick();
                     return;
@@ -1024,8 +1050,9 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   }
                 }}
                 onBuffering={handleBuffering}
-                hasNextEpisode={currentEpisodeIndex < serverData.length - 1}
+                hasNextEpisode={isHost && currentEpisodeIndex < serverData.length - 1}
                 onAutoNext={() => {
+                  if (!isHost) return;
                   if (currentEpisodeIndex < serverData.length - 1) {
                     const nextIdx = currentEpisodeIndex + 1;
                     setCurrentEpisodeIndex(nextIdx);
@@ -1063,7 +1090,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               </button>
               <button
                 onClick={() => {
-                  if (isOutOfSync) {
+                  if (!isHost) {
                     handleSyncClick();
                   }
                   setActiveMobileTab("watchers");
@@ -1113,20 +1140,33 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
               {activeMobileTab === "episodes" && (
                 <div className="flex-1 overflow-y-auto">
                   {episodes.length > 0 && serverData.length > 0 && (
-                    <EpisodeSelector
-                      episodes={episodes}
-                      currentServerIndex={selectedServerIndex}
-                      currentEpisodeIndex={currentServerIndex === selectedServerIndex ? currentEpisodeIndex : -1}
-                      onSelectEpisode={(idx) => {
-                        isLocalEpisodeChangeRef.current = true;
-                        setCurrentServerIndex(selectedServerIndex);
-                        setCurrentEpisodeIndex(idx);
-                        triggerChangeEpisode(selectedServerIndex, idx);
-                      }}
-                      onSelectServer={(idx) => {
-                        setSelectedServerIndex(idx);
-                      }}
-                    />
+                    <div className="relative">
+                      {!isHost && (
+                        <div className="absolute inset-0 z-10 bg-black/50 backdrop-blur-[1px] flex items-center justify-center rounded-xl cursor-not-allowed">
+                          <div className="bg-zinc-900/90 text-white px-4 py-2 rounded-lg text-sm font-medium border border-zinc-700 shadow-xl">
+                            Chỉ Host mới có quyền đổi tập phim
+                          </div>
+                        </div>
+                      )}
+                      <div className={!isHost ? "pointer-events-none opacity-50" : ""}>
+                        <EpisodeSelector
+                          episodes={episodes}
+                          currentServerIndex={selectedServerIndex}
+                          currentEpisodeIndex={currentServerIndex === selectedServerIndex ? currentEpisodeIndex : -1}
+                          onSelectEpisode={(idx) => {
+                            if (!isHost) return;
+                            isLocalEpisodeChangeRef.current = true;
+                            setCurrentServerIndex(selectedServerIndex);
+                            setCurrentEpisodeIndex(idx);
+                            triggerChangeEpisode(selectedServerIndex, idx);
+                          }}
+                          onSelectServer={(idx) => {
+                            if (!isHost) return;
+                            setSelectedServerIndex(idx);
+                          }}
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
@@ -1198,7 +1238,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             <div className="relative">
               <button
                 onClick={() => {
-                  if (isOutOfSync) {
+                  if (!isHost) {
                     handleSyncClick();
                   }
                   setShowWatchers(prev => !prev);
@@ -1322,7 +1362,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 <div className="relative">
                   <button
                     onClick={() => {
-                      if (isOutOfSync) {
+                      if (!isHost) {
                         handleSyncClick();
                       }
                       setShowWatchers(prev => !prev);
@@ -1402,20 +1442,33 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         <div className="hidden md:block w-full shrink-0 max-w-[1600px] mx-auto px-4 md:px-6 pb-12 relative z-20">
           <div className="w-full px-6 py-6 bg-zinc-900/20 border border-zinc-800/40 backdrop-blur-md rounded-2xl">
             {episodes.length > 0 && serverData.length > 0 && (
-              <EpisodeSelector
-                episodes={episodes}
-                currentServerIndex={selectedServerIndex}
-                currentEpisodeIndex={currentServerIndex === selectedServerIndex ? currentEpisodeIndex : -1}
-                onSelectEpisode={(idx) => {
-                  isLocalEpisodeChangeRef.current = true;
-                  setCurrentServerIndex(selectedServerIndex);
-                  setCurrentEpisodeIndex(idx);
-                  triggerChangeEpisode(selectedServerIndex, idx);
-                }}
-                onSelectServer={(idx) => {
-                  setSelectedServerIndex(idx);
-                }}
-              />
+              <div className="relative">
+                {!isHost && (
+                  <div className="absolute inset-0 z-10 bg-black/50 backdrop-blur-[1px] flex items-center justify-center rounded-xl cursor-not-allowed">
+                    <div className="bg-zinc-900/90 text-white px-4 py-2 rounded-lg text-sm font-medium border border-zinc-700 shadow-xl">
+                      Chỉ Host mới có quyền đổi tập phim
+                    </div>
+                  </div>
+                )}
+                <div className={!isHost ? "pointer-events-none opacity-50" : ""}>
+                  <EpisodeSelector
+                    episodes={episodes}
+                    currentServerIndex={selectedServerIndex}
+                    currentEpisodeIndex={currentServerIndex === selectedServerIndex ? currentEpisodeIndex : -1}
+                    onSelectEpisode={(idx) => {
+                      if (!isHost) return;
+                      isLocalEpisodeChangeRef.current = true;
+                      setCurrentServerIndex(selectedServerIndex);
+                      setCurrentEpisodeIndex(idx);
+                      triggerChangeEpisode(selectedServerIndex, idx);
+                    }}
+                    onSelectServer={(idx) => {
+                      if (!isHost) return;
+                      setSelectedServerIndex(idx);
+                    }}
+                  />
+                </div>
+              </div>
             )}
           </div>
         </div>

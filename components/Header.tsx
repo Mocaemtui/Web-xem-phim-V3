@@ -90,13 +90,18 @@ export default function Header() {
       router.push(`/tim-kiem/${encodeURIComponent(searchKeyword.trim())}`);
       setSearchOpen(false);
       setSearchKeyword("");
+    } else {
+      setSearchOpen(false);
     }
   };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+K or Cmd+K
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      // Phím F để tìm kiếm (bỏ qua nếu đang gõ chữ)
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isTyping = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable);
+      
+      if (e.key.toLowerCase() === "f" && !e.ctrlKey && !e.metaKey && !isTyping) {
         e.preventDefault();
         setSearchOpen((prev) => !prev);
       }
@@ -147,10 +152,10 @@ export default function Header() {
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className="flex items-center gap-2 px-3 py-1.5 text-zinc-400 hover:text-white transition-colors rounded-full bg-white/5 hover:bg-white/10 border border-white/5"
-              title="Tìm kiếm (Ctrl+K)"
+              title="Tìm kiếm (F)"
             >
               <Search size={16} />
-              <span className="text-xs hidden md:inline-block font-medium">Ctrl K</span>
+              <span className="text-xs hidden md:inline-block font-medium">F</span>
             </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -227,9 +232,9 @@ export default function Header() {
                                   {movie.origin_name} ({movie.year})
                                 </span>
                               </div>
-                              {movie.quality && (
+                              {(movie.episode_current || movie.quality) && (
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 bg-white/10 text-zinc-300 rounded shrink-0 group-hover:bg-[var(--color-cyan-neon)] group-hover:text-black transition-colors">
-                                  {movie.quality}
+                                  {movie.episode_current || movie.quality}
                                 </span>
                               )}
                             </Link>
