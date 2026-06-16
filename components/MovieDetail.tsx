@@ -293,10 +293,12 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
       {/* Content */}
       <motion.div 
         style={{ y: isMobile ? 0 : y }}
-        className="container mx-auto px-4 mt-6 sm:-mt-32 relative z-10"
+        className="max-w-[1600px] mx-auto px-4 md:px-6 relative z-10 -mt-20 md:-mt-32 pb-12"
       >
-        <div className="grid grid-cols-[110px_1fr] sm:grid-cols-[140px_1fr] md:grid-cols-[300px_1fr] gap-x-4 gap-y-6 md:gap-8">
-          {/* Poster */}
+        {/* Main Info Grid */}
+        <div className="grid grid-cols-[110px_1fr] md:grid-cols-[300px_1fr] lg:grid-cols-[400px_1fr] gap-4 md:gap-12">
+          
+          {/* Poster - Left Column */}
           <div className="col-span-1 row-span-1 md:row-span-2">
             <Link href={`/xem-phim/${movie.slug}`} className="block relative aspect-[2/3] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.6)] md:shadow-[0_0_30px_rgba(0,0,0,0.8)] group bg-zinc-900 transition-transform duration-300 md:hover:scale-105 border border-white/10 hover:border-[var(--color-cyan-neon)]">
               <img
@@ -314,36 +316,33 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
             </Link>
           </div>
 
-          {/* Title */}
+          {/* Title and Mobile Actions */}
           <div className="col-start-2 flex flex-col justify-start">
-            <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2 line-clamp-2 md:line-clamp-none leading-snug md:leading-tight">
+            <h1 className="text-lg sm:text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2 line-clamp-3 md:line-clamp-none leading-snug md:leading-tight">
               {movie.origin_name || movie.name}
             </h1>
             {movie.origin_name && (
-              <p className="text-sm md:text-lg text-zinc-400 font-medium truncate md:whitespace-normal">{movie.name}</p>
+              <p className="text-xs md:text-lg text-zinc-400 font-medium truncate md:whitespace-normal mb-2">{movie.name}</p>
             )}
-          </div>
 
-          {/* Info Container (Full width on mobile, right column on desktop) */}
-          <div className="col-span-2 md:col-span-1 md:col-start-2 flex flex-col gap-4 md:gap-6">
             {/* Mobile Action Buttons */}
             {episodes && 
             episodes.length > 0 && 
             episodes[0].server_data && 
             episodes[0].server_data.length > 0 &&
             (episodes[0].server_data[0].link_m3u8 || episodes[0].server_data[0].link_embed) && (
-              <div className="md:hidden flex flex-col gap-2.5 w-full">
+              <div className="md:hidden flex flex-col gap-2 w-full mt-auto pb-1">
                 {movie.slug && (
                   <Link
                     href={`/xem-phim/${movie.slug}`}
-                    className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-base py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-red-950/40 w-full"
+                    className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2.5 rounded-xl transition-all active:scale-95 shadow-lg shadow-red-950/40 w-full"
                   >
-                    <Play className="w-5 h-5 fill-current" />
+                    <Play className="w-4 h-4 fill-current" />
                     <span>Xem ngay</span>
                   </Link>
                 )}
                 
-                <div className="flex gap-2.5 items-center w-full">
+                <div className="flex gap-2 items-center w-full">
                   {movie.slug && (
                     <button
                       onClick={() => {
@@ -351,15 +350,19 @@ export default function MovieDetail({ movie, images, peoples }: MovieDetailProps
                         sessionStorage.setItem(`host_${roomId}`, 'true');
                         window.location.href = `/watch-together/${movie.slug}/${roomId}`;
                       }}
-                      className="flex-1 inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-855 text-white font-semibold text-sm py-3 rounded-xl transition-colors border border-zinc-800 active:scale-95 cursor-pointer h-12"
+                      className="flex-1 inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-855 text-white font-semibold text-sm py-2.5 rounded-xl transition-colors border border-zinc-800 active:scale-95 cursor-pointer h-10"
                     >
-                      <Users className="w-5 h-5 text-blue-400" />
+                      <Users className="w-4 h-4 text-blue-400" />
                       <span>Xem chung</span>
                     </button>
                   )}
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Info Container (Full width on mobile, right column on desktop) */}
+          <div className="col-span-2 md:col-span-1 md:col-start-2 flex flex-col gap-4 md:gap-6 pt-1 md:pt-0">
             {/* Meta Info */}
             <div className="flex flex-wrap gap-3 text-sm">
               <span className="px-3 py-1 bg-zinc-800 text-zinc-300 rounded-full">

@@ -1042,6 +1042,21 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-red-500" />}
                   <span>{copied ? "Đã copy" : "Mời"}</span>
                 </button>
+
+                {/* Theater/Zoom Toggle Button */}
+                <button
+                  onClick={() => setIsTheaterMode(prev => !prev)}
+                  className={`flex items-center justify-center bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 w-[26px] h-[26px] rounded-lg transition-all active:scale-95 cursor-pointer`}
+                  title="Phóng to rạp chiếu"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    {isTheaterMode ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3 3m12 6V4.5M15 9h4.5M15 9l6-6m-6 12v4.5M15 15h4.5M15 15l6 6m-6-6v4.5M9 15H4.5M9 15l-6 6" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m-11.25 11.25v-4.5m0 4.5h4.5m-4.5 0L9 15m11.25 5.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
+                    )}
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
