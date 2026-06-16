@@ -1027,7 +1027,7 @@ export default function VideoPlayer({
                 {/* Ambient Light Toggle */}
                 <button
                   onClick={handleAmbientToggle}
-                  className={`transition-colors p-1 rounded-md hover:bg-zinc-800 ${ambientActive ? "text-blue-400" : "text-zinc-500"}`}
+                  className={`hidden md:block transition-colors p-1 rounded-md hover:bg-zinc-800 ${ambientActive ? "text-blue-400" : "text-zinc-500"}`}
                   title="Bật/Tắt hiệu ứng đèn nền (Ambient Light)"
                 >
 

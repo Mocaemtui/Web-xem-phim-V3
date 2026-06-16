@@ -831,26 +831,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   <span>{copied ? "Đã copy" : "Mời"}</span>
                 </button>
 
-                {/* Theater Mode Toggle Button */}
-                <button
-                  onClick={() => setIsTheaterMode(prev => !prev)}
-                  className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
-                  title="Chế độ rạp chiếu (Ẩn/Hiện chat trực tiếp trên video)"
-                >
-                  <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m-11.25 11.25v-4.5m0 4.5h4.5m-4.5 0L9 15m11.25 5.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
-                  </svg>
-                  <span>Rạp chiếu</span>
-                </button>
 
-                {/* Exit Room Button */}
-                <a
-                  href={`/phim/${movie.slug}`}
-                  className="flex items-center gap-1 bg-red-950/20 border border-red-900/30 text-red-400 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
-                >
-                  <LogOut className="w-3 h-3" />
-                  <span>Thoát</span>
-                </a>
               </div>
             </div>
           </div>
