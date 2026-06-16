@@ -568,8 +568,10 @@ export default function VideoPlayer({
   // Listen to fullscreen changes to sync state and prevent pause on exit/enter
   useEffect(() => {
     const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
-      setIsFullscreen(isCurrentlyFullscreen);
+      const fsElement = document.fullscreenElement || (document as any).webkitFullscreenElement;
+      const isFullscreen = !!fsElement;
+      
+      setIsFullscreen(isFullscreen);
       
       // Prevent pause on exiting or entering native fullscreen if it was playing
       const video = videoRef.current;
@@ -840,8 +842,7 @@ export default function VideoPlayer({
               style={{
                 zIndex: 2,
                 objectFit: isFullscreen ? "contain" : aspectMode,
-                transform: "scale(1)",
-                transition: "object-fit 0.3s ease"
+                transform: "scale(1)"
               }}
               onTimeUpdate={handleTimeUpdate}
               onPlay={() => {

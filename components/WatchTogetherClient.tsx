@@ -1576,8 +1576,16 @@ function KeyboardAndTheaterHandler({
 
     // Listen to native fullscreen changes (e.g. exiting fullscreen via Esc/browser controls)
     const handleFullscreenChange = () => {
-      const isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
-      setIsTheaterMode(isFullscreen);
+      const fsElement = document.fullscreenElement || (document as any).webkitFullscreenElement;
+      const isFullscreen = !!fsElement;
+      const isDocFullscreen = fsElement === document.documentElement;
+      
+      if (!fsElement) {
+        setIsTheaterMode(false);
+      } else if (isDocFullscreen) {
+        setIsTheaterMode(true);
+      }
+      
       const orientation = screen.orientation as any;
       if (!isFullscreen && orientation) {
         if (orientation.lock) {
