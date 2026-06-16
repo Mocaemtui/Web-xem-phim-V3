@@ -573,36 +573,24 @@ export default function VideoPlayer({
       
       // Prevent pause on exiting or entering native fullscreen if it was playing
       const video = videoRef.current;
-      if (video && isPlaying) {
-        setTimeout(() => {
-          if (isMountedRef.current && video.paused) {
-            video.play().catch(() => {});
-          }
-        }, 100);
+      if (video && isPlaying && video.paused) {
+        video.play().catch(() => {});
       }
     };
 
     const handleWebkitBeginFullscreen = () => {
       setIsFullscreen(true);
       const video = videoRef.current;
-      if (video && isPlaying) {
-        setTimeout(() => {
-          if (isMountedRef.current && video.paused) {
-            video.play().catch(() => {});
-          }
-        }, 100);
+      if (video && isPlaying && video.paused) {
+        video.play().catch(() => {});
       }
     };
 
     const handleWebkitEndFullscreen = () => {
       setIsFullscreen(false);
       const video = videoRef.current;
-      if (video && isPlaying) {
-        setTimeout(() => {
-          if (isMountedRef.current && video.paused) {
-            video.play().catch(() => {});
-          }
-        }, 100);
+      if (video && isPlaying && video.paused) {
+        video.play().catch(() => {});
       }
     };
 
