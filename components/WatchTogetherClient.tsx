@@ -71,9 +71,10 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
           if (orientation) {
             if (orientation.lock) {
               await orientation.lock('portrait').catch(() => {});
-              setTimeout(() => {
+              // Only unlock if they haven't rapidly re-entered theater mode
+              if (!isTheaterMode && (!document.fullscreenElement)) {
                 if (orientation.unlock) orientation.unlock();
-              }, 500);
+              }
             } else if (orientation.unlock) {
               orientation.unlock();
             }
@@ -1580,10 +1581,15 @@ function KeyboardAndTheaterHandler({
       const orientation = screen.orientation as any;
       if (!isFullscreen && orientation) {
         if (orientation.lock) {
-          orientation.lock('portrait').catch(() => {});
-          setTimeout(() => {
-            if (orientation.unlock) orientation.unlock();
-          }, 500);
+          orientation.lock('portrait').then(() => {
+            if (!document.fullscreenElement && orientation.unlock) {
+              orientation.unlock();
+            }
+          }).catch(() => {
+            if (!document.fullscreenElement && orientation.unlock) {
+              orientation.unlock();
+            }
+          });
         } else if (orientation.unlock) {
           orientation.unlock();
         }
