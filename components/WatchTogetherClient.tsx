@@ -802,36 +802,6 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
         >
 
 
-        {/* Mobile Room Header: Show on mobile above video or below video */}
-        {!isTheaterMode && (
-          <div className="flex flex-col md:hidden p-3 border-b border-zinc-850 bg-zinc-900/10 shrink-0">
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <h1 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse shrink-0 shadow-[0_0_6px_rgba(239,68,68,0.5)]" />
-                  <span className="truncate">Xem Chung: {movie.name}</span>
-                </h1>
-                <p className="text-[10px] text-zinc-400 mt-0.5">
-                  Tập: <span className="text-red-500 font-semibold">{currentEpisode?.name.toLowerCase().includes("tập") ? currentEpisode.name : `Tập ${currentEpisodeIndex + 1}`}</span>
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-1.5 shrink-0">
-                {/* Copy Link */}
-                <button
-                  onClick={copyLink}
-                  className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
-                >
-                  {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-red-500" />}
-                  <span>{copied ? "Đã copy" : "Mời"}</span>
-                </button>
-
-
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Video Player */}
         <div className={`w-full transition-all shrink-0 ${
           isTheaterMode 
@@ -1048,6 +1018,34 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
             </div>
           )}
         </div>
+
+        {/* Mobile Room Header: Show on mobile below video */}
+        {!isTheaterMode && (
+          <div className="flex flex-col md:hidden p-3 border-b border-zinc-850 bg-zinc-900/10 shrink-0">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <h1 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse shrink-0 shadow-[0_0_6px_rgba(239,68,68,0.5)]" />
+                  <span className="truncate">Xem Chung: {movie.name}</span>
+                </h1>
+                <p className="text-[10px] text-zinc-400 mt-0.5">
+                  Tập: <span className="text-red-500 font-semibold">{currentEpisode?.name.toLowerCase().includes("tập") ? currentEpisode.name : `Tập ${currentEpisodeIndex + 1}`}</span>
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Copy Link */}
+                <button
+                  onClick={copyLink}
+                  className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+                >
+                  {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-red-500" />}
+                  <span>{copied ? "Đã copy" : "Mời"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
 
 
