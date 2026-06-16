@@ -793,12 +793,12 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
           className={`flex flex-col transition-all duration-300 group/theater relative z-10 ${
             isTheaterMode 
               ? "h-full w-full p-0 bg-transparent overflow-visible justify-center items-center flex-1" 
-              : "flex-1 min-w-0"
+              : "flex-1 min-w-0 mr-0 md:mr-[var(--chat-margin)]"
           }`}
           onDoubleClick={() => setIsTheaterMode(prev => !prev)}
           style={isTheaterMode ? {} : { 
-            marginRight: isChatHidden ? "0px" : `${chatWidth + 24}px` 
-          }}
+            "--chat-margin": isChatHidden ? "0px" : `${chatWidth + 24}px` 
+          } as React.CSSProperties}
         >
 
 
