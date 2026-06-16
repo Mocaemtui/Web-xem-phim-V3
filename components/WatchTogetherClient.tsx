@@ -993,8 +993,8 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 playbackProgressKey={`playback_progress_${movie.slug}_ep_${currentEpisodeIndex}`}
                 nextVideoUrl={serverData[currentEpisodeIndex + 1]?.link_m3u8}
                 isWatchTogether={true}
-                isTheaterMode={isTheaterMode}
                 isHost={isHost}
+                onToggleFullscreen={handleToggleTheaterMode}
                 onPlaySync={() => {
                   if (isReceivingEvent.current) return;
                   if (!isHost) {

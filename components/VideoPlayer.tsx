@@ -20,6 +20,7 @@ interface VideoPlayerProps {
   playbackProgressKey?: string;
   isTheaterMode?: boolean;
   isHost?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 export default function VideoPlayer({
@@ -37,7 +38,9 @@ export default function VideoPlayer({
   isWatchTogether,
   onError,
   playbackProgressKey,
-  isHost = true
+  isTheaterMode,
+  isHost = true,
+  onToggleFullscreen
 }: VideoPlayerProps) {
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const videoRef = externalVideoRef || internalVideoRef;
@@ -508,6 +511,11 @@ export default function VideoPlayer({
   };
 
   const toggleFullscreen = () => {
+    if (onToggleFullscreen) {
+      onToggleFullscreen();
+      return;
+    }
+
     const video = videoRef.current;
     if (!video) return;
     
