@@ -854,7 +854,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
           {/* Floating Horizontal Controller at Top-Right (Only shows when chat is hidden in theater mode) */}
           {isChatHidden && isTheaterMode && (
-            <div className={`absolute top-4 right-4 z-50 flex flex-col md:flex-row items-center gap-2 bg-zinc-950/90 border border-zinc-800/60 p-2 rounded-xl backdrop-blur-md transition-opacity duration-300 shadow-xl ${showTopControls ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} animate-in fade-in`}>
+            <div className={`absolute top-1/2 -translate-y-1/2 right-2 md:top-4 md:translate-y-0 md:right-4 z-50 flex flex-col md:flex-row items-center gap-1.5 md:gap-2 bg-zinc-950/90 border border-zinc-800/60 p-1.5 md:p-2 rounded-xl backdrop-blur-md transition-opacity duration-300 shadow-xl ${showTopControls ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} animate-in fade-in`}>
               
               {/* Watchers Popover */}
               <div className="relative">
@@ -1269,7 +1269,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
         {/* Sleek controls row: Watchers & Emojis Popovers (Only show in Theater Mode) */}
         {isTheaterMode && (
-          <div className="flex items-center gap-1.5 p-2 shrink-0 border-b border-zinc-800/40 bg-zinc-950/20 backdrop-blur-md justify-center w-full pointer-events-auto">
+          <div className="flex items-center gap-1.5 p-2 shrink-0 border-b border-zinc-800/40 bg-zinc-950/20 backdrop-blur-md justify-end md:justify-center w-full pointer-events-auto">
             
             {/* Watchers Popover */}
             <div className="relative">
