@@ -1227,7 +1227,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
         {/* Sleek controls row: Watchers & Emojis Popovers (Only show in Theater Mode) */}
         {isTheaterMode && (
-          <div className="flex items-center gap-1.5 p-2 shrink-0 border-b border-zinc-800/40 bg-zinc-950/20 backdrop-blur-md justify-center w-full">
+          <div className="flex items-center gap-1.5 p-2 shrink-0 border-b border-zinc-800/40 bg-zinc-950/20 backdrop-blur-md justify-center w-full pointer-events-auto">
             
             {/* Watchers Popover */}
             <div className="relative">
