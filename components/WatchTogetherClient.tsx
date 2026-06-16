@@ -834,7 +834,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
       }`}>
         {/* Left Area: Video Player & Controls */}
         <div 
-          className={`flex flex-col transition-all duration-300 group/theater relative z-10 ${
+          className={`flex flex-col group/theater relative z-10 ${
             isTheaterMode 
               ? "h-full w-full p-0 bg-transparent overflow-visible justify-center items-center flex-1" 
               : "flex-1 min-w-0 mr-0 md:mr-[var(--chat-margin)]"
@@ -847,7 +847,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
 
 
         {/* Video Player */}
-        <div className={`w-full transition-all shrink-0 ${
+        <div className={`w-full shrink-0 ${
           isTheaterMode 
             ? "h-full max-h-screen flex items-center justify-end p-0 z-40 fixed inset-0 bg-black" 
             : "relative w-full aspect-video rounded-none md:rounded-2xl overflow-hidden border-b md:border border-zinc-850 shadow-2xl bg-zinc-950 z-30"
