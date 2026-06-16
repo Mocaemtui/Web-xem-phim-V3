@@ -1007,6 +1007,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                 isTheaterMode={isTheaterMode}
                 isHost={isHost}
                 onPlaySync={() => {
+                  if (isReceivingEvent.current) return;
                   if (!isHost) {
                     handleSyncClick();
                     return;
@@ -1022,6 +1023,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   }
                 }}
                 onPauseSync={() => {
+                  if (isReceivingEvent.current) return;
                   if (!isHost) {
                     handleSyncClick();
                     return;
@@ -1036,6 +1038,7 @@ export default function WatchTogetherClient({ movie, posterUrl, roomId }: WatchT
                   }
                 }}
                 onSeekSync={(time) => {
+                  if (isReceivingEvent.current) return;
                   if (!isHost) {
                     handleSyncClick();
                     return;
