@@ -4,7 +4,7 @@ import HomeHistorySection from "@/components/HomeHistorySection";
 import HeroBanner from "@/components/HeroBanner";
 import { getPhimMoi, getDanhSach, getQuocGiaDetails } from "@/lib/api";
 
-export const revalidate = 86400; // Cache trang chủ 24 giờ trên CDN để tiết kiệm CPU Vercel
+export const revalidate = 300; // Cache trang chủ 5 phút để tránh URL ảnh cũ
 
 export default async function Home() {
   const [

@@ -3,7 +3,7 @@ import WatchPageClient from "@/components/WatchPageClient";
 import { getChiTietPhim, getPosterUrl } from "@/lib/api";
 import { getTMDBDetails, resolveTMDBId, getTMDBSeasonDetails } from "@/lib/tmdb";
 
-export const revalidate = 86400; // Cache trang xem phim 24 giờ để giảm Function Invocations
+export const revalidate = 600; // Cache trang xem phim 10 phút để tránh URL ảnh cũ
 
 interface PageProps {
   params: Promise<{

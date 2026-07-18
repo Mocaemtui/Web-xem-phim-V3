@@ -2,7 +2,7 @@ import SearchGrid from "@/components/SearchGrid";
 import SectionTitle from "@/components/SectionTitle";
 import { searchPhim } from "@/lib/api";
 
-export const revalidate = 86400; // Cache trang tìm kiếm 24 giờ
+export const revalidate = 600; // Cache trang tìm kiếm 10 phút để tránh URL ảnh cũ
 
 interface PageProps {
   params: Promise<{

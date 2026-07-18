@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import MovieDetail from "@/components/MovieDetail";
 import { getChiTietPhim, getHinhAnhPhim, getPeoplesPhim } from "@/lib/api";
 
-export const revalidate = 86400; // Cache trang phim 24 giờ để giảm Function Invocations
+export const revalidate = 600; // Cache trang phim 10 phút để tránh URL ảnh cũ
 
 interface PageProps {
   params: Promise<{

@@ -2,7 +2,7 @@ import MovieCardWrapper from "@/components/MovieCardWrapper";
 import SectionTitle from "@/components/SectionTitle";
 import { getPhimByTheLoai } from "@/lib/api";
 
-export const revalidate = 86400; // Cache trang thể loại 24 giờ
+export const revalidate = 600; // Cache trang thể loại 10 phút để tránh URL ảnh cũ
 
 interface PageProps {
   params: Promise<{
