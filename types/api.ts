@@ -27,6 +27,8 @@ export interface Movie {
   episode_total?: string;
   director?: string[];
   actor?: string[];
+  source?: string;
+  available_sources?: string[];
   tmdb?: {
     type: string;
     id: number;

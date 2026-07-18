@@ -138,14 +138,27 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
     }
   }, [movie.slug, movie.name, movie.thumb_url, movie.poster_url, movie.source, finalPosterUrl]);
 
-  // Fallback logic: try alternate URL if primary fails
+  // Fallback logic: try multiple URL combinations if primary fails
   useEffect(() => {
     if (imageError && !fallbackImageUrl) {
-      const { getBackdropUrl } = require('@/lib/api');
-      const fallback = getBackdropUrl(movie);
-      if (fallback !== finalPosterUrl) {
-        setFallbackImageUrl(fallback);
-        setImageError(false);
+      const { getBackdropUrl, resolveImgUrl } = require('@/lib/api');
+
+      // Try different URL combinations
+      const fallbackOptions = [
+        getBackdropUrl(movie),
+        resolveImgUrl(movie.poster_url),
+        resolveImgUrl(movie.thumb_url),
+        movie.poster_url?.startsWith('http') ? movie.poster_url : null,
+        movie.thumb_url?.startsWith('http') ? movie.thumb_url : null,
+      ].filter(Boolean);
+
+      // Find first URL that's different from the failed one
+      for (const url of fallbackOptions) {
+        if (url && url !== finalPosterUrl) {
+          setFallbackImageUrl(url);
+          setImageError(false);
+          break;
+        }
       }
     }
   }, [imageError, fallbackImageUrl, movie, finalPosterUrl]);
