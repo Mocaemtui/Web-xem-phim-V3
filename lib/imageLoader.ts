@@ -24,17 +24,13 @@ export default function myImageLoader({
     return src;
   }
 
-  // TẠM THỜI: TẮT wsrv.nl CDN để debug - trả về URL gốc trực tiếp
-  console.log('[imageLoader] Using original URL (CDN disabled for debug):', src);
-  return src;
-
-  // Sử dụng CDN miễn phí wsrv.nl để tối ưu hóa ảnh (resize, convert sang webp)
+  // Sử dụng CDN miễn phí wsrv.nl để tối ưu hóa ảnh (resize, convert sang jpg)
   // Việc này tăng tốc độ tải mà không tiêu tốn giới hạn Data Transfer hay Image Optimization của Vercel
+  // output=jpg để tương thích tốt hơn với webp từ phimimg.com
   try {
     const cleanUrl = src.replace(/^https?:\/\//, "");
     const q = quality || 75;
-    // wsrv.nl hỗ trợ output=webp để giảm dung lượng đáng kể
-    return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=${width}&q=${q}&output=webp`;
+    return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=${width}&q=${q}&output=jpg`;
   } catch (e) {
     // Fallback: trả về URL gốc nếu có lỗi encoding
     console.warn('[imageLoader] CDN error, using original URL:', e);
