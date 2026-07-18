@@ -227,32 +227,32 @@ export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string; s
   const isPhimApi = movie.source === 'phimapi' || movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
   const useCorrect = isPhimApi || isTmdb;
 
-  // Try both URLs and return the first valid one
-  const primaryUrl = useCorrect
-    ? resolveImgUrl(movie.poster_url || movie.thumb_url)
-    : resolveImgUrl(movie.thumb_url || movie.poster_url);
+  // Try multiple URL combinations in priority order
+  const urlOptions = [
+    // Primary based on source
+    useCorrect ? movie.poster_url : movie.thumb_url,
+    useCorrect ? movie.thumb_url : movie.poster_url,
+    // Fallback combinations
+    movie.poster_url,
+    movie.thumb_url,
+    // Try swapping if both exist
+    movie.poster_url && movie.thumb_url ? movie.poster_url : null,
+    movie.poster_url && movie.thumb_url ? movie.thumb_url : null,
+  ];
 
-  const fallbackUrl = useCorrect
-    ? resolveImgUrl(movie.thumb_url || movie.poster_url)
-    : resolveImgUrl(movie.poster_url || movie.thumb_url);
+  // Find first valid URL
+  for (const url of urlOptions) {
+    if (url && typeof url === 'string' && url.trim() !== '') {
+      const resolved = resolveImgUrl(url);
+      if (resolved && resolved !== '') {
+        console.log('[getPosterUrl] Found valid URL:', { movieName: (movie as any).name, url, resolved });
+        return resolved;
+      }
+    }
+  }
 
-  const finalUrl = primaryUrl || fallbackUrl || DEFAULT_POSTER;
-
-  console.log('[getPosterUrl]', {
-    movieName: (movie as any).name || (movie as any).slug,
-    source: movie.source,
-    thumb_url: movie.thumb_url,
-    poster_url: movie.poster_url,
-    isTmdb,
-    isPhimApi,
-    useCorrect,
-    primaryUrl,
-    fallbackUrl,
-    finalUrl
-  });
-
-  // Return the first valid URL, or default
-  return finalUrl;
+  console.warn('[getPosterUrl] No valid URL found for:', (movie as any).name || (movie as any).slug);
+  return DEFAULT_POSTER;
 };
 
 // Lấy ảnh ngang (Backdrop) - Ophim/Nguonc dùng poster_url làm backdrop; PhimAPI dùng thumb_url làm backdrop
@@ -263,16 +263,30 @@ export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string;
   const isPhimApi = movie.source === 'phimapi' || movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
   const useCorrect = isPhimApi || isTmdb;
 
-  // Try both URLs and return the first valid one
-  const primaryUrl = useCorrect
-    ? resolveImgUrl(movie.thumb_url || movie.poster_url)
-    : resolveImgUrl(movie.poster_url || movie.thumb_url);
+  // Try multiple URL combinations in priority order
+  const urlOptions = [
+    // Primary based on source
+    useCorrect ? movie.thumb_url : movie.poster_url,
+    useCorrect ? movie.poster_url : movie.thumb_url,
+    // Fallback combinations
+    movie.thumb_url,
+    movie.poster_url,
+    // Try swapping if both exist
+    movie.poster_url && movie.thumb_url ? movie.thumb_url : null,
+    movie.poster_url && movie.thumb_url ? movie.poster_url : null,
+  ];
 
-  const fallbackUrl = useCorrect
-    ? resolveImgUrl(movie.poster_url || movie.thumb_url)
-    : resolveImgUrl(movie.thumb_url || movie.poster_url);
+  // Find first valid URL
+  for (const url of urlOptions) {
+    if (url && typeof url === 'string' && url.trim() !== '') {
+      const resolved = resolveImgUrl(url);
+      if (resolved && resolved !== '') {
+        return resolved;
+      }
+    }
+  }
 
-  return primaryUrl || fallbackUrl || DEFAULT_BACKDROP;
+  return DEFAULT_BACKDROP;
 };
 
 export function getCleanServerName(rawName: string | undefined): string {
