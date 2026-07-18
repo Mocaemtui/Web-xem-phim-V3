@@ -423,13 +423,10 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
               />
             ) : (
               thumbImageUrl && (
-                <Image
+                <img
                   src={thumbImageUrl.startsWith('http') ? thumbImageUrl : `https://img.ophim.live/uploads/movies/${thumbImageUrl}`}
                   alt={movie.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  quality={55}
+                  className="absolute inset-0 w-full h-full object-cover"
                   onError={(e) => {
                     // Fallback if thumb image fails to load
                     const target = e.target as HTMLImageElement;
