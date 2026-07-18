@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    unoptimized: false, // Enable optimization for better debugging
+    unoptimized: true, // Disable Next.js optimization to allow webp from phimimg
     loader: "custom",
     loaderFile: "./lib/imageLoader.ts",
     deviceSizes: [640, 828, 1200],
