@@ -232,13 +232,15 @@ export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string; s
     source: movie.source
   });
 
-  // SIMPLIFIED LOGIC: Thử poster_url trước, nếu không có thì thử thumb_url
+  // Detect source based on URL patterns
+  const isPhimApi = movie.source === 'phimapi' || movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
+  const isOphim = movie.source === 'ophim' || movie.thumb_url?.includes('img.ophim.live') || movie.poster_url?.includes('img.ophim.live');
+
   // PhimAPI: poster_url là ảnh dọc, thumb_url là ảnh ngang
   // Ophim/Nguonc: thumb_url là ảnh dọc, poster_url là ảnh ngang
-  const urlOptions = [
-    movie.poster_url,
-    movie.thumb_url,
-  ];
+  const urlOptions = isPhimApi
+    ? [movie.poster_url, movie.thumb_url] // PhimAPI: ưu tiên poster_url
+    : [movie.thumb_url, movie.poster_url]; // Ophim/Nguonc: ưu tiên thumb_url
 
   // Find first valid URL
   for (const url of urlOptions) {
