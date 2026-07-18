@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import Image from "next/image";
 import type { Movie } from "@/types/api";
 import { getPosterUrl } from "@/lib/api";
 import { getWatchHistory } from "@/lib/watchHistory";
@@ -328,18 +327,14 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl pointer-events-none border-2 border-[var(--color-cyan-neon)] shadow-[0_0_20px_var(--color-cyan-neon)]"
         />
         
-        <Image
+        <img
           src={fallbackImageUrl || finalPosterUrl}
           alt={movie.name}
-          fill
           draggable={false}
           onLoad={() => setIsLoaded(true)}
           onError={handleImageError}
-          className={`object-cover transition-all duration-700 ease-out ${trailerUrl ? 'opacity-0 scale-110' : (isLoaded ? 'opacity-100' : 'opacity-0 scale-95')}`}
-          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 16vw"
+          className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out ${trailerUrl ? 'opacity-0 scale-110' : (isLoaded ? 'opacity-100' : 'opacity-0 scale-95')}`}
           loading={priority ? "eager" : "lazy"}
-          priority={priority}
-          quality={60}
         />
         
         {/* Rating Badge */}
