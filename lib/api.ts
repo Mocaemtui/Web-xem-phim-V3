@@ -223,9 +223,14 @@ const DEFAULT_BACKDROP = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/
 export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string; source?: string }): string => {
   if (!movie) return DEFAULT_POSTER;
 
-  const isTmdb = movie.source === 'tmdb' || movie.thumb_url?.includes('tmdb.org') || movie.poster_url?.includes('tmdb.org');
-  const isPhimApi = movie.source === 'phimapi' || movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
-  const useCorrect = isPhimApi || isTmdb;
+  // DEBUG: Log all data to see what we're working with
+  console.log('[getPosterUrl] Input data:', {
+    name: (movie as any).name,
+    slug: (movie as any).slug,
+    poster_url: movie.poster_url,
+    thumb_url: movie.thumb_url,
+    source: movie.source
+  });
 
   // SIMPLIFIED LOGIC: Thử poster_url trước, nếu không có thì thử thumb_url
   // PhimAPI: poster_url là ảnh dọc, thumb_url là ảnh ngang
