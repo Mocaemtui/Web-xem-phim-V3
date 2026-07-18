@@ -435,6 +435,11 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
                   quality={55}
+                  onError={(e) => {
+                    // Fallback if thumb image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.src = getPosterUrl(movie);
+                  }}
                 />
               )
             )}
