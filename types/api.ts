@@ -142,3 +142,10 @@ export interface Genre {
 export interface Year {
   year: number;
 }
+
+export interface MovieKeywords {
+  keywords: {
+    id: number;
+    name: string;
+  }[];
+}

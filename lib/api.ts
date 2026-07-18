@@ -5,6 +5,7 @@ import type {
   MovieDetail,
   MovieImages,
   MoviePeoples,
+  MovieKeywords,
   Genre,
   Country,
   Year,
@@ -1006,4 +1007,36 @@ export async function getMoviePosterUrl(slug: string): Promise<string | null> {
   const baseUrl = imagesData.data.image_sizes?.poster?.w500;
 
   return poster && baseUrl ? `${baseUrl}${poster}` : null;
+}
+
+// Get movie keywords
+export async function getKeywordsPhim(
+  slug: string
+): Promise<ApiResponse<MovieKeywords> | null> {
+  // Từ khóa phim, cache 24 giờ
+  return fetchAPI<MovieKeywords>(`/v1/api/phim/${slug}/keywords`, 3600);
+}
+
+// Get movie by ID
+export async function getPhimById(
+  id: string
+): Promise<ApiResponse<{ item: MovieDetail }> | null> {
+  // Lấy phim theo ID, cache 1 giờ
+  return fetchAPI<{ item: MovieDetail }>(`/phim/id/${id}`, 3600);
+}
+
+// Get movie by TMDB ID
+export async function getPhimByTMDB(
+  tmdbId: string
+): Promise<ApiResponse<{ item: MovieDetail }> | null> {
+  // Tra cứu TMDB trực tiếp, cache 1 giờ
+  return fetchAPI<{ item: MovieDetail }>(`/tmdb/movie/${tmdbId}`, 3600);
+}
+
+// Get movie by IMDB ID
+export async function getPhimByIMDB(
+  imdbId: string
+): Promise<ApiResponse<{ item: MovieDetail }> | null> {
+  // Tra cứu IMDB trực tiếp, cache 1 giờ
+  return fetchAPI<{ item: MovieDetail }>(`/imdb/title/${imdbId}`, 3600);
 }
