@@ -7,8 +7,7 @@ const nextConfig: NextConfig = {
 
   images: {
     unoptimized: true, // Disable Next.js optimization to allow webp from phimimg
-    loader: "custom",
-    loaderFile: "./lib/imageLoader.ts",
+    // Remove custom loader to use original URLs directly
     deviceSizes: [640, 828, 1200],
     imageSizes: [32, 64, 128],
     remotePatterns: [
