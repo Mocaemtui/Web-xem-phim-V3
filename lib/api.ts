@@ -194,12 +194,6 @@ export const resolveImgUrl = (url: string | undefined): string => {
 
   let finalUrl = "";
   if (url.startsWith('http')) {
-    // Nếu URL là phimimg.com .webp, thử chuyển sang .jpg từ ophim
-    if (url.includes('phimimg.com') && url.endsWith('.webp')) {
-      const jpgUrl = url.replace('.webp', '.jpg').replace('phimimg.com', 'img.ophim.live');
-      console.log('[resolveImgUrl] Converting phimimg webp to ophim jpg:', { input: url, output: jpgUrl });
-      return jpgUrl;
-    }
     finalUrl = url;
   } else if (url.startsWith('upload/')) {
     finalUrl = `https://phimimg.com/${url}`;
