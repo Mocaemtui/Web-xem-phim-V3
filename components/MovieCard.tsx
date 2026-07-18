@@ -40,6 +40,8 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [historyData, setHistoryData] = useState<{ episodeName?: string; progressPercent?: number } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null);
 
   const isSingle = movie.type === "single" || 
                    movie.episode_total === "1" || 
@@ -121,6 +123,39 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
   }
 
   const finalPosterUrl = posterUrl || getPosterUrl(movie);
+
+  // Debug logging for image URLs
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('MovieCard image debug:', {
+        slug: movie.slug,
+        name: movie.name,
+        thumb_url: movie.thumb_url,
+        poster_url: movie.poster_url,
+        source: movie.source,
+        finalPosterUrl
+      });
+    }
+  }, [movie.slug, movie.name, movie.thumb_url, movie.poster_url, movie.source, finalPosterUrl]);
+
+  // Fallback logic: try alternate URL if primary fails
+  useEffect(() => {
+    if (imageError && !fallbackImageUrl) {
+      const { getBackdropUrl } = require('@/lib/api');
+      const fallback = getBackdropUrl(movie);
+      if (fallback !== finalPosterUrl) {
+        setFallbackImageUrl(fallback);
+        setImageError(false);
+      }
+    }
+  }, [imageError, fallbackImageUrl, movie, finalPosterUrl]);
+
+  const handleImageError = () => {
+    console.error('Image load error for:', movie.slug, finalPosterUrl);
+    if (!fallbackImageUrl) {
+      setImageError(true);
+    }
+  };
 
   const getRatingValue = (val: any): number | null => {
     if (val === undefined || val === null) return null;
@@ -281,11 +316,12 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
         />
         
         <Image
-          src={finalPosterUrl}
+          src={fallbackImageUrl || finalPosterUrl}
           alt={movie.name}
           fill
           draggable={false}
           onLoad={() => setIsLoaded(true)}
+          onError={handleImageError}
           className={`object-cover transition-all duration-700 ease-out ${trailerUrl ? 'opacity-0 scale-110' : (isLoaded ? 'opacity-100' : 'opacity-0 scale-95')}`}
           sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 16vw"
           loading={priority ? "eager" : "lazy"}
