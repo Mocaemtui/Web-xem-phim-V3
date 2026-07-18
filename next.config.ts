@@ -46,6 +46,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-src 'self' https://vidlink.pro https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com;"
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
