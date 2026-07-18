@@ -187,7 +187,10 @@ export async function getPhimMoi(
 
 // Hàm chuẩn hóa và tối ưu ảnh bằng WEBP converter của PhimAPI
 export const resolveImgUrl = (url: string | undefined): string => {
-  if (!url) return "";
+  if (!url) {
+    console.warn('[resolveImgUrl] URL is empty or undefined');
+    return "";
+  }
 
   let finalUrl = "";
   if (url.startsWith('http')) {
@@ -208,6 +211,7 @@ export const resolveImgUrl = (url: string | undefined): string => {
     finalUrl = `https://img.ophim.live/uploads/${cleanOphimUrl}`;
   }
 
+  console.log('[resolveImgUrl]', { input: url, output: finalUrl });
   return finalUrl;
 };
 
@@ -232,8 +236,23 @@ export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string; s
     ? resolveImgUrl(movie.thumb_url || movie.poster_url)
     : resolveImgUrl(movie.poster_url || movie.thumb_url);
 
+  const finalUrl = primaryUrl || fallbackUrl || DEFAULT_POSTER;
+
+  console.log('[getPosterUrl]', {
+    movieName: (movie as any).name || (movie as any).slug,
+    source: movie.source,
+    thumb_url: movie.thumb_url,
+    poster_url: movie.poster_url,
+    isTmdb,
+    isPhimApi,
+    useCorrect,
+    primaryUrl,
+    fallbackUrl,
+    finalUrl
+  });
+
   // Return the first valid URL, or default
-  return primaryUrl || fallbackUrl || DEFAULT_POSTER;
+  return finalUrl;
 };
 
 // Lấy ảnh ngang (Backdrop) - Ophim/Nguonc dùng poster_url làm backdrop; PhimAPI dùng thumb_url làm backdrop

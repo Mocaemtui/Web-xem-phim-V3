@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    unoptimized: true,
+    unoptimized: false, // Enable optimization for better debugging
     loader: "custom",
     loaderFile: "./lib/imageLoader.ts",
     deviceSizes: [640, 828, 1200],
@@ -43,6 +43,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "vidlink.pro",
+      },
+      {
+        protocol: "https",
+        hostname: "**", // Allow all HTTPS domains temporarily for debugging
       },
     ],
   },
