@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import Image from "next/image";
 import type { Movie } from "@/types/api";
 import { getPosterUrl } from "@/lib/api";
 import { getWatchHistory } from "@/lib/watchHistory";
@@ -327,14 +328,18 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl pointer-events-none border-2 border-[var(--color-cyan-neon)] shadow-[0_0_20px_var(--color-cyan-neon)]"
         />
         
-        <img
+        <Image
           src={fallbackImageUrl || finalPosterUrl}
           alt={movie.name}
+          fill
           draggable={false}
           onLoad={() => setIsLoaded(true)}
           onError={handleImageError}
-          className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out ${trailerUrl ? 'opacity-0 scale-110' : (isLoaded ? 'opacity-100' : 'opacity-0 scale-95')}`}
+          className={`object-cover transition-all duration-700 ease-out ${trailerUrl ? 'opacity-0 scale-110' : (isLoaded ? 'opacity-100' : 'opacity-0 scale-95')}`}
+          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 16vw"
           loading={priority ? "eager" : "lazy"}
+          priority={priority}
+          quality={60}
         />
         
         {/* Rating Badge */}
@@ -423,10 +428,13 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
               />
             ) : (
               thumbImageUrl && (
-                <img
+                <Image
                   src={thumbImageUrl.startsWith('http') ? thumbImageUrl : `https://img.ophim.live/uploads/movies/${thumbImageUrl}`}
                   alt={movie.name}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  quality={55}
                   onError={(e) => {
                     // Fallback if thumb image fails to load
                     const target = e.target as HTMLImageElement;

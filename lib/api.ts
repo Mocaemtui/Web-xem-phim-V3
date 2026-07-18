@@ -194,13 +194,6 @@ export const resolveImgUrl = (url: string | undefined): string => {
 
   let finalUrl = "";
   if (url.startsWith('http')) {
-    // Use CDN to proxy phimimg.com URLs to avoid CORS issues
-    if (url.includes('phimimg.com')) {
-      const cleanUrl = url.replace(/^https?:\/\//, "");
-      finalUrl = `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}`;
-      console.log('[resolveImgUrl] Using CDN proxy for phimimg:', { input: url, output: finalUrl });
-      return finalUrl;
-    }
     finalUrl = url;
   } else if (url.startsWith('upload/')) {
     finalUrl = `https://phimimg.com/${url}`;
