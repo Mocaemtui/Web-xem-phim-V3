@@ -179,7 +179,7 @@ export async function getPhimMoi(
     }
   }
 
-  // Fallback to standard V1 endpoint
+  // Fallback to standard V1 endpoint (Ophim - has working jpg images)
   return fetchAPI<MovieListResponse>(
     `/v1/api/danh-sach/phim-moi-cap-nhat?page=${page}&limit=${limit}`
   );
