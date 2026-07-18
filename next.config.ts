@@ -42,19 +42,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "vidsrc-embed.ru",
-      },
-      {
-        protocol: "https",
-        hostname: "vidsrc-embed.su",
-      },
-      {
-        protocol: "https",
-        hostname: "vidsrcme.su",
-      },
-      {
-        protocol: "https",
-        hostname: "vsrc.su",
+        hostname: "vidlink.pro",
       },
     ],
   },

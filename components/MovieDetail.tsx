@@ -318,7 +318,7 @@ export default function MovieDetail({
       };
       
       baseEps.push({
-        server_name: "Vidsrc",
+        server_name: "VidLink",
         server_data: generateServerData()
       });
     }

@@ -190,18 +190,18 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
 
       if (tmdbId) {
         baseEpisodes.push({
-          server_name: "Vidsrc",
-          server_data: generateServerData((epNum) => 
-            isTVShow ? `https://vidsrc-embed.ru/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${epNum}&ds_lang=vi&autoplay=1` 
-                     : `https://vidsrc-embed.ru/embed/movie?tmdb=${tmdbId}&ds_lang=vi&autoplay=1`
+          server_name: "VidLink",
+          server_data: generateServerData((epNum) =>
+            isTVShow ? `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}`
+                     : `https://vidlink.pro/movie/${tmdbId}`
           )
         });
       } else if (imdbId) {
         baseEpisodes.push({
-          server_name: "Vidsrc",
-          server_data: generateServerData((epNum) => 
-            isTVShow ? `https://vidsrc-embed.ru/embed/tv?imdb=${imdbId}&season=${seasonNum}&episode=${epNum}&ds_lang=vi&autoplay=1` 
-                     : `https://vidsrc-embed.ru/embed/movie?imdb=${imdbId}&ds_lang=vi&autoplay=1`
+          server_name: "VidLink",
+          server_data: generateServerData((epNum) =>
+            isTVShow ? `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}`
+                     : `https://vidlink.pro/movie/${tmdbId}`
           )
         });
       }
@@ -330,7 +330,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
   const currentServerName = currentServer?.server_name;
 
   useEffect(() => {
-    const isExternalSource = currentServerName?.toLowerCase().includes("vidsrc") || currentServerName?.toLowerCase().includes("vidlink");
+    const isExternalSource = currentServerName?.toLowerCase().includes("vidlink");
     const imdbId = movie.imdb?.id;
     
     if (isExternalSource && currentEpisode && imdbId) {
@@ -494,8 +494,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
   if (finalEmbedUrl) {
     const separator = finalEmbedUrl.includes('?') ? '&' : '?';
     
-    if (currentServerName?.toLowerCase().includes("vidsrc")) {
-      finalEmbedUrl += `${separator}ds_lang=vi`;
+    if (currentServerName?.toLowerCase().includes("vidlink")) {
       if (subtitlesData.length > 0) {
         const firstSub = subtitlesData[0];
         const customizedUrl = `${firstSub.file}&offset=${subOffset}&fs=${encodeURIComponent(subSize)}&c=${encodeURIComponent(subColor)}&bg=${encodeURIComponent(subBg)}&b=${encodeURIComponent(subShadow)}`;
@@ -728,13 +727,13 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
           )}
 
           {/* Subtitle Settings panel */}
-          {subtitlesData.length > 0 && currentServerName?.toLowerCase().includes("vidsrc") && (
+          {subtitlesData.length > 0 && currentServerName?.toLowerCase().includes("vidlink") && (
             <div className="mt-4 bg-zinc-900/50 p-4 rounded-xl border border-white/5 transition-all">
-              <button 
+              <button
                 onClick={() => setShowSubSettings(!showSubSettings)}
                 className="flex items-center gap-2 text-sm text-zinc-300 hover:text-white transition-colors focus:outline-none"
               >
-                <Settings size={16} /> Tuỳ chỉnh Phụ đề Nâng cao (Dành cho Vidsrc)
+                <Settings size={16} /> Tuỳ chỉnh Phụ đề Nâng cao (Dành cho VidLink)
               </button>
               
               {showSubSettings && (
