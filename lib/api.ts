@@ -227,17 +227,12 @@ export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string; s
   const isPhimApi = movie.source === 'phimapi' || movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
   const useCorrect = isPhimApi || isTmdb;
 
-  // Try multiple URL combinations in priority order
+  // SIMPLIFIED LOGIC: Thử poster_url trước, nếu không có thì thử thumb_url
+  // PhimAPI: poster_url là ảnh dọc, thumb_url là ảnh ngang
+  // Ophim/Nguonc: thumb_url là ảnh dọc, poster_url là ảnh ngang
   const urlOptions = [
-    // Primary based on source
-    useCorrect ? movie.poster_url : movie.thumb_url,
-    useCorrect ? movie.thumb_url : movie.poster_url,
-    // Fallback combinations
     movie.poster_url,
     movie.thumb_url,
-    // Try swapping if both exist
-    movie.poster_url && movie.thumb_url ? movie.poster_url : null,
-    movie.poster_url && movie.thumb_url ? movie.thumb_url : null,
   ];
 
   // Find first valid URL
@@ -251,7 +246,7 @@ export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string; s
     }
   }
 
-  console.warn('[getPosterUrl] No valid URL found for:', (movie as any).name || (movie as any).slug);
+  console.warn('[getPosterUrl] No valid URL found for:', (movie as any).name || (movie as any).slug, { poster_url: movie.poster_url, thumb_url: movie.thumb_url, source: movie.source });
   return DEFAULT_POSTER;
 };
 
