@@ -334,9 +334,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
     const imdbId = movie.imdb?.id;
 
     if (isExternalSource && currentEpisode && imdbId) {
-      setFetchingSubtitles(true);
-      setSubtitlesData([]);
-
+      // Fetch subtitle in background without blocking render
       let epNum = currentEpisodeIndex + 1;
       const match = currentEpisode.name?.match(/\d+/);
       if (match) epNum = parseInt(match[0], 10);
