@@ -196,7 +196,6 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
                      : `https://vidlink.pro/movie/${tmdbId}`
           )
         });
-        console.log("VidLink server added with TMDB ID:", tmdbId);
       } else if (imdbId) {
         baseEpisodes.push({
           server_name: "VidLink",
@@ -205,9 +204,6 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
                      : `https://vidlink.pro/movie/${imdbId}`
           )
         });
-        console.log("VidLink server added with IMDB ID:", imdbId);
-      } else {
-        console.log("No TMDB or IMDB ID found, VidLink server not added");
       }
     }
     return sortEpisodes(baseEpisodes);
@@ -238,15 +234,15 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsRestored(false);
     setCurrentEpisodeIndex(0);
+    // Only regenerate episodes when movie slug changes
     const extendedEps = getExtendedEpisodes();
-    
     setEpisodes(extendedEps);
     // Luôn chọn server đầu tiên (đã sắp xếp theo thứ tự ưu tiên: PhimAPI > Ophim)
     // khi mở phim mới, trừ phi được phục hồi từ lịch sử xem của chính phim này.
     setCurrentServerIndex(0);
     setSelectedServerIndex(0);
     setCurrentOriginName(movie.origin_name);
-  }, [movie.slug, movie.origin_name, movie.episodes]);
+  }, [movie.slug]);
 
 
 

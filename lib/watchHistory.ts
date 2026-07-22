@@ -88,7 +88,9 @@ export function saveWatchHistory(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ movie, episodeName, serverName, currentServerIndex, currentEpisodeIndex, currentTime, duration })
-      }).catch(() => {});
+      }).catch((err) => {
+        console.error("History sync error:", err);
+      });
     };
 
     const now = Date.now();
