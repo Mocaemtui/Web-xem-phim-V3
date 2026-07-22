@@ -200,8 +200,8 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         baseEpisodes.push({
           server_name: "VidLink",
           server_data: generateServerData((epNum) =>
-            isTVShow ? `https://vidlink.pro/tv/${tmdbId}/${seasonNum}/${epNum}`
-                     : `https://vidlink.pro/movie/${tmdbId}`
+            isTVShow ? `https://vidlink.pro/tv/${imdbId}/${seasonNum}/${epNum}`
+                     : `https://vidlink.pro/movie/${imdbId}`
           )
         });
       }
@@ -332,7 +332,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
   useEffect(() => {
     const isExternalSource = currentServerName?.toLowerCase().includes("vidlink");
     const imdbId = movie.imdb?.id;
-    
+
     if (isExternalSource && currentEpisode && imdbId) {
       setFetchingSubtitles(true);
       setSubtitlesData([]);
@@ -345,11 +345,19 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
       const isTVShow = movie.type === 'series' || movie.type === 'hoathinh' || (templateServer && templateServer.server_data.length > 1);
       const seasonNum = movie.tmdb?.season || tmdbData?.season_number || 1;
 
-      const fetchUrl = isTVShow 
+      // Fetch Stremio with timeout
+      const fetchUrl = isTVShow
         ? `https://opensubtitles-v3.strem.io/subtitles/series/${imdbId}:${seasonNum}:${epNum}.json`
         : `https://opensubtitles-v3.strem.io/subtitles/movie/${imdbId}.json`;
 
-      fetch(fetchUrl)
+      const fetchWithTimeout = (url: string, timeout = 5000) => {
+        return Promise.race([
+          fetch(url),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+        ]);
+      };
+
+      fetchWithTimeout(fetchUrl, 5000)
         .then(res => res.json())
         .then(data => {
            let newSubs: any[] = [];
@@ -365,30 +373,12 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
                }));
              }
            }
-
-           // Fetch thêm từ SubDL Proxy
-           let subdlUrl = `/api/subtitles?imdbId=${imdbId}`;
-           if (movie.type === 'series' || movie.type === 'hoathinh') {
-             const season = movie.tmdb?.season || tmdbData?.season_number || 1;
-             subdlUrl += `&season=${season}&episode=${epNum}`;
-           }
-
-           fetch(subdlUrl)
-            .then(res => res.json())
-            .then(subdlData => {
-               if (subdlData.subtitles && subdlData.subtitles.length > 0) {
-                  newSubs.push(subdlData.subtitles[0]);
-               }
-               setSubtitlesData(newSubs);
-               setFetchingSubtitles(false);
-            })
-            .catch(() => {
-               setSubtitlesData(newSubs);
-               setFetchingSubtitles(false);
-            });
+           setSubtitlesData(newSubs);
+           setFetchingSubtitles(false);
         })
         .catch(err => {
-          console.error("Subtitle fetch error", err);
+          console.error("Stremio subtitle fetch error:", err);
+          setSubtitlesData([]);
           setFetchingSubtitles(false);
         });
     } else {
