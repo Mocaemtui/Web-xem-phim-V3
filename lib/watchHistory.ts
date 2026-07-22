@@ -80,8 +80,9 @@ export function saveWatchHistory(
     const updated = [newItem, ...filtered].slice(0, MAX_HISTORY);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
-    // Background Cloud Sync (Lưu ngầm lên DB)
+    // Background Cloud Sync (Lưu ngầm lên DB) - TEMPORARILY DISABLED
     // Áp dụng kỹ thuật Throttle (60s) + Debounce (10s) để chống spam Database
+    /*
     const syncToCloud = () => {
       lastSyncTime = Date.now();
       fetch("/api/history", {
@@ -101,6 +102,7 @@ export function saveWatchHistory(
       if (syncTimeout) clearTimeout(syncTimeout);
       syncTimeout = setTimeout(syncToCloud, 10000);
     }
+    */
   } catch {
     // Silently fail if localStorage is full or unavailable
   }
