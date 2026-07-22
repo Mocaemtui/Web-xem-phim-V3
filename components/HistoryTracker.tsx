@@ -18,7 +18,7 @@ function HistoryTrackerContent() {
       }
       sessionStorage.setItem("last_browse_page", url);
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams.toString()]);
 
   return null;
 }
