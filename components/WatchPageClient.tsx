@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import EpisodeSelector from "@/components/EpisodeSelector";
 import type { MovieDetail } from "@/types/api";
@@ -213,7 +213,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
     return sortEpisodes(baseEpisodes);
   };
 
-  const [episodes, setEpisodes] = useState(getExtendedEpisodes());
+  const [episodes, setEpisodes] = useState(() => getExtendedEpisodes());
 
   
   const [currentServerIndex, setCurrentServerIndex] = useState(0);
