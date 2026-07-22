@@ -847,7 +847,7 @@ export default function VideoPlayer({
               allowFullScreen
               allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
               referrerPolicy="no-referrer"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allowfullscreen"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allowfullscreen allow-popups allow-popups-to-escape-sandbox"
             />
           )
         ) : (
