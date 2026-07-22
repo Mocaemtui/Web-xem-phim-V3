@@ -130,7 +130,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
   const getExtendedEpisodes = () => {
     const baseEpisodes = [...(movie.episodes || [])];
     const tmdbId = tmdbData?.id || movie.tmdb?.id;
-    const imdbId = movie.imdb?.id || movie.imdb?.id;
+    const imdbId = movie.imdb?.id || tmdbData?.external_ids?.imdb_id;
 
     if (tmdbId || imdbId) {
       const templateServer = baseEpisodes.find(s => s.server_data && s.server_data.length > 0);
@@ -350,14 +350,14 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         ? `https://opensubtitles-v3.strem.io/subtitles/series/${imdbId}:${seasonNum}:${epNum}.json`
         : `https://opensubtitles-v3.strem.io/subtitles/movie/${imdbId}.json`;
 
-      const fetchWithTimeout = (url: string, timeout = 5000): Promise<Response> => {
+      const fetchWithTimeout = (url: string, timeout = 10000): Promise<Response> => {
         return Promise.race([
           fetch(url),
           new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
         ]);
       };
 
-      fetchWithTimeout(fetchUrl, 5000)
+      fetchWithTimeout(fetchUrl, 10000)
         .then(res => res.json())
         .then(data => {
            let newSubs: any[] = [];

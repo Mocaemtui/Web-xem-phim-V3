@@ -58,7 +58,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "frame-src 'self' https://vidlink.pro https://*.vidlink.pro https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://vidlink.xyz https://*.vidlink.xyz;"
+            value: "frame-src 'self' https://vidlink.pro https://*.vidlink.pro https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://vidlink.xyz https://*.vidlink.xyz; connect-src 'self' https://opensubtitles-v3.strem.io https://api.subdl.com https://dl.subdl.com https://vidlink.pro https://*.vidlink.pro;"
           },
         ],
       },
