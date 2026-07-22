@@ -846,7 +846,6 @@ export default function VideoPlayer({
               className="w-full h-full rounded-lg"
               allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
               referrerPolicy="no-referrer"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
               onError={() => {
                 console.error("Iframe load error:", embedUrl);
               }}
