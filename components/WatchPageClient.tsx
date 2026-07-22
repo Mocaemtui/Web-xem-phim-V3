@@ -350,10 +350,10 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         ? `https://opensubtitles-v3.strem.io/subtitles/series/${imdbId}:${seasonNum}:${epNum}.json`
         : `https://opensubtitles-v3.strem.io/subtitles/movie/${imdbId}.json`;
 
-      const fetchWithTimeout = (url: string, timeout = 5000) => {
+      const fetchWithTimeout = (url: string, timeout = 5000): Promise<Response> => {
         return Promise.race([
           fetch(url),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+          new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
         ]);
       };
 
