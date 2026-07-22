@@ -844,7 +844,6 @@ export default function VideoPlayer({
             <iframe
               src={embedUrl}
               className="w-full h-full rounded-lg"
-              allowFullScreen
               allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
               referrerPolicy="no-referrer"
               onError={() => {
