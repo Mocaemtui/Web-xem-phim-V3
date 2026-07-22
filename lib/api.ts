@@ -188,7 +188,6 @@ export async function getPhimMoi(
 // Hàm chuẩn hóa và tối ưu ảnh bằng WEBP converter của PhimAPI
 export const resolveImgUrl = (url: string | undefined): string => {
   if (!url) {
-    console.warn('[resolveImgUrl] URL is empty or undefined');
     return "";
   }
 
@@ -211,7 +210,6 @@ export const resolveImgUrl = (url: string | undefined): string => {
     finalUrl = `https://img.ophim.live/uploads/${cleanOphimUrl}`;
   }
 
-  console.log('[resolveImgUrl]', { input: url, output: finalUrl });
   return finalUrl;
 };
 
@@ -222,15 +220,6 @@ const DEFAULT_BACKDROP = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/
 // Lấy ảnh dọc (Poster) - Ophim/Nguonc dùng thumb_url làm poster; PhimAPI dùng poster_url làm poster; TMDB dùng poster_url làm poster
 export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string; source?: string }): string => {
   if (!movie) return DEFAULT_POSTER;
-
-  // DEBUG: Log all data to see what we're working with
-  console.log('[getPosterUrl] Input data:', {
-    name: (movie as any).name,
-    slug: (movie as any).slug,
-    poster_url: movie.poster_url,
-    thumb_url: movie.thumb_url,
-    source: movie.source
-  });
 
   // Detect source based on URL patterns
   const isTmdb = movie.source === 'tmdb' || movie.thumb_url?.includes('tmdb.org') || movie.poster_url?.includes('tmdb.org');
@@ -248,13 +237,11 @@ export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string; s
     if (url && typeof url === 'string' && url.trim() !== '') {
       const resolved = resolveImgUrl(url);
       if (resolved && resolved !== '') {
-        console.log('[getPosterUrl] Found valid URL:', { movieName: (movie as any).name, url, resolved });
         return resolved;
       }
     }
   }
 
-  console.warn('[getPosterUrl] No valid URL found for:', (movie as any).name || (movie as any).slug, { poster_url: movie.poster_url, thumb_url: movie.thumb_url, source: movie.source });
   return DEFAULT_POSTER;
 };
 
