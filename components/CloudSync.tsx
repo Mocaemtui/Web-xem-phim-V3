@@ -7,7 +7,7 @@ export default function CloudSync() {
   const { data: session, status } = useSession();
 
   useEffect(() => {
-    if (status === "authenticated" && session?.user) {
+    if (status === "authenticated" && session?.user?.email) {
       // Throttle sync to once every 10 minutes to save Vercel Edge Requests
       const lastSyncStr = localStorage.getItem("last_cloud_sync_time");
       const now = Date.now();
@@ -32,7 +32,7 @@ export default function CloudSync() {
         })
         .catch(console.error);
     }
-  }, [status, session]);
+  }, [status, session?.user?.email]);
 
   return null;
 }
