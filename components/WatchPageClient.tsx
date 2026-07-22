@@ -362,13 +362,26 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         .then(data => {
            let newSubs: any[] = [];
            if (data.subtitles && data.subtitles.length > 0) {
-             const vieSubs = data.subtitles.filter((s: any) => s.lang === 'vie').slice(0, 2);
-             const engSubs = data.subtitles.filter((s: any) => s.lang === 'eng').slice(0, 1);
+             // Log để debug
+             console.log("Stremio subtitles:", data.subtitles.map((s: any) => ({ lang: s.lang, id: s.id })));
+
+             // Filter Vietnamese subtitles (vie, vi, vietnamese)
+             const vieSubs = data.subtitles.filter((s: any) =>
+               ['vie', 'vi', 'vietnamese'].includes(s.lang?.toLowerCase())
+             ).slice(0, 2);
+
+             // Filter English subtitles
+             const engSubs = data.subtitles.filter((s: any) =>
+               ['eng', 'en', 'english'].includes(s.lang?.toLowerCase())
+             ).slice(0, 1);
+
              const selectedSubs = [...vieSubs, ...engSubs];
              if (selectedSubs.length > 0) {
                newSubs = selectedSubs.map((s: any, idx: number) => ({
                  file: s.url,
-                 label: s.lang === 'vie' ? `Tiếng Việt (Stremio ${idx + 1})` : "English (Stremio)",
+                 label: ['vie', 'vi', 'vietnamese'].includes(s.lang?.toLowerCase())
+                   ? `Tiếng Việt (Stremio ${idx + 1})`
+                   : "English (Stremio)",
                  kind: "captions"
                }));
              }
