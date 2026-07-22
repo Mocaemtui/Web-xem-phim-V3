@@ -398,7 +398,8 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
     }
   }, [currentEpisode, currentServerName, movie.imdb?.id, movie.type, tmdbData?.season_number, currentEpisodeIndex]);
 
-  // Listener tracking thời gian xem cho iframe VidLink
+  // Listener tracking thời gian xem cho iframe VidLink - TEMPORARILY DISABLED
+  /*
   useEffect(() => {
     const handleVidlinkMessage = (event: MessageEvent) => {
       if (event.origin !== 'https://vidlink.pro') return;
@@ -425,8 +426,10 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
     window.addEventListener('message', handleVidlinkMessage);
     return () => window.removeEventListener('message', handleVidlinkMessage);
   }, [movie.slug, currentEpisode?.name, currentServer?.server_name, currentServerIndex, currentEpisodeIndex]);
+  */
 
-  // Save watch history whenever episode or server changes
+  // Save watch history whenever episode or server changes - TEMPORARILY DISABLED
+  /*
   useEffect(() => {
     if (isRestored && currentEpisode && currentServer) {
       saveWatchHistory(
@@ -438,6 +441,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
       );
     }
   }, [movie.slug, currentEpisode?.name, currentServer?.server_name, currentServerIndex, currentEpisodeIndex, isRestored]);
+  */
 
   useEffect(() => {
     if (currentEpisode) {
