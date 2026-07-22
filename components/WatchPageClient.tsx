@@ -246,6 +246,8 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
 
 
 
+  // Restore from history - TEMPORARILY DISABLED
+  /*
   useEffect(() => {
     if (!isRestored) {
       // Check query parameters first (e.g. ?tap=3&server=0)
@@ -253,10 +255,10 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         const params = new URLSearchParams(window.location.search);
         const tapParam = params.get("tap");
         const serverParam = params.get("server");
-        
+
         let sIdx = serverParam ? parseInt(serverParam, 10) : 0;
         let tIdx = tapParam ? parseInt(tapParam, 10) - 1 : 0;
-        
+
         if (tapParam || serverParam) {
           if (episodes?.[sIdx]?.server_data?.[tIdx]) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -279,12 +281,12 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         let foundServerIdx = -1;
         let foundEpisodeIdx = -1;
 
-        const targetServerName = item.serverName || 
-          (item.currentServerIndex === 2 ? "Ophim" : 
+        const targetServerName = item.serverName ||
+          (item.currentServerIndex === 2 ? "Ophim" :
            item.currentServerIndex === 0 ? "PhimAPI" : undefined);
 
         if (targetServerName) {
-          foundServerIdx = episodes.findIndex(e => 
+          foundServerIdx = episodes.findIndex(e =>
             e.server_name === targetServerName || 
             isSameServerProvider(e.server_name, targetServerName)
           );
@@ -301,7 +303,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
           } else {
             foundEpisodeIdx = item.currentEpisodeIndex;
           }
-          
+
           if (foundEpisodeIdx !== -1 && sData[foundEpisodeIdx]) {
             setCurrentServerIndex(foundServerIdx);
             setSelectedServerIndex(foundServerIdx);
@@ -322,6 +324,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
       setIsRestored(true);
     }
   }, [movie, isRestored, episodes]);
+  */
 
   const currentServer = episodes[currentServerIndex];
 
