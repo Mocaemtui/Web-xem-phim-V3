@@ -196,6 +196,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
                      : `https://vidlink.pro/movie/${tmdbId}`
           )
         });
+        console.log("VidLink server added with TMDB ID:", tmdbId);
       } else if (imdbId) {
         baseEpisodes.push({
           server_name: "VidLink",
@@ -204,6 +205,9 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
                      : `https://vidlink.pro/movie/${imdbId}`
           )
         });
+        console.log("VidLink server added with IMDB ID:", imdbId);
+      } else {
+        console.log("No TMDB or IMDB ID found, VidLink server not added");
       }
     }
     return sortEpisodes(baseEpisodes);
@@ -396,7 +400,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
       setSubtitlesData([]);
       setFetchingSubtitles(false);
     }
-  }, [currentEpisode, currentServerName, movie, tmdbData, currentEpisodeIndex]);
+  }, [currentEpisode, currentServerName, movie.imdb?.id, movie.type, tmdbData?.season_number, currentEpisodeIndex]);
 
   // Listener tracking thời gian xem cho iframe VidLink
   useEffect(() => {
@@ -424,7 +428,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
     };
     window.addEventListener('message', handleVidlinkMessage);
     return () => window.removeEventListener('message', handleVidlinkMessage);
-  }, [movie, currentEpisode, currentServer, currentServerIndex, currentEpisodeIndex]);
+  }, [movie.slug, currentEpisode?.name, currentServer?.server_name, currentServerIndex, currentEpisodeIndex]);
 
   // Save watch history whenever episode or server changes
   useEffect(() => {
@@ -437,7 +441,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         currentEpisodeIndex
       );
     }
-  }, [movie, currentEpisode, currentServer, currentServerIndex, currentEpisodeIndex, isRestored]);
+  }, [movie.slug, currentEpisode?.name, currentServer?.server_name, currentServerIndex, currentEpisodeIndex, isRestored]);
 
   useEffect(() => {
     if (currentEpisode) {
