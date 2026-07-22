@@ -497,8 +497,8 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
     if (currentServerName?.toLowerCase().includes("vidlink")) {
       if (subtitlesData.length > 0) {
         const firstSub = subtitlesData[0];
-        const customizedUrl = `${firstSub.file}&offset=${subOffset}&fs=${encodeURIComponent(subSize)}&c=${encodeURIComponent(subColor)}&bg=${encodeURIComponent(subBg)}&b=${encodeURIComponent(subShadow)}`;
-        finalEmbedUrl += `&sub_file=${encodeURIComponent(customizedUrl)}&sub_label=${encodeURIComponent(firstSub.label)}`;
+        // Vidlink requires direct VTT link, no customization parameters
+        finalEmbedUrl += `&sub_file=${encodeURIComponent(firstSub.file)}&sub_label=${encodeURIComponent(firstSub.label)}`;
       }
     }
   }
