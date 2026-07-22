@@ -784,7 +784,11 @@ export default function MovieDetail({
         <div className="w-full mt-8 md:mt-12 flex flex-col min-w-0">
           {/* TV Seasons */}
           {(() => {
-            const validSeasons = tmdbData?.seasons?.filter(s => s.season_number >= 0) || [];
+            const validSeasons = tmdbData?.seasons?.filter(s => 
+              s.season_number > 0 && 
+              s.episode_count > 0 &&
+              s.air_date !== null
+            ) || [];
             const hasSeasonIndicator = 
               /(?:Phần|Mùa|Season|Part|Tập|P)\s*\d+/i.test(movie.name) || 
               /(?:Phần|Mùa|Season|Part|Tập|P)\s*\d+/i.test(movie.origin_name || "");
