@@ -337,6 +337,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
     const imdbId = movie.imdb?.id;
 
     if (isExternalSource && currentEpisode && imdbId) {
+      setFetchingSubtitles(true);
       // Fetch subtitle in background without blocking render
       let epNum = currentEpisodeIndex + 1;
       const match = currentEpisode.name?.match(/\d+/);
@@ -363,9 +364,6 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         .then(data => {
            let newSubs: any[] = [];
            if (data.subtitles && data.subtitles.length > 0) {
-             // Log để debug
-             console.log("Stremio subtitles:", data.subtitles.map((s: any) => ({ lang: s.lang, id: s.id })));
-
              // Filter Vietnamese subtitles (vie, vi, vietnamese)
              const vieSubs = data.subtitles.filter((s: any) =>
                ['vie', 'vi', 'vietnamese'].includes(s.lang?.toLowerCase())
@@ -399,7 +397,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
       setSubtitlesData([]);
       setFetchingSubtitles(false);
     }
-  }, [currentEpisode, currentServerName, movie.imdb?.id, movie.type, tmdbData?.season_number, currentEpisodeIndex]);
+  }, [currentServerName, movie.imdb?.id, movie.type, tmdbData?.season_number, currentEpisodeIndex, currentEpisode?.name]);
 
   // Listener tracking thời gian xem cho iframe VidLink - TEMPORARILY DISABLED
   /*
