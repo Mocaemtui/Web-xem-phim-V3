@@ -452,7 +452,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         setPlayerMode("iframe");
       }
     }
-  }, [currentEpisode, currentServerName]);
+  }, [currentEpisode?.link_m3u8, currentEpisode?.link_embed, currentServerName]);
 
 
 
@@ -490,7 +490,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         })
         .catch(console.error);
     }
-  }, [currentServerName, movie.origin_name, currentEpisodeIndex, currentEpisode]);
+  }, [currentServerName, movie.origin_name, currentEpisodeIndex, currentEpisode?.name]);
 
   let finalEmbedUrl = currentEpisode?.link_embed;
   if (currentServerName === "VidLink Anime (Chuẩn MAL)" && malAnimeUrl) {
