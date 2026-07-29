@@ -23,6 +23,7 @@ interface VideoPlayerProps {
   isHost?: boolean;
   onToggleFullscreen?: () => void;
   showControls?: boolean;
+  autoPlayIframe?: boolean;
 }
 
 export default function VideoPlayer({
@@ -45,6 +46,7 @@ export default function VideoPlayer({
   isHost = true,
   onToggleFullscreen,
   showControls: showControlsProp,
+  autoPlayIframe = false,
 }: VideoPlayerProps) {
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const videoRef = externalVideoRef || internalVideoRef;
@@ -88,7 +90,7 @@ export default function VideoPlayer({
   
   // Progress Save & Resume Watch
   const lastSavedTimeRef = useRef(0);
-  const [showIframe, setShowIframe] = useState(false);
+  const [showIframe, setShowIframe] = useState(autoPlayIframe);
   
   // Aspect Ratio Mode (Contain/Cover/Fill)
   const [aspectMode, setAspectMode] = useState<"contain" | "cover" | "fill">("contain");

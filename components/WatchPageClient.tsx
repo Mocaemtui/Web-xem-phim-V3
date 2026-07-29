@@ -544,6 +544,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
               }}
               hasNextEpisode={currentEpisodeIndex < serverData.length - 1}
               nextVideoUrl={serverData[currentEpisodeIndex + 1]?.link_m3u8}
+              autoPlayIframe={playerMode === "iframe"}
               onAutoNext={() => {
                 if (currentEpisodeIndex < serverData.length - 1) {
                   setCurrentEpisodeIndex((prev) => prev + 1);
