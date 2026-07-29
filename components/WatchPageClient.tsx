@@ -244,8 +244,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
 
 
 
-  // Restore from history - TEMPORARILY DISABLED
-  /*
+  // Restore from history
   useEffect(() => {
     if (!isRestored) {
       // Check query parameters first (e.g. ?tap=3&server=0)
@@ -322,7 +321,6 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
       setIsRestored(true);
     }
   }, [movie, isRestored, episodes]);
-  */
 
   const currentServer = episodes[currentServerIndex];
 

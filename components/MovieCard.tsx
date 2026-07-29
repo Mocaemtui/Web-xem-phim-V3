@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import type { Movie } from "@/types/api";
-import { getPosterUrl } from "@/lib/api";
+import { getPosterUrl, resolveImgUrl } from "@/lib/api";
 import { getWatchHistory } from "@/lib/watchHistory";
 
 interface MovieCardProps {
@@ -122,9 +122,7 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
     return null;
   }
 
-  const finalPosterUrl = typeof window !== 'undefined' 
-    ? require('@/lib/api').resolveImgUrl(posterUrl || getPosterUrl(movie))
-    : posterUrl || getPosterUrl(movie);
+  const finalPosterUrl = resolveImgUrl(posterUrl || getPosterUrl(movie));
 
   // Debug logging for image URLs
   useEffect(() => {
