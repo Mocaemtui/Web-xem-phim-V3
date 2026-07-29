@@ -35,7 +35,22 @@ export function getWatchHistory(): WatchHistoryItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as WatchHistoryItem[];
+    const items = JSON.parse(raw) as WatchHistoryItem[];
+    // Lọc bỏ các phim từ Nguồn C (vì đã bị gỡ bỏ khỏi hệ thống)
+    const validItems = items.filter(item => {
+      const isNguonC = 
+        (item.poster_url && item.poster_url.includes('nguonc')) || 
+        (item.thumb_url && item.thumb_url.includes('nguonc')) ||
+        (item.serverName && item.serverName.toLowerCase().includes('nguonc'));
+      return !isNguonC;
+    });
+    
+    // Nếu có thay đổi do lọc, cập nhật lại storage
+    if (validItems.length !== items.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(validItems));
+    }
+    
+    return validItems;
   } catch {
     return [];
   }

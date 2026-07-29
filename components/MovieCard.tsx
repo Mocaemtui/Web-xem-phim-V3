@@ -122,7 +122,9 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
     return null;
   }
 
-  const finalPosterUrl = posterUrl || getPosterUrl(movie);
+  const finalPosterUrl = typeof window !== 'undefined' 
+    ? require('@/lib/api').resolveImgUrl(posterUrl || getPosterUrl(movie))
+    : posterUrl || getPosterUrl(movie);
 
   // Debug logging for image URLs
   useEffect(() => {
@@ -495,10 +497,12 @@ const MovieCard = memo(function MovieCard({ movie, posterUrl, href, isHistory, p
         </h3>
         <div className="flex items-center gap-2 mt-auto pt-1.5">
           <span className="text-xs font-medium text-zinc-400">{movie.year}</span>
-          {movie.country && movie.country.length > 0 && (
+          {movie.country && (Array.isArray(movie.country) ? movie.country.length > 0 : true) && (
             <>
               <span className="text-zinc-700 text-[10px]">•</span>
-              <span className="text-xs text-zinc-500 line-clamp-1">{movie.country[0].name}</span>
+              <span className="text-xs text-zinc-500 line-clamp-1">
+                {Array.isArray(movie.country) ? movie.country[0].name : movie.country}
+              </span>
             </>
           )}
         </div>
