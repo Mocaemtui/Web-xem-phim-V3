@@ -22,7 +22,6 @@ export async function GET(req: NextRequest) {
         phimapi: 'https://phimapi.com',
         backup: 'https://ophim1.com',
         ophim: 'https://ophim1.com',
-        nguonc: 'https://phim.nguonc.com'
       };
       const lowerVal = baseUrl.toLowerCase();
       if (SOURCE_MAP[lowerVal]) {

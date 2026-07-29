@@ -38,10 +38,6 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "phim.nguonc.com",
-      },
-      {
-        protocol: "https",
         hostname: "vidlink.pro",
       },
       {

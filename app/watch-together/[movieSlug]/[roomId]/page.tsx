@@ -26,13 +26,6 @@ export default async function WatchTogetherPage({ params }: PageProps) {
   const movie = movieData.data.item;
   const posterUrl = getPosterUrl(movie);
 
-  // Lọc bỏ Nguồn C khỏi tính năng Xem Chung do không đồng bộ được IFrame
-  if (movie.episodes) {
-    movie.episodes = movie.episodes.filter(
-      (ep) => !ep.server_name.toLowerCase().includes("nguồn c") && !ep.server_name.toLowerCase().includes("nguonc")
-    );
-  }
-
   return (
     <WatchTogetherClient movie={movie} posterUrl={posterUrl} roomId={roomId} />
   );

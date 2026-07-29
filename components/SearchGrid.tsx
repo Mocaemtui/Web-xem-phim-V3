@@ -69,15 +69,6 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       }
     });
 
-    // Next, NguonC images
-    movies.forEach(m => {
-      if (m.source === 'nguonc' && m.poster_url && m.thumb_url) {
-        imageMap.set(getSmartKey(m), { poster_url: m.poster_url, thumb_url: m.thumb_url, source: 'nguonc' });
-      }
-    });
-
-
-    
     // Finally, populate/overwrite with PhimAPI images (highest priority)
     movies.forEach(m => {
       if (m.source === 'phimapi' && m.poster_url && m.thumb_url) {
@@ -91,8 +82,7 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
       const mappedImg = imageMap.get(key);
       if (mappedImg && movie.source !== mappedImg.source) {
         const getPriority = (src: string) => {
-          if (src === 'phimapi') return 3;
-          if (src === 'nguonc') return 2;
+          if (src === 'phimapi') return 2;
           if (src === 'ophim') return 1;
           return 0;
         };
@@ -109,16 +99,14 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
     // 3. Extract and sort movies for each source
     const phimapiMovies = resolvedMovies.filter(m => m.source === 'phimapi' || m.available_sources?.includes('phimapi'));
-    const nguoncMovies = resolvedMovies.filter(m => m.source === 'nguonc' || m.available_sources?.includes('nguonc'));
     const ophimMovies = resolvedMovies.filter(m => m.source === 'ophim' || m.available_sources?.includes('ophim'));
     const tmdbMovies = resolvedMovies.filter(m => m.source === 'tmdb');
 
     // 4. Return results based on selectedSource
     if (selectedSource === "all") {
-      // Group movies by source priority: phimapi (first) -> nguonc (second) -> ophim (third) -> tmdb (fourth)
+      // Group movies by source priority: phimapi (first) -> ophim (second) -> tmdb (third)
       const sortedGroupedMovies = [
         ...phimapiMovies,
-        ...nguoncMovies,
         ...ophimMovies,
         ...tmdbMovies
       ];
@@ -134,11 +122,9 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
       return Array.from(itemsMap.values());
     } else if (selectedSource === "phimapi") {
-      return phimapiMovies; // Original API relevance order
-    } else if (selectedSource === "nguonc") {
-      return nguoncMovies; 
+      return phimapiMovies;
     } else if (selectedSource === "ophim") {
-      return ophimMovies; // Original API relevance order (no sorting)
+      return ophimMovies;
     } else {
       return resolvedMovies.filter((movie: ExtendedMovie) => movie.source === selectedSource || movie.available_sources?.includes(selectedSource));
     }
@@ -147,7 +133,6 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
   const sourceFilters = [
     { id: "all", name: "Tất cả" },
     { id: "phimapi", name: "PhimAPI" },
-    { id: "nguonc", name: "Nguồn C" },
     { id: "ophim", name: "Ophim" },
     { id: "tmdb", name: "TMDB" },
   ];
