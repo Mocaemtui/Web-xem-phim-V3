@@ -94,7 +94,7 @@ export function mapNguoncDetailToV1(data: any): { status: string; data: { item: 
         filename: item.name,
         link: item.embed,
         link_embed: item.embed,
-        link_m3u8: item.m3u8,
+        link_m3u8: item.m3u8 || "",
       }))
     };
   });
