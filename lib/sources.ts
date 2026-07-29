@@ -10,12 +10,6 @@ export const MOVIE_SOURCES = {
     name: 'PhimAPI',
     url: 'https://phimapi.com',
     type: 'V1_STANDARD'
-  },
-  NGUONC: {
-    id: 'nguonc',
-    name: 'Nguồn C',
-    url: 'https://phim.nguonc.com',
-    type: 'V2_NGUONC'
   }
 };
 

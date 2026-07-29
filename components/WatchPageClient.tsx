@@ -429,10 +429,9 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
   }, [movie.slug, currentEpisode?.name, currentServer?.server_name, currentServerIndex, currentEpisodeIndex]);
   */
 
-  // Save watch history whenever episode or server changes - TEMPORARILY DISABLED
-  /*
+  // Save watch history whenever episode or server changes
   useEffect(() => {
-    if (isRestored && currentEpisode && currentServer) {
+    if (currentEpisode && currentServer) {
       saveWatchHistory(
         movie,
         currentEpisode.name || `Tập ${currentEpisodeIndex + 1}`,
@@ -441,8 +440,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         currentEpisodeIndex
       );
     }
-  }, [movie.slug, currentEpisode?.name, currentServer?.server_name, currentServerIndex, currentEpisodeIndex, isRestored]);
-  */
+  }, [movie.slug, currentEpisode?.name, currentServer?.server_name, currentServerIndex, currentEpisodeIndex]);
 
   useEffect(() => {
     if (currentEpisode) {

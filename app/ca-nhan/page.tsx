@@ -2030,49 +2030,20 @@ if (!mounted) {
                   {history.map((item) => (
                     <div
                       key={item.slug}
-                      className="group relative transition-all duration-300 hover:scale-105 hover:z-10"
+                      className="group relative"
                     >
-                      <Link href={`/xem-phim/${item.slug}`} className="flex flex-col h-full">
-                        <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-zinc-900 shadow-lg border border-white/5 transition-all duration-300 group-hover:shadow-[var(--color-cyan-neon)]/10 group-hover:border-white/10">
-                          <Image
-                            src={getPosterUrl(item)}
-                            alt={item.name}
-                            fill
-                            className="object-cover transition-transform duration-500 ease-out will-change-transform"
-                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 16vw"
-                            unoptimized
-                          />
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Play className="w-12 h-12 text-white fill-white" />
-                          </div>
-                          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
-                            <p className="text-xs font-semibold text-[var(--color-cyan-neon)] mb-1 flex items-center gap-1">
-                              <Clock size={12} />
-                              {item.episodeName || "Xem tiếp"}
-                            </p>
-                            <p className="text-[10px] text-zinc-400">
-                              {timeAgo(item.watchedAt)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-2">
-                          <h3 className="font-medium text-white text-sm line-clamp-1 group-hover:text-[var(--color-cyan-neon)] transition-colors">
-                            {item.name}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-zinc-500">{item.year}</span>
-                          </div>
-                        </div>
-                      </Link>
-
-                      {/* Remove item button */}
+                      <MovieCard
+                        movie={item as unknown as Movie}
+                        href={`/xem-phim/${item.slug}`}
+                        isHistory={true}
+                      />
                       <button
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           handleRemoveHistory(item.slug);
                         }}
-                        className="absolute top-2 right-2 p-1.5 rounded-full bg-zinc-900/80 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors opacity-0 group-hover:opacity-100 z-10 cursor-pointer"
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-zinc-950/80 text-zinc-400 hover:text-red-400 hover:bg-zinc-900 transition-colors opacity-0 group-hover:opacity-100 z-30 cursor-pointer border-none"
                         title="Xóa khỏi lịch sử"
                       >
                         <X className="w-4 h-4" />

@@ -12,7 +12,6 @@ import type {
   Movie,
 } from "@/types/api";
 import { MOVIE_SOURCES, PRIMARY_SOURCE } from "./sources";
-import { mapNguoncListToV1, mapNguoncDetailToV1 } from "./nguonc-mapper";
 const API_BASE_URL = PRIMARY_SOURCE.url;
 const TMDB_API_BASE_URL = process.env.TMDB_API_BASE_URL || "https://api.themoviedb.org";
 
@@ -32,8 +31,6 @@ export async function fetchAPI<T>(
           encodedBaseUrl = 'primary';
         } else if (baseUrl === 'https://ophim1.com') {
           encodedBaseUrl = 'backup';
-        } else if (baseUrl === 'https://phim.nguonc.com') {
-          encodedBaseUrl = 'nguonc';
         } else {
           try {
             encodedBaseUrl = window.btoa(baseUrl);
@@ -109,16 +106,6 @@ export async function getPhimMoi(
   page: number = 1,
   limit: number = 20
 ): Promise<ApiResponse<MovieListResponse> | null> {
-  if (PRIMARY_SOURCE.id === 'nguonc') {
-    try {
-      const res = await fetchAPI<any>(`/api/film/phim-moi-cap-nhat?page=${page}`, 3600, PRIMARY_SOURCE.url);
-      const mapped = mapNguoncListToV1(res);
-      if (mapped) return mapped as any;
-    } catch (e) {
-      console.warn("Nguonc getPhimMoi fetch failed:", e);
-    }
-  }
-
   if (PRIMARY_SOURCE.id === 'phimapi') {
     try {
       // PhimAPI's phim-moi-cap-nhat endpoint ignores limit and always returns 10 items.
@@ -292,9 +279,6 @@ export function getCleanServerName(rawName: string | undefined): string {
   if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) {
     return `PhimAPI ${suffix ? `(${suffix})` : ""}`.trim();
   }
-  if (lower.includes("nguonc") || lower.includes("nguồn c")) {
-    return `Nguồn C ${suffix ? `(${suffix})` : ""}`.trim();
-  }
   if (lower.includes("ophim")) {
     return `Ophim ${suffix ? `(${suffix})` : ""}`.trim();
   }
@@ -304,7 +288,6 @@ export function getCleanServerName(rawName: string | undefined): string {
 export function sortEpisodes(eps: any[]): any[] {
   if (!eps) return [];
   const priority: Record<string, number> = {
-    nguonc: 3,
     phimapi: 2,
     kkphim: 2,
     ophim: 1
@@ -313,7 +296,6 @@ export function sortEpisodes(eps: any[]): any[] {
   return [...eps].sort((a, b) => {
     const getPriority = (name: string) => {
       const lower = name.toLowerCase();
-      if (lower.includes("nguonc") || lower.includes("nguồn c")) return priority.nguonc;
       if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) return priority.phimapi;
       if (lower.includes("ophim")) return priority.ophim;
       return 0;
@@ -405,38 +387,6 @@ export async function searchPhim(
   
   const searchKeyword = isImdbId ? imdbId : cleanKeyword;
 
-  // Helper: Tự động fetch nhiều trang của Nguồn C (do API của họ limit cứng 10 phim/trang)
-  const searchNguoncAll = async (keyword: string, isQuick: boolean = false) => {
-    const firstPage = await fetchAPI<any>(`/api/film/search?keyword=${encodeURIComponent(keyword)}&page=1`, 3600, MOVIE_SOURCES.NGUONC.url);
-    const firstPageAny = firstPage as any;
-    if (!firstPageAny?.items) return mapNguoncListToV1(firstPage);
-
-    const totalPages = firstPageAny.paginate?.total_page || 1;
-    const items = firstPageAny.items || [];
-    console.log(`[Nguonc] keyword: ${keyword}, totalPages: ${totalPages}, items: ${items.length}`);
-
-    if (totalPages > 1) {
-      // Tìm kiếm nhanh: chỉ fetch 2 trang (max 20 items)
-      // Tìm kiếm thường: fetch tối đa 10 trang (max 100 items)
-      const maxPages = isQuick ? Math.min(totalPages, 2) : Math.min(totalPages, 10);
-      const promises = [];
-      for (let i = 2; i <= maxPages; i++) {
-        promises.push(fetchAPI<any>(`/api/film/search?keyword=${encodeURIComponent(keyword)}&page=${i}`, 3600, MOVIE_SOURCES.NGUONC.url));
-      }
-      const results = await Promise.all(promises);
-      for (const res of results) {
-        const resAny = res as any;
-        if (resAny?.items) {
-          items.push(...resAny.items);
-        }
-      }
-      console.log(`[Nguonc] after fetch, total items: ${items.length}`);
-    }
-
-    firstPageAny.items = items;
-    return mapNguoncListToV1(firstPageAny);
-  };
-
   // Helper: Tự động fetch nhiều trang cho API chuẩn V1 (Ophim, PhimAPI)
   const searchV1All = async (keyword: string, baseUrl: string, isQuick: boolean = false) => {
     const firstPage = await fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(keyword)}&page=1`, 3600, baseUrl);
@@ -471,7 +421,7 @@ export async function searchPhim(
   
   const uniqueItemsMap = new Map<string, Movie & { source?: string; available_sources?: string[] }>();
 
-  const sourcePriority: Record<string, number> = { phimapi: 3, nguonc: 2, ophim: 1, tmdb: 0 };
+  const sourcePriority: Record<string, number> = { phimapi: 2, ophim: 1, tmdb: 0 };
 
   const addItems = (res: any, sourceName: string) => {
     const items = res?.data?.items || res?.items || [];
@@ -519,16 +469,13 @@ export async function searchPhim(
   const { searchTMDB } = await import('./tmdb');
 
   if (isImdbId) {
-    const endpoint = `/v1/api/tim-kiem?keyword=${encodeURIComponent(imdbId)}`;
-    const [ophimRes, phimapiRes, nguoncRes, tmdbMovies] = await Promise.all([
+    const [ophimRes, phimapiRes, tmdbMovies] = await Promise.all([
       searchV1All(imdbId || cleanKeyword, MOVIE_SOURCES.OPHIM.url, false),
       searchV1All(imdbId || cleanKeyword, MOVIE_SOURCES.PHIMAPI.url, false),
-      searchNguoncAll(imdbId || cleanKeyword, false),
       searchTMDB(imdbId || cleanKeyword)
     ]);
     addItems(phimapiRes, 'phimapi');
     addItems(ophimRes, 'ophim');
-    addItems(nguoncRes, 'nguonc');
     addItems({ data: { items: tmdbMovies } }, 'tmdb');
   } else {
     if (isQuick) {
@@ -539,49 +486,39 @@ export async function searchPhim(
         ]).catch(() => null);
       };
 
-      const [ophimRes, phimapiRes, nguoncRes, tmdbMovies] = await Promise.all([
+      const [ophimRes, phimapiRes, tmdbMovies] = await Promise.all([
         withTimeout(searchV1All(searchKeyword, MOVIE_SOURCES.OPHIM.url, true), 2000),
         withTimeout(searchV1All(searchKeyword, MOVIE_SOURCES.PHIMAPI.url, true), 2000),
-        withTimeout(searchNguoncAll(searchKeyword, true), 2500),
         withTimeout(searchTMDB(searchKeyword), 2000)
       ]);
       addItems(phimapiRes, 'phimapi');
       addItems(ophimRes, 'ophim');
-      addItems(nguoncRes, 'nguonc');
       addItems({ data: { items: tmdbMovies || [] } }, 'tmdb');
     } else {
       const baseKeyword = getBaseKeyword(searchKeyword);
       const hasDifferentBase = baseKeyword && baseKeyword.toLowerCase() !== searchKeyword.toLowerCase();
 
-      const endpoints = [
-        `/v1/api/tim-kiem?keyword=${encodeURIComponent(searchKeyword)}`
+      const fetchPromises = [
+        searchV1All(searchKeyword, MOVIE_SOURCES.OPHIM.url, false),
+        searchV1All(searchKeyword, MOVIE_SOURCES.PHIMAPI.url, false),
+        searchTMDB(searchKeyword, 20),
+        ...(hasDifferentBase ? [
+          searchV1All(baseKeyword, MOVIE_SOURCES.OPHIM.url, false),
+          searchV1All(baseKeyword, MOVIE_SOURCES.PHIMAPI.url, false),
+          searchTMDB(baseKeyword, 20)
+        ] : [])
       ];
-      if (hasDifferentBase) {
-        endpoints.push(`/v1/api/tim-kiem?keyword=${encodeURIComponent(baseKeyword)}`);
-      }
-
-      const fetchPromises = endpoints.flatMap((ep, idx) => {
-        const keywordToSearch = idx === 0 ? searchKeyword : baseKeyword;
-        return [
-          searchV1All(keywordToSearch, MOVIE_SOURCES.OPHIM.url, false),
-          searchV1All(keywordToSearch, MOVIE_SOURCES.PHIMAPI.url, false),
-          searchNguoncAll(keywordToSearch, false),
-          searchTMDB(keywordToSearch, 20)
-        ];
-      });
 
       const results = await Promise.all(fetchPromises);
 
       addItems(results[1], 'phimapi');
       addItems(results[0], 'ophim');
-      addItems(results[2], 'nguonc');
-      addItems({ data: { items: results[3] } }, 'tmdb');
+      addItems({ data: { items: results[2] } }, 'tmdb');
 
-      if (hasDifferentBase && results.length >= 8) {
-        addItems(results[5], 'phimapi');
-        addItems(results[4], 'ophim');
-        addItems(results[6], 'nguonc');
-        addItems({ data: { items: results[7] } }, 'tmdb');
+      if (hasDifferentBase && results.length >= 6) {
+        addItems(results[4], 'phimapi');
+        addItems(results[3], 'ophim');
+        addItems({ data: { items: results[5] } }, 'tmdb');
       }
     }
   }
@@ -670,8 +607,7 @@ export async function searchPhimWithPagination(
   if (PRIMARY_SOURCE.id === 'nguonc') {
     const page = options.page || 1;
     const res = await fetchAPI<any>(`/api/film/search?keyword=${encodeURIComponent(keyword)}&page=${page}`, 3600, PRIMARY_SOURCE.url);
-    const mapped = mapNguoncListToV1(res);
-    if (mapped) return mapped as any;
+    if (res) return res as any;
   }
 
   const cleanKeyword = keyword.trim();
@@ -699,13 +635,6 @@ export async function getTheLoaiDetails(
     year?: string;
   } = {}
 ): Promise<ApiResponse<MovieListResponse> | null> {
-  if (PRIMARY_SOURCE.id === 'nguonc') {
-    const page = options.page || 1;
-    const res = await fetchAPI<any>(`/api/film/the-loai/${slug}?page=${page}`, 3600, PRIMARY_SOURCE.url);
-    const mapped = mapNguoncListToV1(res);
-    if (mapped) return mapped as any;
-  }
-
   const params = new URLSearchParams();
   if (options.page !== undefined) params.append('page', options.page.toString());
   if (options.limit !== undefined) params.append('limit', options.limit.toString());
@@ -729,13 +658,6 @@ export async function getQuocGiaDetails(
     year?: string;
   } = {}
 ): Promise<ApiResponse<MovieListResponse> | null> {
-  if (PRIMARY_SOURCE.id === 'nguonc') {
-    const page = options.page || 1;
-    const res = await fetchAPI<any>(`/api/film/quoc-gia/${slug}?page=${page}`, 3600, PRIMARY_SOURCE.url);
-    const mapped = mapNguoncListToV1(res);
-    if (mapped) return mapped as any;
-  }
-
   const params = new URLSearchParams();
   if (options.page !== undefined) params.append('page', options.page.toString());
   if (options.limit !== undefined) params.append('limit', options.limit.toString());
@@ -763,13 +685,6 @@ export async function getDanhSach(
     year?: string;
   } = {}
 ): Promise<ApiResponse<MovieListResponse> | null> {
-  if (PRIMARY_SOURCE.id === 'nguonc') {
-    const page = options.page || 1;
-    const res = await fetchAPI<any>(`/api/film/danh-sach/${slug}?page=${page}`, 3600, PRIMARY_SOURCE.url);
-    const mapped = mapNguoncListToV1(res);
-    if (mapped) return mapped as any;
-  }
-
   const params = new URLSearchParams();
   if (options.page !== undefined) params.append('page', options.page.toString());
   if (options.limit !== undefined) params.append('limit', options.limit.toString());
@@ -836,13 +751,12 @@ export async function getChiTietPhim(
     };
   }
 
-  let [ophimRes, phimapiRes, nguoncRes] = await Promise.all([
+  let [ophimRes, phimapiRes] = await Promise.all([
     !slug.startsWith('tmdb-') ? fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 3600, MOVIE_SOURCES.OPHIM.url) : Promise.resolve(null),
     !slug.startsWith('tmdb-') ? fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 3600, MOVIE_SOURCES.PHIMAPI.url) : Promise.resolve(null),
-    !slug.startsWith('tmdb-') ? fetchAPI<any>(`/api/film/${slug}`, 3600, MOVIE_SOURCES.NGUONC.url).then(mapNguoncDetailToV1) : Promise.resolve(null)
   ]);
 
-  let baseMovie: MovieDetail | null = phimapiRes?.data?.item || nguoncRes?.data?.item || ophimRes?.data?.item || tmdbMovieDetail;
+  let baseMovie: MovieDetail | null = phimapiRes?.data?.item || ophimRes?.data?.item || tmdbMovieDetail;
 
   // --- SMART CROSS-API MATCHING (FALLBACK) ---
   if (baseMovie) {
@@ -851,23 +765,19 @@ export async function getChiTietPhim(
     const targetSeason = baseMovie.tmdb?.season || null;
     const baseKeyword = getBaseKeyword(originName);
     
-    if ((!ophimRes?.data?.item || !phimapiRes?.data?.item || !nguoncRes?.data?.item) && originName) {
+    if ((!ophimRes?.data?.item || !phimapiRes?.data?.item) && originName) {
       // Step 1: Parallelize searches
-      const [searchOphim, searchPhimapi, searchNguonc] = await Promise.all([
+      const [searchOphim, searchPhimapi] = await Promise.all([
         !ophimRes?.data?.item 
           ? fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(originName)}`, 3600, MOVIE_SOURCES.OPHIM.url) 
           : Promise.resolve(null),
         !phimapiRes?.data?.item 
           ? fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(originName)}`, 3600, MOVIE_SOURCES.PHIMAPI.url) 
           : Promise.resolve(null),
-        !nguoncRes?.data?.item
-          ? fetchAPI<any>(`/api/film/search?keyword=${encodeURIComponent(originName)}`, 3600, MOVIE_SOURCES.NGUONC.url).then(mapNguoncListToV1)
-          : Promise.resolve(null)
       ]);
 
       let fetchOphimPromise: Promise<ApiResponse<{ item: MovieDetail }> | null> | null = null;
       let fetchPhimapiPromise: Promise<ApiResponse<{ item: MovieDetail }> | null> | null = null;
-      let fetchNguoncPromise: Promise<{ status: string; data: { item: MovieDetail } } | null> | null = null;
 
       if (searchOphim?.data?.items) {
         let bestMatch = null;
@@ -893,29 +803,15 @@ export async function getChiTietPhim(
         }
       }
 
-      if (searchNguonc?.data?.items) {
-        let bestMatch = null;
-        let bestScore = 0;
-        searchNguonc.data.items.forEach((m: any) => {
-          const score = calculateMatchScore(m as any, originName, baseKeyword, targetSeason);
-          if (score > bestScore) { bestScore = score; bestMatch = m; }
-        });
-        if (bestMatch && (bestMatch as any).slug !== slug && bestScore > 0) {
-          fetchNguoncPromise = fetchAPI<any>(`/api/film/${(bestMatch as any).slug}`, 3600, MOVIE_SOURCES.NGUONC.url).then(mapNguoncDetailToV1);
-        }
-      }
-
       // Step 2: Parallelize detail fetches
-      if (fetchOphimPromise || fetchPhimapiPromise || fetchNguoncPromise) {
-        const [fallbackOphim, fallbackPhimapi, fallbackNguonc] = await Promise.all([
+      if (fetchOphimPromise || fetchPhimapiPromise) {
+        const [fallbackOphim, fallbackPhimapi] = await Promise.all([
           fetchOphimPromise || Promise.resolve(null),
           fetchPhimapiPromise || Promise.resolve(null),
-          fetchNguoncPromise || Promise.resolve(null)
         ]);
         
         if (fallbackOphim?.data?.item) ophimRes = fallbackOphim;
         if (fallbackPhimapi?.data?.item) phimapiRes = fallbackPhimapi;
-        if (fallbackNguonc?.data?.item) nguoncRes = fallbackNguonc as any;
       }
     }
   }
@@ -928,10 +824,6 @@ export async function getChiTietPhim(
     return `${prefix} - ${clean}`;
   };
 
-  if (nguoncRes?.data?.item) {
-    allEpisodes.push(...(nguoncRes.data.item.episodes?.map((e: any) => ({ ...e, server_name: formatServerName('Nguồn C', e.server_name) })) || []));
-  }
-
   if (phimapiRes?.data?.item) {
     allEpisodes.push(...(phimapiRes.data.item.episodes?.map((e: any) => ({ ...e, server_name: formatServerName('PhimAPI', e.server_name) })) || []));
   }
@@ -940,8 +832,8 @@ export async function getChiTietPhim(
     allEpisodes.push(...(ophimRes.data.item.episodes?.map((e: any) => ({ ...e, server_name: formatServerName('Ophim', e.server_name) })) || []));
   }
 
-  // Re-evaluate baseMovie based on priority: TMDB > PhimAPI > NguonC > Ophim
-  baseMovie = tmdbMovieDetail || phimapiRes?.data?.item || nguoncRes?.data?.item || ophimRes?.data?.item || null;
+  // Re-evaluate baseMovie based on priority: TMDB > PhimAPI > Ophim
+  baseMovie = tmdbMovieDetail || phimapiRes?.data?.item || ophimRes?.data?.item || null;
 
   if (!baseMovie) return null;
 
