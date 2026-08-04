@@ -3,13 +3,19 @@ import { fetchAPI } from '@/lib/api';
 
 export const runtime = 'edge';
 
+const SOURCES = [
+  'https://ophim1.com',
+  'https://phim.nguonc.com',
+  'https://phimapi.com'
+];
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const endpoint = searchParams.get('endpoint') || '';
     const baseUrl = searchParams.get('baseUrl') || undefined;
     const revalidateStr = searchParams.get('revalidate');
-    const revalidate = revalidateStr ? parseInt(revalidateStr, 10) : 3600;
+    const revalidate = revalidateStr ? parseInt(revalidateStr, 10) : 0;
 
     if (!endpoint) {
       return NextResponse.json({ error: 'Endpoint is required' }, { status: 400 });
@@ -38,7 +44,23 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const data = await fetchAPI(endpoint, revalidate, finalBaseUrl);
+    // Try the requested source first
+    let data = await fetchAPI(endpoint, revalidate, finalBaseUrl);
+    
+    // If failed and no specific baseUrl requested, try all sources with fallback
+    if (!data && !baseUrl) {
+      console.warn('Primary fetch failed, trying fallback sources');
+      for (const source of SOURCES) {
+        if (source === finalBaseUrl) continue; // Skip already tried
+        console.log(`Trying fallback source: ${source}`);
+        data = await fetchAPI(endpoint, revalidate, source);
+        if (data) {
+          console.log(`Success with fallback source: ${source}`);
+          break;
+        }
+      }
+    }
+
     const response = NextResponse.json(data);
 
     // Lưu Edge CDN cache để giải phóng tài nguyên CPU Serverless trên Vercel
