@@ -8,5 +8,8 @@
   "env": {
     "NEXT_PUBLIC_SITE_NAME": "Mocaemtui",
     "NEXT_PUBLIC_API_BASE_URL": "https://phimapi.com"
+  },
+  "caching": {
+    "maxAge": 0
   }
 }
