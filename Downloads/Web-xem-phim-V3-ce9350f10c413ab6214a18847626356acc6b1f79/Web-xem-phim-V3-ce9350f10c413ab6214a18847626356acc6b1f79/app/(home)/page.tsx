@@ -109,20 +109,19 @@ const FALLBACK_MOVIES = [
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any>({
-    phimMoiData: null,
-    bannerHoatHinhData: null,
-    phimVietData: null,
-    phimAuMyData: null,
-    phimHanData: null,
-    phimNhatData: null,
-    phimTrungData: null,
-    animeData: null,
-    cartoonData: null,
-    longTiengData: null,
-    thuyetMinhData: null,
-    tvShowsData: null,
+    phimMoiData: { data: { items: FALLBACK_MOVIES } },
+    bannerHoatHinhData: { data: { items: FALLBACK_MOVIES } },
+    phimVietData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
+    phimAuMyData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
+    phimHanData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
+    phimNhatData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
+    phimTrungData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
+    animeData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
+    cartoonData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
+    longTiengData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
+    thuyetMinhData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
+    tvShowsData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
   });
 
   useEffect(() => {
@@ -130,7 +129,6 @@ export default function Home() {
       try {
         console.log('[Home Client] Starting data fetch...');
         setLoading(true);
-        setError(null);
 
         // Try API calls with fallback to hardcoded data
         let phimMoiData;
@@ -202,23 +200,6 @@ export default function Home() {
           longTiengData,
           thuyetMinhData,
           tvShowsData,
-        });
-      } catch (err) {
-        console.error('[Home Client] Fatal error:', err);
-        // Even on fatal error, use fallback data
-        setData({
-          phimMoiData: { data: { items: FALLBACK_MOVIES } },
-          bannerHoatHinhData: { data: { items: FALLBACK_MOVIES } },
-          phimVietData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
-          phimAuMyData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
-          phimHanData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
-          phimNhatData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
-          phimTrungData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
-          animeData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
-          cartoonData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
-          longTiengData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
-          thuyetMinhData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
-          tvShowsData: { data: { items: FALLBACK_MOVIES.slice(0, 3) } },
         });
       } finally {
         setLoading(false);
