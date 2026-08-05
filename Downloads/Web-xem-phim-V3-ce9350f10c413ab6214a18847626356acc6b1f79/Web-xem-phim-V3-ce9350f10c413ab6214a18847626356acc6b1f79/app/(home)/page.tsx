@@ -35,19 +35,38 @@ export default async function Home() {
     getDanhSach("tv-shows", { page: 1, limit: 12 }),
   ]);
 
-  if (!phimMoiData || !phimMoiData.data?.items) {
+  // Tạm thời bỏ qua validation để debug Vercel
+  // if (!phimMoiData || !phimMoiData.data?.items) {
+  //   return (
+  //     <div className="container mx-auto px-4 py-8">
+  //       <div className="text-center py-16">
+  //         <p className="text-zinc-400 text-lg">
+  //           Không thể tải dữ liệu từ API. Vui lòng thử lại sau.
+  //         </p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  const allPhimMoi = phimMoiData?.data?.items || [];
+  
+  // Fallback nếu không có data
+  if (allPhimMoi.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-16">
           <p className="text-zinc-400 text-lg">
-            Không thể tải dữ liệu từ API. Vui lòng thử lại sau.
+            Đang tải dữ liệu...
           </p>
+          <div className="mt-4 text-sm text-zinc-500">
+            <p>PRIMARY_SOURCE: {process.env.NEXT_PUBLIC_API_BASE_URL || 'default'}</p>
+            <p>phimMoiData: {phimMoiData ? 'exists' : 'null'}</p>
+            <p>items: {allPhimMoi.length}</p>
+          </div>
         </div>
       </div>
     );
   }
-
-  const allPhimMoi = phimMoiData.data.items;
   
   // Combine sources to create a larger, more diverse pool for the banner
   const bannerPool = [
