@@ -25,8 +25,6 @@ export async function fetchAPI<T>(
     const isBrowser = typeof window !== "undefined";
     const baseUrl = customBaseUrl || API_BASE_URL;
 
-    console.log(`[fetchAPI] endpoint: ${endpoint}, baseUrl: ${baseUrl}, isBrowser: ${isBrowser}`);
-
     if (isBrowser) {
       try {
         let encodedBaseUrl = baseUrl;
@@ -60,8 +58,7 @@ export async function fetchAPI<T>(
     };
 
     const options: RequestInit = {
-      headers,
-      signal: AbortSignal.timeout(30000) // 30 second timeout for Vercel
+      headers
     };
 
     if (revalidate === 0) {
@@ -80,7 +77,6 @@ export async function fetchAPI<T>(
     }
 
     if (!response.ok) {
-      console.error(`[fetchAPI] Response not OK: ${response.status} ${response.statusText}`);
       return null;
     }
 
@@ -97,13 +93,12 @@ export async function fetchAPI<T>(
       }
       return null;
     } else if (data.status === 'error') {
-      console.error(`[fetchAPI] API returned error status`);
       return null;
     }
     
     return data;
   } catch (error) {
-    console.error('[fetchAPI] Error:', error);
+    console.error('API Error:', error);
     return null;
   }
 }

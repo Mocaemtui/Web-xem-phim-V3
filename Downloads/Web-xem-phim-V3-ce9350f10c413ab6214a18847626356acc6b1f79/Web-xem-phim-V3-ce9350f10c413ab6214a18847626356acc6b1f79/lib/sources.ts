@@ -19,6 +19,6 @@ export const MOVIE_SOURCES = {
   }
 };
 
-// PhimAPI (KKPhim) là nguồn chính với nhiều tính năng nâng cao
-// Ophim đóng vai trò dự phòng khi PhimAPI gặp vấn đề
-export const PRIMARY_SOURCE = MOVIE_SOURCES.PHIMAPI;
+// PhimAPI có thể không hoạt động ổn định trên Vercel (region/network issues)
+// Tạm thời dùng Ophim làm nguồn chính để đảm bảo Vercel hoạt động
+export const PRIMARY_SOURCE = MOVIE_SOURCES.OPHIM;
