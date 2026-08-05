@@ -4,53 +4,46 @@ import HomeHistorySection from "@/components/HomeHistorySection";
 import HeroBanner from "@/components/HeroBanner";
 import { getPhimMoi, getDanhSach, getQuocGiaDetails } from "@/lib/api";
 
-export const revalidate = 600; // Bật lại caching sau khi debug
+export const revalidate = 0; // Tắt cache hoàn toàn để force re-render
 
 export default async function Home() {
-  const [
-    phimMoiData,
-    bannerHoatHinhData,
-    phimVietData,
-    phimAuMyData,
-    phimHanData,
-    phimNhatData,
-    phimTrungData,
-    animeData,
-    cartoonData,
-    longTiengData,
-    thuyetMinhData,
-    tvShowsData,
-  ] = await Promise.all([
-    getPhimMoi(1, 30),
-    getDanhSach("hoat-hinh", { page: 1, limit: 50 }),
-    getQuocGiaDetails("viet-nam", { page: 1, limit: 12 }),
-    getQuocGiaDetails("au-my", { page: 1, limit: 12 }),
-    getQuocGiaDetails("han-quoc", { page: 1, limit: 12 }),
-    getQuocGiaDetails("nhat-ban", { page: 1, limit: 12 }),
-    getQuocGiaDetails("trung-quoc", { page: 1, limit: 12 }),
-    getDanhSach("hoat-hinh", { page: 1, limit: 12, country: "nhat-ban" }),
-    getDanhSach("hoat-hinh", { page: 1, limit: 30, country: "au-my" }),
-    getDanhSach("phim-long-tieng", { page: 1, limit: 12 }),
-    getDanhSach("phim-thuyet-minh", { page: 1, limit: 12 }),
-    getDanhSach("tv-shows", { page: 1, limit: 12 }),
-  ]);
+  let phimMoiData, bannerHoatHinhData, phimVietData, phimAuMyData, phimHanData, phimNhatData, phimTrungData, animeData, cartoonData, longTiengData, thuyetMinhData, tvShowsData;
 
-  // Tạm thời bỏ qua validation để debug Vercel
-  // if (!phimMoiData || !phimMoiData.data?.items) {
-  //   return (
-  //     <div className="container mx-auto px-4 py-8">
-  //       <div className="text-center py-16">
-  //         <p className="text-zinc-400 text-lg">
-  //           Không thể tải dữ liệu từ API. Vui lòng thử lại sau.
-  //         </p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  try {
+    [
+      phimMoiData,
+      bannerHoatHinhData,
+      phimVietData,
+      phimAuMyData,
+      phimHanData,
+      phimNhatData,
+      phimTrungData,
+      animeData,
+      cartoonData,
+      longTiengData,
+      thuyetMinhData,
+      tvShowsData,
+    ] = await Promise.all([
+      getPhimMoi(1, 30).catch(e => { console.error('[Home] getPhimMoi failed:', e); return null; }),
+      getDanhSach("hoat-hinh", { page: 1, limit: 50 }).catch(e => { console.error('[Home] bannerHoatHinh failed:', e); return null; }),
+      getQuocGiaDetails("viet-nam", { page: 1, limit: 12 }).catch(e => { console.error('[Home] phimViet failed:', e); return null; }),
+      getQuocGiaDetails("au-my", { page: 1, limit: 12 }).catch(e => { console.error('[Home] phimAuMy failed:', e); return null; }),
+      getQuocGiaDetails("han-quoc", { page: 1, limit: 12 }).catch(e => { console.error('[Home] phimHan failed:', e); return null; }),
+      getQuocGiaDetails("nhat-ban", { page: 1, limit: 12 }).catch(e => { console.error('[Home] phimNhat failed:', e); return null; }),
+      getQuocGiaDetails("trung-quoc", { page: 1, limit: 12 }).catch(e => { console.error('[Home] phimTrung failed:', e); return null; }),
+      getDanhSach("hoat-hinh", { page: 1, limit: 12, country: "nhat-ban" }).catch(e => { console.error('[Home] anime failed:', e); return null; }),
+      getDanhSach("hoat-hinh", { page: 1, limit: 30, country: "au-my" }).catch(e => { console.error('[Home] cartoon failed:', e); return null; }),
+      getDanhSach("phim-long-tieng", { page: 1, limit: 12 }).catch(e => { console.error('[Home] longTieng failed:', e); return null; }),
+      getDanhSach("phim-thuyet-minh", { page: 1, limit: 12 }).catch(e => { console.error('[Home] thuyetMinh failed:', e); return null; }),
+      getDanhSach("tv-shows", { page: 1, limit: 12 }).catch(e => { console.error('[Home] tvShows failed:', e); return null; }),
+    ]);
+  } catch (error) {
+    console.error('[Home] Fatal error:', error);
+  }
 
   const allPhimMoi = phimMoiData?.data?.items || [];
   
-  // Fallback nếu không có data
+  // Nếu không có data, hiển thị debug info thay vì crash
   if (allPhimMoi.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -62,6 +55,7 @@ export default async function Home() {
             <p>PRIMARY_SOURCE: {process.env.NEXT_PUBLIC_API_BASE_URL || 'default'}</p>
             <p>phimMoiData: {phimMoiData ? 'exists' : 'null'}</p>
             <p>items: {allPhimMoi.length}</p>
+            <p>environment: {process.env.NODE_ENV || 'unknown'}</p>
           </div>
         </div>
       </div>
