@@ -28,11 +28,27 @@ export default function Home() {
   useEffect(() => {
     async function fetchData() {
       try {
+        console.log('[Home Client] Starting data fetch...');
         setLoading(true);
         setError(null);
 
+        // Try just one API call first to test
+        console.log('[Home Client] Testing getPhimMoi only...');
+        const phimMoiData = await getPhimMoi(1, 30);
+        
+        console.log('[Home Client] phimMoiData result:', phimMoiData);
+        console.log('[Home Client] phimMoiData items:', phimMoiData?.data?.items?.length || 0);
+
+        if (!phimMoiData || !phimMoiData.data?.items || phimMoiData.data.items.length === 0) {
+          console.error('[Home Client] getPhimMoi returned no data');
+          setError('Không thể tải dữ liệu từ API. getPhimMoi failed.');
+          setLoading(false);
+          return;
+        }
+
+        // If first call works, try the rest
+        console.log('[Home Client] First API success, loading rest...');
         const [
-          phimMoiData,
           bannerHoatHinhData,
           phimVietData,
           phimAuMyData,
@@ -45,7 +61,6 @@ export default function Home() {
           thuyetMinhData,
           tvShowsData,
         ] = await Promise.all([
-          getPhimMoi(1, 30),
           getDanhSach("hoat-hinh", { page: 1, limit: 50 }),
           getQuocGiaDetails("viet-nam", { page: 1, limit: 12 }),
           getQuocGiaDetails("au-my", { page: 1, limit: 12 }),
@@ -58,6 +73,8 @@ export default function Home() {
           getDanhSach("phim-thuyet-minh", { page: 1, limit: 12 }),
           getDanhSach("tv-shows", { page: 1, limit: 12 }),
         ]);
+
+        console.log('[Home Client] All data fetch completed');
 
         setData({
           phimMoiData,
@@ -74,7 +91,7 @@ export default function Home() {
           tvShowsData,
         });
       } catch (err) {
-        console.error('[Home] Error fetching data:', err);
+        console.error('[Home Client] Error fetching data:', err);
         setError('Không thể tải dữ liệu từ API. Vui lòng thử lại sau.');
       } finally {
         setLoading(false);
@@ -95,10 +112,14 @@ export default function Home() {
   }
 
   if (error) {
+    console.error('[Home Client] Showing error state:', error);
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-16">
           <p className="text-zinc-400 text-lg">{error}</p>
+          <div className="mt-4 text-sm text-zinc-500">
+            <p>Vui lòng kiểm tra browser console (F12) để xem chi tiết lỗi</p>
+          </div>
         </div>
       </div>
     );
