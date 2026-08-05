@@ -1,11 +1,12 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import HistoryTracker from "@/components/HistoryTracker";
-import PWARegistration from "@/components/PWARegistration";
-import Providers from "@/components/Providers";
-import CloudSync from "@/components/CloudSync";
+// Temporarily disabled all components to debug error
+// import Header from "@/components/Header";
+// import Footer from "@/components/Footer";
+// import HistoryTracker from "@/components/HistoryTracker";
+// import PWARegistration from "@/components/PWARegistration";
+// import Providers from "@/components/Providers";
+// import CloudSync from "@/components/CloudSync";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -50,15 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}} />
       </head>
       <body className="min-h-full flex flex-col bg-black text-white font-sans">
-        <Providers>
-          {/* Temporarily disabled components to debug */}
-          {/* <CloudSync /> */}
-          {/* <PWARegistration /> */}
-          {/* <HistoryTracker /> */}
-          {/* <Header /> */}
-          {children}
-          {/* <Footer /> */}
-        </Providers>
+        {children}
       </body>
     </html>
   );
