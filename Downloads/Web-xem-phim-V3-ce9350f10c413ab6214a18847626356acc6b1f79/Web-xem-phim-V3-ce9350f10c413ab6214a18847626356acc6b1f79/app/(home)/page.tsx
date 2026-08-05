@@ -124,7 +124,7 @@ export default function Home() {
   ];
   
   // Remove duplicates
-  const uniquePool = Array.from(new Map(bannerPool.map(m => [m.slug, m])).values()));
+  const uniquePool = Array.from(new Map(bannerPool.map(m => [m.slug, m])).values());
   
   const heroMovies: any[] = [];
   const sliderPhimMoi: any[] = [];
