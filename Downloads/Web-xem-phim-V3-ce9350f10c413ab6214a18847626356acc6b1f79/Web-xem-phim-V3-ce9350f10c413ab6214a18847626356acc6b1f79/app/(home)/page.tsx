@@ -4,44 +4,64 @@ import HomeHistorySection from "@/components/HomeHistorySection";
 import HeroBanner from "@/components/HeroBanner";
 import { getPhimMoi, getDanhSach, getQuocGiaDetails } from "@/lib/api";
 
-export const revalidate = 600; // Cache trang chủ 10 phút trên CDN để tiết kiệm CPU Vercel
+export const revalidate = 0; // Tắt caching tạm thời để debug Vercel
 
 export default async function Home() {
-  const [
-    phimMoiData,
-    bannerHoatHinhData,
-    phimVietData,
-    phimAuMyData,
-    phimHanData,
-    phimNhatData,
-    phimTrungData,
-    animeData,
-    cartoonData,
-    longTiengData,
-    thuyetMinhData,
-    tvShowsData,
-  ] = await Promise.all([
-    getPhimMoi(1, 30), // Fetch 30 items for slider
-    getDanhSach("hoat-hinh", { page: 1, limit: 50 }), // Banner pool
-    getQuocGiaDetails("viet-nam", { page: 1, limit: 12 }),
-    getQuocGiaDetails("au-my", { page: 1, limit: 12 }),
-    getQuocGiaDetails("han-quoc", { page: 1, limit: 12 }),
-    getQuocGiaDetails("nhat-ban", { page: 1, limit: 12 }),
-    getQuocGiaDetails("trung-quoc", { page: 1, limit: 12 }),
-    getDanhSach("hoat-hinh", { page: 1, limit: 12, country: "nhat-ban" }),
-    getDanhSach("hoat-hinh", { page: 1, limit: 30, country: "au-my" }),
-    getDanhSach("phim-long-tieng", { page: 1, limit: 12 }),
-    getDanhSach("phim-thuyet-minh", { page: 1, limit: 12 }),
-    getDanhSach("tv-shows", { page: 1, limit: 12 }),
-  ]);
+  let phimMoiData, bannerHoatHinhData, phimVietData, phimAuMyData, phimHanData, phimNhatData, phimTrungData, animeData, cartoonData, longTiengData, thuyetMinhData, tvShowsData;
+
+  try {
+    const startTime = Date.now();
+    console.log('[Home] Starting data fetch...');
+
+    [
+      phimMoiData,
+      bannerHoatHinhData,
+      phimVietData,
+      phimAuMyData,
+      phimHanData,
+      phimNhatData,
+      phimTrungData,
+      animeData,
+      cartoonData,
+      longTiengData,
+      thuyetMinhData,
+      tvShowsData,
+    ] = await Promise.all([
+      getPhimMoi(1, 30).catch(e => { console.error('[Home] getPhimMoi failed:', e); return null; }),
+      getDanhSach("hoat-hinh", { page: 1, limit: 50 }).catch(e => { console.error('[Home] bannerHoatHinh failed:', e); return null; }),
+      getQuocGiaDetails("viet-nam", { page: 1, limit: 12 }).catch(e => { console.error('[Home] phimViet failed:', e); return null; }),
+      getQuocGiaDetails("au-my", { page: 1, limit: 12 }).catch(e => { console.error('[Home] phimAuMy failed:', e); return null; }),
+      getQuocGiaDetails("han-quoc", { page: 1, limit: 12 }).catch(e => { console.error('[Home] phimHan failed:', e); return null; }),
+      getQuocGiaDetails("nhat-ban", { page: 1, limit: 12 }).catch(e => { console.error('[Home] phimNhat failed:', e); return null; }),
+      getQuocGiaDetails("trung-quoc", { page: 1, limit: 12 }).catch(e => { console.error('[Home] phimTrung failed:', e); return null; }),
+      getDanhSach("hoat-hinh", { page: 1, limit: 12, country: "nhat-ban" }).catch(e => { console.error('[Home] anime failed:', e); return null; }),
+      getDanhSach("hoat-hinh", { page: 1, limit: 30, country: "au-my" }).catch(e => { console.error('[Home] cartoon failed:', e); return null; }),
+      getDanhSach("phim-long-tieng", { page: 1, limit: 12 }).catch(e => { console.error('[Home] longTieng failed:', e); return null; }),
+      getDanhSach("phim-thuyet-minh", { page: 1, limit: 12 }).catch(e => { console.error('[Home] thuyetMinh failed:', e); return null; }),
+      getDanhSach("tv-shows", { page: 1, limit: 12 }).catch(e => { console.error('[Home] tvShows failed:', e); return null; }),
+    ]);
+
+    const fetchTime = Date.now() - startTime;
+    console.log(`[Home] Data fetch completed in ${fetchTime}ms`);
+    console.log('[Home] phimMoiData:', phimMoiData ? 'success' : 'failed');
+    console.log('[Home] PRIMARY_SOURCE:', process.env.NEXT_PUBLIC_API_BASE_URL || 'default');
+  } catch (error) {
+    console.error('[Home] Fatal error in data fetching:', error);
+  }
 
   if (!phimMoiData || !phimMoiData.data?.items) {
+    console.error('[Home] Critical: phimMoiData is null or empty');
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-16">
           <p className="text-zinc-400 text-lg">
             Không thể tải dữ liệu từ API. Vui lòng thử lại sau.
           </p>
+          <div className="mt-4 text-sm text-zinc-500">
+            <p>Debug info:</p>
+            <p>PRIMARY_SOURCE: {process.env.NEXT_PUBLIC_API_BASE_URL || 'not set'}</p>
+            <p>phimMoiData: {phimMoiData ? 'exists' : 'null'}</p>
+          </div>
         </div>
       </div>
     );
