@@ -99,8 +99,6 @@ const FALLBACK_MOVIES = [
 ];
 
 export default function Home() {
-
-export default function Home() {
   return (
     <div className="overflow-hidden bg-black pb-16">
       <div className="container mx-auto px-4 py-16">
