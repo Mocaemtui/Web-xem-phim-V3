@@ -4,42 +4,36 @@ import HomeHistorySection from "@/components/HomeHistorySection";
 import HeroBanner from "@/components/HeroBanner";
 import { getPhimMoi, getDanhSach, getQuocGiaDetails } from "@/lib/api";
 
-export const revalidate = 0; // Tắt caching tạm thời để debug
+export const revalidate = 600; // Cache trang chủ 10 phút trên CDN để tiết kiệm CPU Vercel
 
 export default async function Home() {
-  let phimMoiData, bannerHoatHinhData, phimVietData, phimAuMyData, phimHanData, phimNhatData, phimTrungData, animeData, cartoonData, longTiengData, thuyetMinhData, tvShowsData;
-
-  try {
-    [
-      phimMoiData,
-      bannerHoatHinhData,
-      phimVietData,
-      phimAuMyData,
-      phimHanData,
-      phimNhatData,
-      phimTrungData,
-      animeData,
-      cartoonData,
-      longTiengData,
-      thuyetMinhData,
-      tvShowsData,
-    ] = await Promise.all([
-      getPhimMoi(1, 30), // Fetch 30 items for slider
-      getDanhSach("hoat-hinh", { page: 1, limit: 50 }), // Banner pool
-      getQuocGiaDetails("viet-nam", { page: 1, limit: 12 }),
-      getQuocGiaDetails("au-my", { page: 1, limit: 12 }),
-      getQuocGiaDetails("han-quoc", { page: 1, limit: 12 }),
-      getQuocGiaDetails("nhat-ban", { page: 1, limit: 12 }),
-      getQuocGiaDetails("trung-quoc", { page: 1, limit: 12 }),
-      getDanhSach("hoat-hinh", { page: 1, limit: 12, country: "nhat-ban" }),
-      getDanhSach("hoat-hinh", { page: 1, limit: 30, country: "au-my" }),
-      getDanhSach("phim-long-tieng", { page: 1, limit: 12 }),
-      getDanhSach("phim-thuyet-minh", { page: 1, limit: 12 }),
-      getDanhSach("tv-shows", { page: 1, limit: 12 }),
-    ]);
-  } catch (error) {
-    console.error('Error fetching home data:', error);
-  }
+  const [
+    phimMoiData,
+    bannerHoatHinhData,
+    phimVietData,
+    phimAuMyData,
+    phimHanData,
+    phimNhatData,
+    phimTrungData,
+    animeData,
+    cartoonData,
+    longTiengData,
+    thuyetMinhData,
+    tvShowsData,
+  ] = await Promise.all([
+    getPhimMoi(1, 30), // Fetch 30 items for slider
+    getDanhSach("hoat-hinh", { page: 1, limit: 50 }), // Banner pool
+    getQuocGiaDetails("viet-nam", { page: 1, limit: 12 }),
+    getQuocGiaDetails("au-my", { page: 1, limit: 12 }),
+    getQuocGiaDetails("han-quoc", { page: 1, limit: 12 }),
+    getQuocGiaDetails("nhat-ban", { page: 1, limit: 12 }),
+    getQuocGiaDetails("trung-quoc", { page: 1, limit: 12 }),
+    getDanhSach("hoat-hinh", { page: 1, limit: 12, country: "nhat-ban" }),
+    getDanhSach("hoat-hinh", { page: 1, limit: 30, country: "au-my" }),
+    getDanhSach("phim-long-tieng", { page: 1, limit: 12 }),
+    getDanhSach("phim-thuyet-minh", { page: 1, limit: 12 }),
+    getDanhSach("tv-shows", { page: 1, limit: 12 }),
+  ]);
 
   if (!phimMoiData || !phimMoiData.data?.items) {
     return (
@@ -48,12 +42,6 @@ export default async function Home() {
           <p className="text-zinc-400 text-lg">
             Không thể tải dữ liệu từ API. Vui lòng thử lại sau.
           </p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 px-6 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-white transition"
-          >
-            Tải lại trang
-          </button>
         </div>
       </div>
     );
