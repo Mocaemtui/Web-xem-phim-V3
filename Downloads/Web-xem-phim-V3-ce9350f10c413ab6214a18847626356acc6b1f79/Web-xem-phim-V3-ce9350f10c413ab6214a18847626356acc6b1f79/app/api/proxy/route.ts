@@ -3,19 +3,13 @@ import { fetchAPI } from '@/lib/api';
 
 export const runtime = 'edge';
 
-const SOURCES = [
-  'https://ophim1.com',
-  'https://phim.nguonc.com',
-  'https://phimapi.com'
-];
-
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const endpoint = searchParams.get('endpoint') || '';
     const baseUrl = searchParams.get('baseUrl') || undefined;
     const revalidateStr = searchParams.get('revalidate');
-    const revalidate = revalidateStr ? parseInt(revalidateStr, 10) : 0;
+    const revalidate = revalidateStr ? parseInt(revalidateStr, 10) : 3600;
 
     if (!endpoint) {
       return NextResponse.json({ error: 'Endpoint is required' }, { status: 400 });
@@ -24,10 +18,10 @@ export async function GET(req: NextRequest) {
     let finalBaseUrl = baseUrl;
     if (baseUrl) {
       const SOURCE_MAP: Record<string, string> = {
-        primary: 'https://ophim1.com',
-        ophim: 'https://ophim1.com',
-        backup: 'https://phimapi.com',
+        primary: 'https://phimapi.com',  // PhimAPI là nguồn chính
         phimapi: 'https://phimapi.com',
+        backup: 'https://ophim1.com',    // Ophim là nguồn dự phòng
+        ophim: 'https://ophim1.com',
         nguonc: 'https://phim.nguonc.com'
       };
       const lowerVal = baseUrl.toLowerCase();
@@ -44,36 +38,15 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Try the requested source first
-    let data = await fetchAPI(endpoint, revalidate, finalBaseUrl);
-    
-    // If failed and no specific baseUrl requested, try all sources with fallback
-    if (!data && !baseUrl) {
-      console.warn('Primary fetch failed, trying fallback sources');
-      for (const source of SOURCES) {
-        if (source === finalBaseUrl) continue; // Skip already tried
-        console.log(`Trying fallback source: ${source}`);
-        data = await fetchAPI(endpoint, revalidate, source);
-        if (data) {
-          console.log(`Success with fallback source: ${source}`);
-          break;
-        }
-      }
-    }
-
+    const data = await fetchAPI(endpoint, revalidate, finalBaseUrl);
     const response = NextResponse.json(data);
 
     // Lưu Edge CDN cache để giải phóng tài nguyên CPU Serverless trên Vercel
-    // Giảm stale-while-revalidate để tránh trả về cached response lỗi quá lâu
-    // KHÔNG cache khi data là null hoặc có lỗi
-    if (revalidate > 0 && data !== null) {
+    if (revalidate > 0) {
       response.headers.set(
         'Cache-Control',
-        `public, s-maxage=${revalidate}, stale-while-revalidate=10`
+        `public, s-maxage=${revalidate}, stale-while-revalidate=59`
       );
-    } else {
-      // Không cache response lỗi
-      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     return response;
