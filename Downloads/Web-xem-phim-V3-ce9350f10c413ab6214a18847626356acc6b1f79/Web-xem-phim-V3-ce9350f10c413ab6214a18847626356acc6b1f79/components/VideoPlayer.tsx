@@ -846,9 +846,9 @@ export default function VideoPlayer({
               className="w-full h-full rounded-lg"
               allowFullScreen
               allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-              referrerPolicy="no-referrer-when-downgrade"
+              referrerPolicy="no-referrer"
               scrolling="no"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allowfullscreen allow-popups"
+              {...(!embedUrl?.includes('vidlink.pro') && { sandbox: "allow-scripts allow-same-origin allow-forms allow-presentation allowfullscreen" })}
             />
           )
         ) : (

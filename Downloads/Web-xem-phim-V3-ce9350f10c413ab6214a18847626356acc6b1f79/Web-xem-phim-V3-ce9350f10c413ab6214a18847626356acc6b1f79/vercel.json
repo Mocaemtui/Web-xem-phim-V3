@@ -7,9 +7,6 @@
   "regions": ["sin1"],
   "env": {
     "NEXT_PUBLIC_SITE_NAME": "Mocaemtui",
-    "NEXT_PUBLIC_API_BASE_URL": "https://phimapi.com"
-  },
-  "caching": {
-    "maxAge": 0
+    "NEXT_PUBLIC_API_BASE_URL": "https://ophim1.com"
   }
 }

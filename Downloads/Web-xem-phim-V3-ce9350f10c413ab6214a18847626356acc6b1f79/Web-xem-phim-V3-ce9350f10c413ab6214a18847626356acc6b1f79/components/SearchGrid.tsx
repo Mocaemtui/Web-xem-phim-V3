@@ -115,11 +115,11 @@ export default function SearchGrid({ initialMovies, keyword }: SearchGridProps) 
 
     // 4. Return results based on selectedSource
     if (selectedSource === "all") {
-      // Group movies by source priority: phimapi (first) -> ophim (second) -> nguonc (third) -> tmdb (fourth)
+      // Group movies by source priority: phimapi (first) -> nguonc (second) -> ophim (third) -> tmdb (fourth)
       const sortedGroupedMovies = [
         ...phimapiMovies,
-        ...ophimMovies,
         ...nguoncMovies,
+        ...ophimMovies,
         ...tmdbMovies
       ];
 

@@ -32,9 +32,9 @@ import { Film } from "lucide-react";
 
 const getServerPriority = (name: string) => {
   const lower = name.toLowerCase();
-  if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) return 3;
-  if (lower.includes("ophim")) return 2;
-  if (lower.includes("nguonc") || lower.includes("nguồn c")) return 1;
+  if (lower.includes("nguonc") || lower.includes("nguồn c")) return 3;
+  if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) return 2;
+  if (lower.includes("ophim")) return 1;
   return 0;
 };
 
@@ -251,7 +251,7 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
     const extendedEps = getExtendedEpisodes();
     
     setEpisodes(extendedEps);
-    // Luôn chọn server đầu tiên (đã sắp xếp theo thứ tự ưu tiên: PhimAPI > Ophim > NguonC)
+    // Luôn chọn server đầu tiên (đã sắp xếp theo thứ tự ưu tiên: PhimAPI > Ophim)
     // khi mở phim mới, trừ phi được phục hồi từ lịch sử xem của chính phim này.
     setCurrentServerIndex(0);
     setSelectedServerIndex(0);

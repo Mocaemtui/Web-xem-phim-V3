@@ -12,11 +12,11 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "X-Frame-Options",
-            value: "ALLOW-FROM https://phimapi.com https://phim.nguonc.com https://vidlink.pro",
+            value: "SAMEORIGIN",
           },
           {
             key: "Content-Security-Policy",
-            value: "frame-src 'self' https://vidlink.pro https://ophim1.com https://*.ophim1.com https://img.ophim.live https://*.img.ophim.live https://phimapi.com https://*.phimapi.com https://phim.nguonc.com https://*.phim.nguonc.com https://vidsource.co https://*.vidsource.co https://2embed.cc https://*.2embed.cc https://player.vimeo.com https://*.player.vimeo.com;",
+            value: "frame-src 'self' https://vidlink.pro;",
           },
         ],
       },

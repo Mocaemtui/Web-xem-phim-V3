@@ -133,13 +133,6 @@ export interface MoviePeoples {
   }[];
 }
 
-export interface MovieKeywords {
-  keywords: {
-    id: number;
-    name: string;
-  }[];
-}
-
 export interface Genre {
   id: string;
   name: string;
