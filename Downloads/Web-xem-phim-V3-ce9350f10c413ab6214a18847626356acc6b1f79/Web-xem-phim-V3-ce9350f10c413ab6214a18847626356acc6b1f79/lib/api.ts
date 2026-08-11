@@ -255,18 +255,18 @@ export function getCleanServerName(rawName: string | undefined): string {
 export function sortEpisodes(eps: any[]): any[] {
   if (!eps) return [];
   const priority: Record<string, number> = {
-    nguonc: 3,
-    phimapi: 2,
-    kkphim: 2,
-    ophim: 1
+    phimapi: 3,
+    kkphim: 3,
+    ophim: 2,
+    nguonc: 1
   };
   
   return [...eps].sort((a, b) => {
     const getPriority = (name: string) => {
       const lower = name.toLowerCase();
-      if (lower.includes("nguonc") || lower.includes("nguồn c")) return priority.nguonc;
       if (lower.includes("phimapi") || lower.includes("kkphim") || lower.includes("kk phim")) return priority.phimapi;
       if (lower.includes("ophim")) return priority.ophim;
+      if (lower.includes("nguonc") || lower.includes("nguồn c")) return priority.nguonc;
       return 0;
     };
     return getPriority(b.server_name) - getPriority(a.server_name);
@@ -422,7 +422,7 @@ export async function searchPhim(
   
   const uniqueItemsMap = new Map<string, Movie & { source?: string; available_sources?: string[] }>();
 
-  const sourcePriority: Record<string, number> = { phimapi: 3, nguonc: 2, ophim: 1, tmdb: 0 };
+  const sourcePriority: Record<string, number> = { phimapi: 3, ophim: 2, nguonc: 1, tmdb: 0 };
 
   const addItems = (res: any, sourceName: string) => {
     const items = res?.data?.items || res?.items || [];
@@ -885,21 +885,21 @@ export async function getChiTietPhim(
     return `${prefix} - ${clean}`;
   };
 
-  // Ưu tiên PhimAPI episodes trước
+  // Ưu tiên PhimAPI episodes trước, sau đó Ophim, cuối cùng NguonC
   if (phimapiRes?.data?.item) {
     allEpisodes.push(...(phimapiRes.data.item.episodes?.map((e: any) => ({ ...e, server_name: formatServerName('PhimAPI', e.server_name) })) || []));
-  }
-
-  if (nguoncRes?.data?.item) {
-    allEpisodes.push(...(nguoncRes.data.item.episodes?.map((e: any) => ({ ...e, server_name: formatServerName('Nguồn C', e.server_name) })) || []));
   }
 
   if (ophimRes?.data?.item) {
     allEpisodes.push(...(ophimRes.data.item.episodes?.map((e: any) => ({ ...e, server_name: formatServerName('Ophim', e.server_name) })) || []));
   }
 
-  // Re-evaluate baseMovie based on priority: TMDB > PhimAPI > NguonC > Ophim
-  baseMovie = tmdbMovieDetail || phimapiRes?.data?.item || nguoncRes?.data?.item || ophimRes?.data?.item || null;
+  if (nguoncRes?.data?.item) {
+    allEpisodes.push(...(nguoncRes.data.item.episodes?.map((e: any) => ({ ...e, server_name: formatServerName('Nguồn C', e.server_name) })) || []));
+  }
+
+  // Re-evaluate baseMovie based on priority: TMDB > PhimAPI > Ophim > NguonC
+  baseMovie = tmdbMovieDetail || phimapiRes?.data?.item || ophimRes?.data?.item || nguoncRes?.data?.item || null;
 
   if (!baseMovie) return null;
 
