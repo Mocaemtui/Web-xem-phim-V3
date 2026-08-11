@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: typeof process !== "undefined" ? process.cwd() : undefined,
-  },
+  // turbopack disabled to avoid root directory issues
+  // turbopack: {
+  //   root: __dirname,
+  // },
 
   async headers() {
     return [
@@ -12,11 +13,11 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "X-Frame-Options",
-            value: "SAMEORIGIN",
+            value: "ALLOW-FROM https://phimapi.com https://phim.nguonc.com https://vidlink.pro",
           },
           {
             key: "Content-Security-Policy",
-            value: "frame-src 'self' https://vidlink.pro;",
+            value: "frame-src 'self' https://vidlink.pro https://phimapi.com https://*.phimapi.com https://phim.nguonc.com https://*.phim.nguonc.com https://vidsource.co https://*.vidsource.co https://2embed.cc https://*.2embed.cc https://player.vimeo.com https://*.player.vimeo.com;",
           },
         ],
       },
@@ -53,6 +54,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "wsrv.nl",
+      },
+      {
+        protocol: "https",
+        hostname: "phim.nguonc.com",
       },
       {
         protocol: "https",

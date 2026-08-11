@@ -18,10 +18,11 @@ export async function GET(req: NextRequest) {
     let finalBaseUrl = baseUrl;
     if (baseUrl) {
       const SOURCE_MAP: Record<string, string> = {
-        primary: 'https://ophim1.com',
+        primary: 'https://phimapi.com',  // PhimAPI là nguồn chính
+        phimapi: 'https://phimapi.com',
+        backup: 'https://ophim1.com',    // Ophim là nguồn dự phòng
         ophim: 'https://ophim1.com',
-        backup: 'https://phimapi.com',
-        phimapi: 'https://phimapi.com'
+        nguonc: 'https://phim.nguonc.com'
       };
       const lowerVal = baseUrl.toLowerCase();
       if (SOURCE_MAP[lowerVal]) {
