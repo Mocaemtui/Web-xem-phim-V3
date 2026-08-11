@@ -5,7 +5,6 @@ import type {
   MovieDetail,
   MovieImages,
   MoviePeoples,
-  MovieKeywords,
   Genre,
   Country,
   Year,
@@ -28,10 +27,10 @@ export async function fetchAPI<T>(
     if (isBrowser) {
       try {
         let encodedBaseUrl = baseUrl;
-        if (baseUrl === 'https://phimapi.com') {
-          encodedBaseUrl = 'primary';  // PhimAPI là nguồn chính
-        } else if (baseUrl === 'https://ophim1.com') {
-          encodedBaseUrl = 'backup';   // Ophim là nguồn dự phòng
+        if (baseUrl === 'https://ophim1.com') {
+          encodedBaseUrl = 'primary';
+        } else if (baseUrl === 'https://phimapi.com') {
+          encodedBaseUrl = 'backup';
         } else if (baseUrl === 'https://phim.nguonc.com') {
           encodedBaseUrl = 'nguonc';
         } else {
@@ -69,9 +68,8 @@ export async function fetchAPI<T>(
 
     let response = await fetch(url, options);
 
-    // Fallback to Ophim if PhimAPI (KKPhim) returns 404 or fails
+    // Fallback to Ophim if PhimAPI returns 404 or fails
     if (!response.ok && baseUrl === MOVIE_SOURCES.PHIMAPI.url) {
-      console.log(`[API Fallback] PhimAPI failed for ${endpoint}, trying Ophim...`);
       const fallbackUrl = `${MOVIE_SOURCES.OPHIM.url}${endpoint}${hasQuery ? '&' : '?'}cb=1`;
       response = await fetch(fallbackUrl, options);
     }
@@ -81,10 +79,9 @@ export async function fetchAPI<T>(
     }
 
     const data = await response.json();
-
+    
     // Check if API returns error status
     if (data.status === 'error' && baseUrl === MOVIE_SOURCES.PHIMAPI.url) {
-      console.log(`[API Fallback] PhimAPI returned error for ${endpoint}, trying Ophim...`);
       const fallbackUrl = `${MOVIE_SOURCES.OPHIM.url}${endpoint}${hasQuery ? '&' : '?'}cb=1`;
       const fallbackResponse = await fetch(fallbackUrl, options);
       if (fallbackResponse.ok) {
@@ -113,7 +110,7 @@ export async function getPhimMoi(
 ): Promise<ApiResponse<MovieListResponse> | null> {
   if (PRIMARY_SOURCE.id === 'nguonc') {
     try {
-      const res = await fetchAPI<any>(`/api/films/phim-moi-cap-nhat?page=${page}`, 3600, PRIMARY_SOURCE.url);
+      const res = await fetchAPI<any>(`/api/film/phim-moi-cap-nhat?page=${page}`, 3600, PRIMARY_SOURCE.url);
       const mapped = mapNguoncListToV1(res);
       if (mapped) return mapped as any;
     } catch (e) {
@@ -123,19 +120,19 @@ export async function getPhimMoi(
 
   if (PRIMARY_SOURCE.id === 'phimapi') {
     try {
-      // KKPhim (PhimAPI) phim-moi-cap-nhat endpoint - ưu tiên sử dụng variant -v3
-      // Endpoint này trả về 10 items/trang, cần fetch nhiều trang để đủ limit
+      // PhimAPI's phim-moi-cap-nhat endpoint ignores limit and always returns 10 items.
+      // We must fetch multiple pages to satisfy the requested limit.
       const API_ITEMS_PER_PAGE = 10;
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
-
+      
       const startApiPage = Math.floor(startIndex / API_ITEMS_PER_PAGE) + 1;
       const endApiPage = Math.ceil(endIndex / API_ITEMS_PER_PAGE);
-
+      
       const pagePromises = [];
       for (let p = startApiPage; p <= endApiPage; p++) {
         pagePromises.push(
-          fetch(`${MOVIE_SOURCES.PHIMAPI.url}/danh-sach/phim-moi-cap-nhat-v3?page=${p}`, {
+          fetch(`https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${p}&v=3`, {
             next: { revalidate: 3600 },
             headers: { 'Accept': 'application/json' }
           }).then(res => res.json())
@@ -358,7 +355,7 @@ export async function searchPhim(
 
   // Helper: Tự động fetch nhiều trang của Nguồn C (do API của họ limit cứng 10 phim/trang)
   const searchNguoncAll = async (keyword: string, isQuick: boolean = false) => {
-    const firstPage = await fetchAPI<any>(`/api/films/search?keyword=${encodeURIComponent(keyword)}&page=1`, 3600, MOVIE_SOURCES.NGUONC.url);
+    const firstPage = await fetchAPI<any>(`/api/film/search?keyword=${encodeURIComponent(keyword)}&page=1`, 3600, MOVIE_SOURCES.NGUONC.url);
     const firstPageAny = firstPage as any;
     if (!firstPageAny?.items) return mapNguoncListToV1(firstPage);
 
@@ -372,7 +369,7 @@ export async function searchPhim(
       const maxPages = isQuick ? Math.min(totalPages, 2) : Math.min(totalPages, 10);
       const promises = [];
       for (let i = 2; i <= maxPages; i++) {
-        promises.push(fetchAPI<any>(`/api/films/search?keyword=${encodeURIComponent(keyword)}&page=${i}`, 3600, MOVIE_SOURCES.NGUONC.url));
+        promises.push(fetchAPI<any>(`/api/film/search?keyword=${encodeURIComponent(keyword)}&page=${i}`, 3600, MOVIE_SOURCES.NGUONC.url));
       }
       const results = await Promise.all(promises);
       for (const res of results) {
@@ -471,15 +468,15 @@ export async function searchPhim(
 
   if (isImdbId) {
     const endpoint = `/v1/api/tim-kiem?keyword=${encodeURIComponent(imdbId)}`;
-    const [phimapiRes, nguoncRes, ophimRes, tmdbMovies] = await Promise.all([
+    const [ophimRes, phimapiRes, nguoncRes, tmdbMovies] = await Promise.all([
+      searchV1All(imdbId || cleanKeyword, MOVIE_SOURCES.OPHIM.url, false),
       searchV1All(imdbId || cleanKeyword, MOVIE_SOURCES.PHIMAPI.url, false),
       searchNguoncAll(imdbId || cleanKeyword, false),
-      searchV1All(imdbId || cleanKeyword, MOVIE_SOURCES.OPHIM.url, false),
       searchTMDB(imdbId || cleanKeyword)
     ]);
     addItems(phimapiRes, 'phimapi');
-    addItems(nguoncRes, 'nguonc');
     addItems(ophimRes, 'ophim');
+    addItems(nguoncRes, 'nguonc');
     addItems({ data: { items: tmdbMovies } }, 'tmdb');
   } else {
     if (isQuick) {
@@ -490,15 +487,15 @@ export async function searchPhim(
         ]).catch(() => null);
       };
 
-      const [phimapiRes, nguoncRes, ophimRes, tmdbMovies] = await Promise.all([
+      const [ophimRes, phimapiRes, nguoncRes, tmdbMovies] = await Promise.all([
+        withTimeout(searchV1All(searchKeyword, MOVIE_SOURCES.OPHIM.url, true), 2000),
         withTimeout(searchV1All(searchKeyword, MOVIE_SOURCES.PHIMAPI.url, true), 2000),
         withTimeout(searchNguoncAll(searchKeyword, true), 2500),
-        withTimeout(searchV1All(searchKeyword, MOVIE_SOURCES.OPHIM.url, true), 2000),
         withTimeout(searchTMDB(searchKeyword), 2000)
       ]);
       addItems(phimapiRes, 'phimapi');
-      addItems(nguoncRes, 'nguonc');
       addItems(ophimRes, 'ophim');
+      addItems(nguoncRes, 'nguonc');
       addItems({ data: { items: tmdbMovies || [] } }, 'tmdb');
     } else {
       const baseKeyword = getBaseKeyword(searchKeyword);
@@ -514,22 +511,19 @@ export async function searchPhim(
       const fetchPromises = endpoints.flatMap((ep, idx) => {
         const keywordToSearch = idx === 0 ? searchKeyword : baseKeyword;
         return [
-          searchV1All(keywordToSearch, MOVIE_SOURCES.PHIMAPI.url, false),  // Ưu tiên PhimAPI
-          searchNguoncAll(keywordToSearch, false),
           searchV1All(keywordToSearch, MOVIE_SOURCES.OPHIM.url, false),
+          searchV1All(keywordToSearch, MOVIE_SOURCES.PHIMAPI.url, false),
+          searchNguoncAll(keywordToSearch, false),
           searchTMDB(keywordToSearch, 20)
         ];
       });
 
       const results = await Promise.all(fetchPromises);
 
-      // Xử lý kết quả từ tất cả endpoints
-      for (let i = 0; i < results.length; i += 4) {
-        addItems(results[i], 'phimapi');     // PhimAPI từ endpoint thứ i/4
-        addItems(results[i + 1], 'nguonc');  // Nguonc từ endpoint thứ i/4
-        addItems(results[i + 2], 'ophim');    // Ophim từ endpoint thứ i/4
-        addItems({ data: { items: results[i + 3] } }, 'tmdb'); // TMDB từ endpoint thứ i/4
-      }
+      addItems(results[1], 'phimapi');
+      addItems(results[0], 'ophim');
+      addItems(results[2], 'nguonc');
+      addItems({ data: { items: results[3] } }, 'tmdb');
 
       if (hasDifferentBase && results.length >= 8) {
         addItems(results[5], 'phimapi');
@@ -587,8 +581,7 @@ export async function searchPhim(
 export async function getTheLoai(): Promise<ApiResponse<{ items: Genre[] }> | null> {
   if (PRIMARY_SOURCE.id === 'phimapi') {
     try {
-      // KKPhim endpoint cho thể loại
-      const res = await fetch(`${MOVIE_SOURCES.PHIMAPI.url}/the-loai`, { next: { revalidate: 3600 } });
+      const res = await fetch(`https://phimapi.com/the-loai`, { next: { revalidate: 3600 } });
       if (res.ok) {
         const items = await res.json();
         // Lọc bỏ danh mục Phim 18+
@@ -605,8 +598,7 @@ export async function getTheLoai(): Promise<ApiResponse<{ items: Genre[] }> | nu
 export async function getQuocGia(): Promise<ApiResponse<{ items: Country[] }> | null> {
   if (PRIMARY_SOURCE.id === 'phimapi') {
     try {
-      // KKPhim endpoint cho quốc gia
-      const res = await fetch(`${MOVIE_SOURCES.PHIMAPI.url}/quoc-gia`, { next: { revalidate: 3600 } });
+      const res = await fetch(`https://phimapi.com/quoc-gia`, { next: { revalidate: 3600 } });
       if (res.ok) {
         const items = await res.json();
         return { status: "success", data: { items } } as any;
@@ -625,7 +617,7 @@ export async function searchPhimWithPagination(
 ): Promise<ApiResponse<MovieListResponse> | null> {
   if (PRIMARY_SOURCE.id === 'nguonc') {
     const page = options.page || 1;
-    const res = await fetchAPI<any>(`/api/films/search?keyword=${encodeURIComponent(keyword)}&page=${page}`, 3600, PRIMARY_SOURCE.url);
+    const res = await fetchAPI<any>(`/api/film/search?keyword=${encodeURIComponent(keyword)}&page=${page}`, 3600, PRIMARY_SOURCE.url);
     const mapped = mapNguoncListToV1(res);
     if (mapped) return mapped as any;
   }
@@ -657,7 +649,7 @@ export async function getTheLoaiDetails(
 ): Promise<ApiResponse<MovieListResponse> | null> {
   if (PRIMARY_SOURCE.id === 'nguonc') {
     const page = options.page || 1;
-    const res = await fetchAPI<any>(`/api/films/danh-sach/${slug}?page=${page}`, 3600, PRIMARY_SOURCE.url);
+    const res = await fetchAPI<any>(`/api/film/the-loai/${slug}?page=${page}`, 3600, PRIMARY_SOURCE.url);
     const mapped = mapNguoncListToV1(res);
     if (mapped) return mapped as any;
   }
@@ -687,7 +679,7 @@ export async function getQuocGiaDetails(
 ): Promise<ApiResponse<MovieListResponse> | null> {
   if (PRIMARY_SOURCE.id === 'nguonc') {
     const page = options.page || 1;
-    const res = await fetchAPI<any>(`/api/films/danh-sach/${slug}?page=${page}`, 3600, PRIMARY_SOURCE.url);
+    const res = await fetchAPI<any>(`/api/film/quoc-gia/${slug}?page=${page}`, 3600, PRIMARY_SOURCE.url);
     const mapped = mapNguoncListToV1(res);
     if (mapped) return mapped as any;
   }
@@ -721,7 +713,7 @@ export async function getDanhSach(
 ): Promise<ApiResponse<MovieListResponse> | null> {
   if (PRIMARY_SOURCE.id === 'nguonc') {
     const page = options.page || 1;
-    const res = await fetchAPI<any>(`/api/films/danh-sach/${slug}?page=${page}`, 3600, PRIMARY_SOURCE.url);
+    const res = await fetchAPI<any>(`/api/film/danh-sach/${slug}?page=${page}`, 3600, PRIMARY_SOURCE.url);
     const mapped = mapNguoncListToV1(res);
     if (mapped) return mapped as any;
   }
@@ -792,14 +784,13 @@ export async function getChiTietPhim(
     };
   }
 
-  let [phimapiRes, nguoncRes, ophimRes] = await Promise.all([
+  let [ophimRes, phimapiRes, nguoncRes] = await Promise.all([
+    !slug.startsWith('tmdb-') ? fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 3600, MOVIE_SOURCES.OPHIM.url) : Promise.resolve(null),
     !slug.startsWith('tmdb-') ? fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 3600, MOVIE_SOURCES.PHIMAPI.url) : Promise.resolve(null),
-    !slug.startsWith('tmdb-') ? fetchAPI<any>(`/api/films/${slug}`, 3600, MOVIE_SOURCES.NGUONC.url).then(mapNguoncDetailToV1) : Promise.resolve(null),
-    !slug.startsWith('tmdb-') ? fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${slug}`, 3600, MOVIE_SOURCES.OPHIM.url) : Promise.resolve(null)
+    !slug.startsWith('tmdb-') ? fetchAPI<any>(`/api/film/${slug}`, 3600, MOVIE_SOURCES.NGUONC.url).then(mapNguoncDetailToV1) : Promise.resolve(null)
   ]);
 
-  // Ưu tiên: PhimAPI (KKPhim) -> Nguồn C -> Ophim -> TMDB fallback
-  let baseMovie: MovieDetail | null = phimapiRes?.data?.item || nguoncRes?.data?.item || ophimRes?.data?.item || tmdbMovieDetail;
+  let baseMovie: MovieDetail | null = phimapiRes?.data?.item || ophimRes?.data?.item || nguoncRes?.data?.item || tmdbMovieDetail;
 
   // --- SMART CROSS-API MATCHING (FALLBACK) ---
   if (baseMovie) {
@@ -808,23 +799,35 @@ export async function getChiTietPhim(
     const targetSeason = baseMovie.tmdb?.season || null;
     const baseKeyword = getBaseKeyword(originName);
     
-    if ((!phimapiRes?.data?.item || !nguoncRes?.data?.item || !ophimRes?.data?.item) && originName) {
-      // Step 1: Parallelize searches - Ưu tiên PhimAPI
-      const [searchPhimapi, searchNguonc, searchOphim] = await Promise.all([
-        !phimapiRes?.data?.item
-          ? fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(originName)}`, 3600, MOVIE_SOURCES.PHIMAPI.url)
+    if ((!ophimRes?.data?.item || !phimapiRes?.data?.item || !nguoncRes?.data?.item) && originName) {
+      // Step 1: Parallelize searches
+      const [searchOphim, searchPhimapi, searchNguonc] = await Promise.all([
+        !ophimRes?.data?.item 
+          ? fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(originName)}`, 3600, MOVIE_SOURCES.OPHIM.url) 
+          : Promise.resolve(null),
+        !phimapiRes?.data?.item 
+          ? fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(originName)}`, 3600, MOVIE_SOURCES.PHIMAPI.url) 
           : Promise.resolve(null),
         !nguoncRes?.data?.item
-          ? fetchAPI<any>(`/api/films/search?keyword=${encodeURIComponent(originName)}`, 3600, MOVIE_SOURCES.NGUONC.url).then(mapNguoncListToV1)
-          : Promise.resolve(null),
-        !ophimRes?.data?.item
-          ? fetchAPI<MovieListResponse>(`/v1/api/tim-kiem?keyword=${encodeURIComponent(originName)}`, 3600, MOVIE_SOURCES.OPHIM.url)
+          ? fetchAPI<any>(`/api/film/search?keyword=${encodeURIComponent(originName)}`, 3600, MOVIE_SOURCES.NGUONC.url).then(mapNguoncListToV1)
           : Promise.resolve(null)
       ]);
 
+      let fetchOphimPromise: Promise<ApiResponse<{ item: MovieDetail }> | null> | null = null;
       let fetchPhimapiPromise: Promise<ApiResponse<{ item: MovieDetail }> | null> | null = null;
       let fetchNguoncPromise: Promise<{ status: string; data: { item: MovieDetail } } | null> | null = null;
-      let fetchOphimPromise: Promise<ApiResponse<{ item: MovieDetail }> | null> | null = null;
+
+      if (searchOphim?.data?.items) {
+        let bestMatch = null;
+        let bestScore = 0;
+        searchOphim.data.items.forEach(m => {
+          const score = calculateMatchScore(m as any, originName, baseKeyword, targetSeason);
+          if (score > bestScore) { bestScore = score; bestMatch = m; }
+        });
+        if (bestMatch && (bestMatch as any).slug !== slug && bestScore > 0) {
+          fetchOphimPromise = fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${(bestMatch as any).slug}`, 3600, MOVIE_SOURCES.OPHIM.url);
+        }
+      }
 
       if (searchPhimapi?.data?.items) {
         let bestMatch = null;
@@ -846,33 +849,21 @@ export async function getChiTietPhim(
           if (score > bestScore) { bestScore = score; bestMatch = m; }
         });
         if (bestMatch && (bestMatch as any).slug !== slug && bestScore > 0) {
-          fetchNguoncPromise = fetchAPI<any>(`/api/films/${(bestMatch as any).slug}`, 3600, MOVIE_SOURCES.NGUONC.url).then(mapNguoncDetailToV1);
+          fetchNguoncPromise = fetchAPI<any>(`/api/film/${(bestMatch as any).slug}`, 3600, MOVIE_SOURCES.NGUONC.url).then(mapNguoncDetailToV1);
         }
       }
 
-      if (searchOphim?.data?.items) {
-        let bestMatch = null;
-        let bestScore = 0;
-        searchOphim.data.items.forEach(m => {
-          const score = calculateMatchScore(m as any, originName, baseKeyword, targetSeason);
-          if (score > bestScore) { bestScore = score; bestMatch = m; }
-        });
-        if (bestMatch && (bestMatch as any).slug !== slug && bestScore > 0) {
-          fetchOphimPromise = fetchAPI<{ item: MovieDetail }>(`/v1/api/phim/${(bestMatch as any).slug}`, 3600, MOVIE_SOURCES.OPHIM.url);
-        }
-      }
-
-      // Step 2: Parallelize detail fetches - Ưu tiên PhimAPI
-      if (fetchPhimapiPromise || fetchNguoncPromise || fetchOphimPromise) {
-        const [fallbackPhimapi, fallbackNguonc, fallbackOphim] = await Promise.all([
+      // Step 2: Parallelize detail fetches
+      if (fetchOphimPromise || fetchPhimapiPromise || fetchNguoncPromise) {
+        const [fallbackOphim, fallbackPhimapi, fallbackNguonc] = await Promise.all([
+          fetchOphimPromise || Promise.resolve(null),
           fetchPhimapiPromise || Promise.resolve(null),
-          fetchNguoncPromise || Promise.resolve(null),
-          fetchOphimPromise || Promise.resolve(null)
+          fetchNguoncPromise || Promise.resolve(null)
         ]);
-
+        
+        if (fallbackOphim?.data?.item) ophimRes = fallbackOphim;
         if (fallbackPhimapi?.data?.item) phimapiRes = fallbackPhimapi;
         if (fallbackNguonc?.data?.item) nguoncRes = fallbackNguonc as any;
-        if (fallbackOphim?.data?.item) ophimRes = fallbackOphim;
       }
     }
   }
@@ -885,7 +876,6 @@ export async function getChiTietPhim(
     return `${prefix} - ${clean}`;
   };
 
-  // Ưu tiên PhimAPI episodes trước, sau đó Ophim, cuối cùng NguonC
   if (phimapiRes?.data?.item) {
     allEpisodes.push(...(phimapiRes.data.item.episodes?.map((e: any) => ({ ...e, server_name: formatServerName('PhimAPI', e.server_name) })) || []));
   }
@@ -953,13 +943,6 @@ export async function getPeoplesPhim(
   return fetchAPI<MoviePeoples>(`/v1/api/phim/${slug}/peoples`, 3600);
 }
 
-export async function getKeywordsPhim(
-  slug: string
-): Promise<ApiResponse<MovieKeywords> | null> {
-  // Từ khóa phim từ TMDB, cache 24 giờ
-  return fetchAPI<MovieKeywords>(`/v1/api/phim/${slug}/keywords`, 3600);
-}
-
 export async function getPhimByTheLoai(
   slug: string,
   page: number = 1,
@@ -1023,114 +1006,4 @@ export async function getMoviePosterUrl(slug: string): Promise<string | null> {
   const baseUrl = imagesData.data.image_sizes?.poster?.w500;
 
   return poster && baseUrl ? `${baseUrl}${poster}` : null;
-}
-
-// KKPhim (PhimAPI) Advanced Functions
-
-// Tra cứu phim theo TMDB ID (KKPhim exclusive)
-export async function getPhimByTMDB(
-  type: 'movie' | 'tv',
-  id: string
-): Promise<ApiResponse<MovieDetail> | null> {
-  if (PRIMARY_SOURCE.id !== 'phimapi') {
-    // Fallback: không hỗ trợ direct TMDB lookup trên các nguồn khác
-    return null;
-  }
-  return fetchAPI<MovieDetail>(`/tmdb/${type}/${id}`, 3600, MOVIE_SOURCES.PHIMAPI.url);
-}
-
-// Tra cứu phim theo IMDB ID (KKPhim exclusive)
-export async function getPhimByIMDB(
-  id: string
-): Promise<ApiResponse<MovieDetail> | null> {
-  if (PRIMARY_SOURCE.id !== 'phimapi') {
-    // Fallback: không hỗ trợ direct IMDB lookup trên các nguồn khác
-    return null;
-  }
-  return fetchAPI<MovieDetail>(`/imdb/title/${id}`, 3600, MOVIE_SOURCES.PHIMAPI.url);
-}
-
-// Lọc phim theo type (KKPhim exclusive)
-export async function getPhimByType(
-  type: 'phim-le' | 'phim-bo' | 'hoat-hinh' | 'tv-shows' | 'phim-chieu-rap',
-  page: number = 1,
-  limit: number = 20
-): Promise<ApiResponse<MovieListResponse> | null> {
-  if (PRIMARY_SOURCE.id !== 'phimapi') {
-    // Fallback: sử dụng endpoint danh sách chuẩn
-    return fetchAPI<MovieListResponse>(`/v1/api/danh-sach/${type}?page=${page}&limit=${limit}`);
-  }
-  return fetchAPI<MovieListResponse>(`/danh-sach/${type}?page=${page}&limit=${limit}`, 3600, MOVIE_SOURCES.PHIMAPI.url);
-}
-
-// Danh sách phim với bộ lọc nâng cao (KKPhim exclusive)
-export async function getDanhSachAdvanced(options: {
-  page?: number;
-  limit?: number;
-  category?: string;
-  country?: string;
-  year?: string | number;
-  sort_field?: 'modified.time' | '_id' | 'year';
-  sort_type?: 'desc' | 'asc';
-  sort_lang?: 'vietsub' | 'thuyet-minh' | 'long-tieng';
-}): Promise<ApiResponse<MovieListResponse> | null> {
-  const params = new URLSearchParams();
-  
-  if (options.page !== undefined) params.append('page', options.page.toString());
-  if (options.limit !== undefined) params.append('limit', options.limit.toString());
-  if (options.category) params.append('category', options.category);
-  if (options.country) params.append('country', options.country);
-  if (options.year !== undefined) params.append('year', String(options.year));
-  if (options.sort_field) params.append('sort_field', options.sort_field);
-  if (options.sort_type) params.append('sort_type', options.sort_type);
-  if (options.sort_lang) params.append('sort_lang', options.sort_lang);
-
-  const query = params.toString();
-  
-  if (PRIMARY_SOURCE.id === 'phimapi') {
-    // Sử dụng endpoint nâng cao của KKPhim
-    return fetchAPI<MovieListResponse>(`/v1/api/danh-sach?${query}`, 3600, MOVIE_SOURCES.PHIMAPI.url);
-  }
-  
-  // Fallback: sử dụng endpoint chuẩn với các tham số cơ bản
-  return fetchAPI<MovieListResponse>(`/v1/api/danh-sach?${query}`);
-}
-
-// Endpoint tổng hợp "Phim Mới" (KKPhim exclusive)
-export async function getPhimMoiKKPhim(
-  page: number = 1,
-  variant: '' | '-v2' | '-v3' = '-v3'
-): Promise<ApiResponse<MovieListResponse> | null> {
-  if (PRIMARY_SOURCE.id !== 'phimapi') {
-    // Fallback: sử dụng endpoint chuẩn
-    return getPhimMoi(page, 20);
-  }
-  return fetchAPI<MovieListResponse>(`/danh-sach/phim-moi-cap-nhat${variant}?page=${page}`, 3600, MOVIE_SOURCES.PHIMAPI.url);
-}
-
-// Nguồn C API Functions
-
-// Lấy danh sách phim theo danh mục (dang-chieu, phim-bo, phim-le, etc.)
-export async function getNguoncByCategory(
-  slug: string,
-  page: number = 1
-): Promise<ApiResponse<MovieListResponse> | null> {
-  const res = await fetchAPI<any>(`/api/films/danh-sach/${slug}?page=${page}`, 3600, MOVIE_SOURCES.NGUONC.url);
-  return mapNguoncListToV1(res);
-}
-
-// Lấy danh sách thể loại từ Nguồn C
-export async function getNguoncCategories(): Promise<any> {
-  try {
-    const res = await fetch(`${MOVIE_SOURCES.NGUONC.url}/api/films/danh-sach`, {
-      next: { revalidate: 3600 },
-      headers: { 'Accept': 'application/json' }
-    });
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch (e) {
-    console.error(e);
-  }
-  return null;
 }

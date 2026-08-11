@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: typeof process !== "undefined" ? process.cwd() : undefined,
-  },
+  // turbopack disabled to avoid root directory issues
+  // turbopack: {
+  //   root: __dirname,
+  // },
 
   async headers() {
     return [
@@ -29,7 +30,6 @@ const nextConfig: NextConfig = {
     loaderFile: "./lib/imageLoader.ts",
     deviceSizes: [640, 828, 1200],
     imageSizes: [32, 64, 128],
-    qualities: [65, 75],
     remotePatterns: [
       {
         protocol: "https",
