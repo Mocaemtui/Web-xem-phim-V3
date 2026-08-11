@@ -164,7 +164,7 @@ export default function VideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || !ambientActive || !isPlaying || isIOS) return;
+    if (!video || !canvas || !ambientActive || !isPlaying || isMobile) return;
 
     const ctx = canvas.getContext("2d", { willReadFrequently: false });
     if (!ctx) return;
@@ -204,7 +204,7 @@ export default function VideoPlayer({
       cancelAnimationFrame(animationFrameId);
       observer.disconnect();
     };
-  }, [isPlaying, ambientActive, videoRef, isIOS]);
+  }, [isPlaying, ambientActive, videoRef, isMobile]);
 
   // Monitor playback for Auto-Next trigger
   useEffect(() => {
@@ -366,6 +366,9 @@ export default function VideoPlayer({
           }
         }
       });
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Native HLS support for other browsers (like Safari on macOS)
+      video.src = videoUrl;
     } else {
       // Direct video source for non-HLS formats
       video.src = videoUrl;
@@ -763,7 +766,7 @@ export default function VideoPlayer({
     >
 
       {/* Ambient Light Canvas (Glow) */}
-      {ambientActive && videoUrl && !isMobile && !isIOS && (
+      {ambientActive && videoUrl && !isMobile && (
         <canvas
           ref={canvasRef}
           width="16"
@@ -891,7 +894,7 @@ export default function VideoPlayer({
 
 
         {/* Custom Controls - only show for video element on desktop */}
-        {videoUrl && !isMobile && !isIOS && (
+        {videoUrl && !isMobile && (
           <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 z-20 transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
             {/* Progress Bar */}
             <div className={`mb-3 ${!isHost ? "pointer-events-none" : ""}`}>
