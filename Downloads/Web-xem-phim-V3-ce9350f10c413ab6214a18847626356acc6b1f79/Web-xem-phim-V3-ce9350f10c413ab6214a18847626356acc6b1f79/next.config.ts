@@ -1,10 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // turbopack disabled to avoid root directory issues
-  // turbopack: {
-  //   root: __dirname,
-  // },
+  turbopack: {
+    root: typeof process !== "undefined" ? process.cwd() : undefined,
+  },
 
   async headers() {
     return [
@@ -17,7 +16,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "frame-src 'self' https://vidlink.pro https://phimapi.com https://*.phimapi.com https://phim.nguonc.com https://*.phim.nguonc.com https://vidsource.co https://*.vidsource.co https://2embed.cc https://*.2embed.cc https://player.vimeo.com https://*.player.vimeo.com;",
+            value: "frame-src 'self' https://vidlink.pro https://ophim1.com https://*.ophim1.com https://img.ophim.live https://*.img.ophim.live https://phimapi.com https://*.phimapi.com https://phim.nguonc.com https://*.phim.nguonc.com https://vidsource.co https://*.vidsource.co https://2embed.cc https://*.2embed.cc https://player.vimeo.com https://*.player.vimeo.com;",
           },
         ],
       },
