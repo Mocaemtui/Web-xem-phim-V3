@@ -3,3 +3,7 @@ declare module '@/models/Subscription' {
   const Subscription: mongoose.Model<any>;
   export default Subscription;
 }
+
+declare module 'react-intersection-observer' {
+  export function useInView(options?: any): { ref: (node: any) => void; inView: boolean };
+}
