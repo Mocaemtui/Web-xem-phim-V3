@@ -220,7 +220,14 @@ export default function WatchPageClient({ movie, posterUrl, tmdbData, seasonData
         });
       }
     }
-    return sortEpisodes(baseEpisodes);
+    
+    // Lọc bỏ server Nguồn C để ẩn nút phát từ nguồn này
+    const filteredEpisodes = baseEpisodes.filter(server => {
+      const serverName = server.server_name.toLowerCase();
+      return !serverName.includes("nguonc") && !serverName.includes("nguồn c");
+    });
+    
+    return sortEpisodes(filteredEpisodes);
   };
 
   const [episodes, setEpisodes] = useState(getExtendedEpisodes());

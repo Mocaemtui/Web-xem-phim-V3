@@ -28,7 +28,7 @@
     "pusher-js": "^8.5.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-intersection-observer": "^10.1.0",
+    "react-intersection-observer": "^10.0.3",
     "react-youtube": "^10.1.0",
     "web-push": "^3.6.7"
   },

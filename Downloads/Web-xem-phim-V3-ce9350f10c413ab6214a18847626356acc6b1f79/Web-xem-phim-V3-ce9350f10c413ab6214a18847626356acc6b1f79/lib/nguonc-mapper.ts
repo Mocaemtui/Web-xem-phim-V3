@@ -1,24 +1,17 @@
 import type { MovieListResponse, MovieDetail, Movie, Category, Country } from "@/types/api";
 
-// Nguonc API Documentation:
-// Base URL: https://phim.nguonc.com
-// Response structure: { status: "success", paginate: {...}, items: [...] }
-// Key endpoints:
-// - /api/films/phim-moi-cap-nhat?page={page} - Phim mới cập nhật
-// - /api/films/danh-sach/{slug}?page={page} - Phim theo danh mục (dang-chieu, phim-bo, phim-le)
-// - /api/films/search?keyword={keyword}&page={page} - Tìm kiếm phim
-// - /api/films/{slug} - Chi tiết phim
-// Category object: { "1": { "group": { "name": "Định dạng" }, "list": [{ "id": "...", "name": "..." }] }, ... }
+// Nguonc API Category object looks like:
+// { "1": { "group": { "name": "Định dạng" }, "list": [{ "id": "...", "name": "..." }] }, ... }
 export function mapNguoncListToV1(data: any): { status: string; data: MovieListResponse } | null {
   if (!data || data.status !== 'success') return null;
-
+  
   const items: Movie[] = (data.items || []).map((item: any) => {
     // Extract year, categories, countries from category object
     let year = 0;
     let type = 'series';
     const categories: Category[] = [];
     const countries: Country[] = [];
-
+    
     if (item.category) {
       Object.values(item.category).forEach((catGroup: any) => {
         if (catGroup.group?.name === 'Năm phát hành' && catGroup.list?.[0]) {
@@ -62,7 +55,7 @@ export function mapNguoncListToV1(data: any): { status: string; data: MovieListR
           totalItems: data.paginate?.total_items || 0,
           totalItemsPerPage: data.paginate?.items_per_page || 10,
           currentPage: data.paginate?.current_page || 1,
-          pageRanges: data.paginate?.total_page || 1, // Cập nhật theo API mới
+          pageRanges: 1, // mapping approximation
         }
       }
     }
