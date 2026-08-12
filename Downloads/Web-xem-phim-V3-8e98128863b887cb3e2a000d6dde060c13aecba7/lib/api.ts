@@ -603,7 +603,7 @@ export async function getTheLoai(): Promise<ApiResponse<{ items: Genre[] }> | nu
       if (res.ok) {
         const items = await res.json();
         // Lọc bỏ danh mục Phim 18+
-        const filteredItems = Array.isArray(items) ? items.filter((item: Genre) => item.slug !== 'phim-18') : [];
+        const filteredItems = items.filter((item: Genre) => item.slug !== 'phim-18');
         return { status: "success", data: { items: filteredItems } } as any;
       }
     } catch (e) {

@@ -55,7 +55,7 @@ export function saveWatchHistory(
     const history = getWatchHistory();
 
     // Remove existing entry for this movie (to move it to front)
-    const filtered = Array.isArray(history) ? history.filter((item) => item.slug !== movie.slug) : [];
+    const filtered = history.filter((item) => item.slug !== movie.slug);
 
     const newItem: WatchHistoryItem = {
       slug: movie.slug,
@@ -109,7 +109,7 @@ export function removeFromHistory(slug: string): void {
   try {
     // 1. Xóa khỏi danh sách lịch sử phim
     const history = getWatchHistory();
-    const filtered = Array.isArray(history) ? history.filter((item) => item.slug !== slug) : [];
+    const filtered = history.filter((item) => item.slug !== slug);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 
     // 2. Xóa các tập đã xem của phim này khỏi danh sách "watched_episodes_v3"

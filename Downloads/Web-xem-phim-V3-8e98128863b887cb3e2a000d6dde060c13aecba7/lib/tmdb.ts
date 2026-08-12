@@ -57,12 +57,12 @@ export async function getTMDBDetails(tmdbId: string | number, type: "movie" | "t
         const viData = await viRes.json();
         if (viData.results && viData.results.length > 0) {
           // Lấy danh sách English hiện có (từ append_to_response)
-          const enReviews = Array.isArray(data.reviews?.results) ? data.reviews.results : [];
-
+          const enReviews = data.reviews?.results || [];
+          
           // Lọc bỏ trùng lặp (nếu có)
           const viIds = new Set(viData.results.map((r: any) => r.id));
           const filteredEnReviews = enReviews.filter(r => !viIds.has(r.id));
-
+          
           // Ưu tiên Tiếng Việt lên đầu
           data.reviews = { results: [...viData.results, ...filteredEnReviews] };
         }
@@ -315,12 +315,12 @@ export async function searchTMDB(keyword: string, limit: number = 20): Promise<M
     
     const res = await fetch(url.toString(), { headers, next: { revalidate: 3600 } });
     if (!res.ok) return [];
-
+    
     const data = await res.json();
-    if (!Array.isArray(data.results)) return [];
-
+    if (!data.results) return [];
+    
     let validResults = data.results.filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv');
-
+    
     validResults = validResults.filter((item: any) => {
         const isFake = item.vote_count === 0 && item.popularity < 5;
         return !isFake;

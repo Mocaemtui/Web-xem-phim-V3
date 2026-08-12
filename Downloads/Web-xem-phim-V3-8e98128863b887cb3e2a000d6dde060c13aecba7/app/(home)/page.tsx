@@ -63,9 +63,8 @@ export default async function Home() {
   const sliderPhimMoi: any[] = [];
   
   // Banner pool: 50 hoạt hình mới nhất, lọc bỏ phim Trung Quốc
-  const eligibleForBanner = Array.isArray(bannerHoatHinhData?.data?.items)
-    ? bannerHoatHinhData.data.items.filter(movie => !movie.country?.some(c => c.slug === 'trung-quoc'))
-    : [];
+  const eligibleForBanner = (bannerHoatHinhData?.data?.items || [])
+    .filter(movie => !movie.country?.some(c => c.slug === 'trung-quoc'));
   
   // Pick the top 15 for the hero banner to have backups in case some are blocked by YouTube
   for (const movie of eligibleForBanner) {
@@ -99,11 +98,7 @@ export default async function Home() {
         {/* 3. Cartoon Section */}
         <section className="mb-14">
           <SectionTitle title="Cartoon" viewAllLink="/cartoon" />
-          <MovieSlider movies={
-            Array.isArray(cartoonData?.data?.items)
-              ? cartoonData.data.items.filter(movie => !movie.country?.some(c => c.slug === 'nhat-ban'))
-              : []
-          } />
+          <MovieSlider movies={(cartoonData?.data?.items || []).filter(movie => !movie.country?.some(c => c.slug === 'nhat-ban'))} />
         </section>
 
         {/* 5. Phim Việt Section */}
