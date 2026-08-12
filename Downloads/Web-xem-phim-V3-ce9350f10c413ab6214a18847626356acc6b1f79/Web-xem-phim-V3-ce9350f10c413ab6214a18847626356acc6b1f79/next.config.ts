@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "frame-src 'self' https://vidlink.pro;",
+            value: "default-src 'self' 'unsafe-inline' 'unsafe-eval' *; connect-src 'self' https://vidlink.pro https://*.vidlink.pro https://phimapi.com https://player.phimapi.com https://v7.kkphimplayer7.com https://vip.opstream10.com https://phimimg.com https://*.kkphim.com https://*.phimapi.com https://*.kkphimplayer*.com https://*.opstream*.com https://ophim1.com https://img.ophim.live https://*.ophim.live *; frame-src 'self' https://vidlink.pro https://*.vidlink.pro https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://vidlink.xyz https://*.vidlink.xyz https://player.phimapi.com https://vip.opstream10.com https://*.kkphim.com https://*.phimapi.com https://*.kkphimplayer*.com https://*.opstream*.com *; img-src 'self' https://phimimg.com https://img.ophim.live https://image.tmdb.org https://*.kkphim.com https://*.phimapi.com https://*.kkphimplayer*.com https://*.opstream*.com data: blob: *; media-src 'self' https://*.vidlink.pro https://*.kkphimplayer*.com https://*.opstream*.com https://*.phimapi.com https://phimapi.com *;",
           },
         ],
       },
@@ -61,6 +61,26 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "vidlink.pro",
+      },
+      {
+        protocol: "https",
+        hostname: "player.phimapi.com",
+      },
+      {
+        protocol: "https",
+        hostname: "v7.kkphimplayer7.com",
+      },
+      {
+        protocol: "https",
+        hostname: "vip.opstream10.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.kkphim.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.phimapi.com",
       },
     ],
   },
