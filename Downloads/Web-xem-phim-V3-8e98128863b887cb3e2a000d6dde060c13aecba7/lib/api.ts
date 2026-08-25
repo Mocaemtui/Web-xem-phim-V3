@@ -134,7 +134,7 @@ export async function getPhimMoi(
       for (let p = startApiPage; p <= endApiPage; p++) {
         pagePromises.push(
           fetch(`https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${p}&v=3`, {
-            cache: 'no-store', // Không cache để tránh lưu kết quả lỗi
+            next: { revalidate: 3600 },
             headers: { 'Accept': 'application/json' }
           }).then(res => res.json())
         );

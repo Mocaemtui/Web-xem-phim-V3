@@ -19,5 +19,6 @@ export const MOVIE_SOURCES = {
   }
 };
 
-// TEST: Tạm đổi sang Ophim để kiểm tra lỗi Vercel
-export const PRIMARY_SOURCE = MOVIE_SOURCES.OPHIM;
+// Đặt PhimAPI làm Nguồn chính (Primary Source) để có ảnh WEBP siêu nhẹ và metadata chuẩn.
+// Nguồn C sẽ đóng vai trò dự phòng và ưu tiên tốc độ stream video trong trang xem phim.
+export const PRIMARY_SOURCE = MOVIE_SOURCES.PHIMAPI;
