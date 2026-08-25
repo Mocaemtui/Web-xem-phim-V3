@@ -723,6 +723,8 @@ export default function VideoPlayer({
     if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
   };
 
+  const isVidlink = embedUrl?.includes("vidlink.pro");
+
   return (
     <div 
       className={`relative w-full h-full max-h-full flex items-center justify-center z-10 ${!showControlsInternal && isPlaying ? "cursor-none" : ""}`}
@@ -847,7 +849,7 @@ export default function VideoPlayer({
               allowFullScreen
               allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
               referrerPolicy="no-referrer"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allowfullscreen"
+              sandbox={isVidlink ? undefined : "allow-scripts allow-same-origin allow-forms allow-presentation allowfullscreen"}
             />
           )
         ) : (

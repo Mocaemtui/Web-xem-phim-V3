@@ -192,7 +192,7 @@ export const resolveImgUrl = (url: string | undefined): string => {
   let finalUrl = "";
   if (url.startsWith('http')) {
     finalUrl = url;
-  } else if (url.startsWith('upload/')) {
+  } else if (url.startsWith('upload/') || url.startsWith('uploads/')) {
     finalUrl = `https://phimimg.com/${url}`;
   } else if (url.includes('phimimg.com')) {
     // URL đã có domain phimimg.com nhưng thiếu https
@@ -209,39 +209,17 @@ const DEFAULT_POSTER = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/20
 
 const DEFAULT_BACKDROP = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="%2318181b"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-size="24">No Image</text></svg>';
 
-// Lấy ảnh dọc (Poster) - Ophim/Nguonc dùng thumb_url làm poster; PhimAPI dùng poster_url làm poster
+// Lấy ảnh dọc (Poster) - Tất cả các nguồn đều dùng poster_url làm poster dọc
 export const getPosterUrl = (movie: { thumb_url?: string; poster_url?: string; source?: string }): string => {
-  const isTmdb = movie.source === 'tmdb' || movie.thumb_url?.includes('tmdb.org') || movie.poster_url?.includes('tmdb.org');
-  const isPhimApi = movie.source === 'phimapi' || movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
-  const useCorrect = isPhimApi || isTmdb;
-
-  // Try both URLs and return the first valid one
-  const primaryUrl = useCorrect
-    ? resolveImgUrl(movie.poster_url || movie.thumb_url)
-    : resolveImgUrl(movie.thumb_url || movie.poster_url);
-
-  const fallbackUrl = useCorrect
-    ? resolveImgUrl(movie.thumb_url || movie.poster_url)
-    : resolveImgUrl(movie.poster_url || movie.thumb_url);
-
+  const primaryUrl = resolveImgUrl(movie.poster_url || movie.thumb_url);
+  const fallbackUrl = resolveImgUrl(movie.thumb_url || movie.poster_url);
   return primaryUrl || fallbackUrl || DEFAULT_POSTER;
 };
 
-// Lấy ảnh ngang (Backdrop) - Ophim/Nguonc dùng poster_url làm backdrop; PhimAPI dùng thumb_url làm backdrop
+// Lấy ảnh ngang (Backdrop) - Tất cả các nguồn đều dùng thumb_url làm backdrop ngang
 export const getBackdropUrl = (movie: { thumb_url?: string; poster_url?: string; source?: string }): string => {
-  const isTmdb = movie.source === 'tmdb' || movie.thumb_url?.includes('tmdb.org') || movie.poster_url?.includes('tmdb.org');
-  const isPhimApi = movie.source === 'phimapi' || movie.thumb_url?.includes('upload/') || movie.poster_url?.includes('upload/') || movie.thumb_url?.includes('phimimg.com') || movie.poster_url?.includes('phimimg.com');
-  const useCorrect = isPhimApi || isTmdb;
-
-  // Try both URLs and return the first valid one
-  const primaryUrl = useCorrect
-    ? resolveImgUrl(movie.thumb_url || movie.poster_url)
-    : resolveImgUrl(movie.poster_url || movie.thumb_url);
-
-  const fallbackUrl = useCorrect
-    ? resolveImgUrl(movie.poster_url || movie.thumb_url)
-    : resolveImgUrl(movie.thumb_url || movie.poster_url);
-
+  const primaryUrl = resolveImgUrl(movie.thumb_url || movie.poster_url);
+  const fallbackUrl = resolveImgUrl(movie.poster_url || movie.thumb_url);
   return primaryUrl || fallbackUrl || DEFAULT_BACKDROP;
 };
 
