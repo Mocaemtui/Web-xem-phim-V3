@@ -4,7 +4,7 @@ import HomeHistorySection from "@/components/HomeHistorySection";
 import HeroBanner from "@/components/HeroBanner";
 import { getPhimMoi, getDanhSach, getQuocGiaDetails } from "@/lib/api";
 
-export const revalidate = 86400; // Cache trang chủ 24 giờ trên CDN để tiết kiệm CPU Vercel
+export const revalidate = 60; // Revalidate mỗi 60 giây để tránh cache lỗi API
 
 export default async function Home() {
   const [
@@ -35,7 +35,8 @@ export default async function Home() {
     getDanhSach("tv-shows", { page: 1, limit: 12 }),
   ]);
 
-  if (!phimMoiData || !phimMoiData.data?.items) {
+  const phimMoiItems = phimMoiData?.data?.items || [];
+  if (phimMoiItems.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center py-16">
@@ -47,7 +48,7 @@ export default async function Home() {
     );
   }
 
-  const allPhimMoi = phimMoiData.data.items;
+  const allPhimMoi = phimMoiItems;
   
   // Combine sources to create a larger, more diverse pool for the banner
   const bannerPool = [
