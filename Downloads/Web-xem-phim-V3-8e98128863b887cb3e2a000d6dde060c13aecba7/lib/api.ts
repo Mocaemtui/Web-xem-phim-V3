@@ -579,7 +579,8 @@ export async function getTheLoai(): Promise<ApiResponse<{ items: Genre[] }> | nu
     try {
       const res = await fetch(`https://phimapi.com/the-loai`, { next: { revalidate: 3600 } });
       if (res.ok) {
-        const items = await res.json();
+        const json = await res.json();
+        const items = json.data?.items || [];
         // Lọc bỏ danh mục Phim 18+
         const filteredItems = items.filter((item: Genre) => item.slug !== 'phim-18');
         return { status: "success", data: { items: filteredItems } } as any;
@@ -596,7 +597,8 @@ export async function getQuocGia(): Promise<ApiResponse<{ items: Country[] }> | 
     try {
       const res = await fetch(`https://phimapi.com/quoc-gia`, { next: { revalidate: 3600 } });
       if (res.ok) {
-        const items = await res.json();
+        const json = await res.json();
+        const items = json.data?.items || [];
         return { status: "success", data: { items } } as any;
       }
     } catch (e) {
