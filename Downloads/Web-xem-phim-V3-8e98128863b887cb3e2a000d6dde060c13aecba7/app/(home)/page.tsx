@@ -4,7 +4,7 @@ import HomeHistorySection from "@/components/HomeHistorySection";
 import HeroBanner from "@/components/HeroBanner";
 import { getPhimMoi, getDanhSach, getQuocGiaDetails } from "@/lib/api";
 
-export const revalidate = 60; // Revalidate mỗi 60 giây để tránh cache lỗi API
+export const dynamic = 'force-dynamic'; // Không cache tĩnh, render mỗi request (giống trang search)
 
 export default async function Home() {
   const [
