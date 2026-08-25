@@ -67,27 +67,28 @@ export async function fetchAPI<T>(
       options.next = { revalidate };
     }
 
-    let response = await fetch(url, options);
+    let response = await fetch(url, options).catch(() => null);
 
     // Fallback to Ophim if PhimAPI returns 404 or fails
-    if (!response.ok && baseUrl === MOVIE_SOURCES.PHIMAPI.url) {
+    if ((!response || !response.ok) && baseUrl === MOVIE_SOURCES.PHIMAPI.url) {
       const fallbackUrl = `${MOVIE_SOURCES.OPHIM.url}${endpoint}${hasQuery ? '&' : '?'}cb=1`;
-      response = await fetch(fallbackUrl, options);
+      response = await fetch(fallbackUrl, options).catch(() => null);
     }
 
-    if (!response.ok) {
+    if (!response || !response.ok) {
       return null;
     }
 
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
+    if (!data) return null;
     
     // Check if API returns error status
     if (data.status === 'error' && baseUrl === MOVIE_SOURCES.PHIMAPI.url) {
       const fallbackUrl = `${MOVIE_SOURCES.OPHIM.url}${endpoint}${hasQuery ? '&' : '?'}cb=1`;
-      const fallbackResponse = await fetch(fallbackUrl, options);
-      if (fallbackResponse.ok) {
-        const fallbackData = await fallbackResponse.json();
-        if (fallbackData.status !== 'error') return fallbackData;
+      const fallbackResponse = await fetch(fallbackUrl, options).catch(() => null);
+      if (fallbackResponse && fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json().catch(() => null);
+        if (fallbackData && fallbackData.status !== 'error') return fallbackData;
       }
       return null;
     } else if (data.status === 'error') {
@@ -109,20 +110,8 @@ export async function getPhimMoi(
   page: number = 1,
   limit: number = 20
 ): Promise<ApiResponse<MovieListResponse> | null> {
-  if (PRIMARY_SOURCE.id === 'nguonc') {
-    try {
-      const res = await fetchAPI<any>(`/api/film/phim-moi-cap-nhat?page=${page}`, 3600, PRIMARY_SOURCE.url);
-      const mapped = mapNguoncListToV1(res);
-      if (mapped) return mapped as any;
-    } catch (e) {
-      console.warn("Nguonc getPhimMoi fetch failed:", e);
-    }
-  }
-
   if (PRIMARY_SOURCE.id === 'phimapi') {
     try {
-      // PhimAPI's phim-moi-cap-nhat endpoint ignores limit and always returns 10 items.
-      // We must fetch multiple pages to satisfy the requested limit.
       const API_ITEMS_PER_PAGE = 10;
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
@@ -136,7 +125,10 @@ export async function getPhimMoi(
           fetch(`https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${p}&v=3`, {
             next: { revalidate: 3600 },
             headers: { 'Accept': 'application/json' }
-          }).then(res => res.json())
+          }).then(async res => {
+            if (!res.ok) return null;
+            return res.json().catch(() => null);
+          }).catch(() => null)
         );
       }
       
@@ -146,7 +138,7 @@ export async function getPhimMoi(
       let totalItems = 0;
       
       for (const data of results) {
-        if (data.status === true && data.items) {
+        if (data && data.status === true && data.items) {
           allItems.push(...data.items);
           if (data.pagination) {
             totalItems = data.pagination.totalItems;
@@ -179,10 +171,24 @@ export async function getPhimMoi(
     }
   }
 
-  // Fallback to standard V1 endpoint
-  return fetchAPI<MovieListResponse>(
-    `/v1/api/danh-sach/phim-moi-cap-nhat?page=${page}&limit=${limit}`
-  );
+  // Fallback 1: Standard V1 endpoint (Ophim)
+  try {
+    const v1Res = await fetchAPI<MovieListResponse>(
+      `/v1/api/danh-sach/phim-moi-cap-nhat?page=${page}&limit=${limit}`
+    );
+    if (v1Res && v1Res.data?.items?.length) return v1Res;
+  } catch (e) {}
+
+  // Fallback 2: Nguồn C endpoint
+  try {
+    const nguoncRes = await fetchAPI<any>(`/api/film/phim-moi-cap-nhat?page=${page}`, 3600, MOVIE_SOURCES.NGUONC.url);
+    const mapped = mapNguoncListToV1(nguoncRes);
+    if (mapped && mapped.data?.items?.length) return mapped as any;
+  } catch (e) {
+    console.warn("Nguonc getPhimMoi fallback failed:", e);
+  }
+
+  return null;
 }
 
 // Hàm chuẩn hóa và tối ưu ảnh bằng WEBP converter của PhimAPI
@@ -709,13 +715,7 @@ export async function getDanhSach(
     year?: string;
   } = {}
 ): Promise<ApiResponse<MovieListResponse> | null> {
-  if (PRIMARY_SOURCE.id === 'nguonc') {
-    const page = options.page || 1;
-    const res = await fetchAPI<any>(`/api/film/danh-sach/${slug}?page=${page}`, 3600, PRIMARY_SOURCE.url);
-    const mapped = mapNguoncListToV1(res);
-    if (mapped) return mapped as any;
-  }
-
+  const page = options.page || 1;
   const params = new URLSearchParams();
   if (options.page !== undefined) params.append('page', options.page.toString());
   if (options.limit !== undefined) params.append('limit', options.limit.toString());
@@ -726,7 +726,20 @@ export async function getDanhSach(
   if (options.year) params.append('year', options.year);
   const query = params.toString();
   const endpoint = `/v1/api/danh-sach/${slug}${query ? '?' + query + '&v=3' : '?v=3'}`;
-  return fetchAPI<MovieListResponse>(endpoint);
+
+  const v1Res = await fetchAPI<MovieListResponse>(endpoint);
+  if (v1Res && v1Res.data?.items?.length) {
+    return v1Res;
+  }
+
+  // Fallback to NguonC
+  try {
+    const nguoncRes = await fetchAPI<any>(`/api/film/danh-sach/${slug}?page=${page}`, 3600, MOVIE_SOURCES.NGUONC.url);
+    const mapped = mapNguoncListToV1(nguoncRes);
+    if (mapped && mapped.data?.items?.length) return mapped as any;
+  } catch (e) {}
+
+  return null;
 }
 
 
