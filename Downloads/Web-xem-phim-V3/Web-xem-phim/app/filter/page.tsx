@@ -219,6 +219,14 @@ function FilterContent() {
             phienBan: filters.phienBan,
             sortField: filters.sortField,
             sortLang: filters.sortLang as string | undefined
+          } as {
+            theLoaiSlug?: string;
+            quocGiaSlug?: string;
+            year?: string;
+            loaiPhim?: string;
+            phienBan?: string;
+            sortField?: string;
+            sortLang?: string;
           }}
           onFilterChange={handleFilterChange}
         />
