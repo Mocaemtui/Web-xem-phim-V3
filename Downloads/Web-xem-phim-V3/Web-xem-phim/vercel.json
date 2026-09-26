@@ -4,7 +4,7 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["sin1"],
+  "regions": ["iad1"],
   "env": {
     "NEXT_PUBLIC_SITE_NAME": "Mocaemtui",
     "NEXT_PUBLIC_API_BASE_URL": "https://phimapi.com"
