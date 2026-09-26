@@ -218,7 +218,7 @@ function FilterContent() {
             loaiPhim: filters.loaiPhim,
             phienBan: filters.phienBan,
             sortField: filters.sortField,
-            sortLang: filters.sortLang
+            sortLang: filters.sortLang as string | undefined
           }}
           onFilterChange={handleFilterChange}
         />
